@@ -5,6 +5,8 @@ out/
 
 # Local QA artifacts
 screenshots/
+output/
+tmp/
 *.zip
 
 # TypeScript and editor caches
