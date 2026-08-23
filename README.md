@@ -1,12 +1,17 @@
 # Joongwon Chae Research Website
 
-A statically exportable Next.js research portfolio built from the supplied CV and research website source package.
+A bilingual, statically exported Next.js research portfolio built from the supplied CV and verified publication records.
 
 ## Routes
 
-- `/`: compact bio, research interests, selected projects, recent publications, and academic record
-- `/publications`: full publication archive grouped by year
-- `/cv`: embedded CV preview and PDF download
+- `/`: English profile, selected research, publications, and academic record
+- `/publications`: English publication archive
+- `/cv`: English CV preview and PDF download
+- `/zh`: Chinese profile and research overview
+- `/zh/publications`: Chinese publication archive
+- `/zh/cv`: Chinese CV preview and PDF download
+
+Each page includes a language switch that preserves the current section.
 
 ## Run locally
 
@@ -48,17 +53,29 @@ Then configure the repository:
 5. Visit `https://jw-chae.github.io/`.
 
 If the GitHub username is not `jw-chae`, update `metadataBase` in
-`app/layout.tsx` and use `<username>.github.io` as the repository name.
+`app/(en)/layout.tsx` and `app/(zh)/zh/layout.tsx`, then use
+`<username>.github.io` as the repository name.
 A project repository such as `research-website` requires an additional
 `basePath` configuration because the published URL includes the repository
 name.
+
+## Rebuild the CV PDFs
+
+`scripts/build_cv.py` generates the English and Chinese PDFs in `output/pdf/`
+and copies the web-ready versions to `public/`. It expects the private ID photo
+`JOONGWON_CHAE_ID Photo.jpg` one directory above this repository and uses local
+Windows fonts for English and CJK text, so font paths must be adapted on other
+operating systems.
 
 ## Design and image provenance
 
 - `DESIGN_REFERENCES.md` documents Gao Huang's site and the additional researcher websites reviewed.
 - `public/research/SOURCES.md` records the source of every research figure.
-- `screenshots/*gao-final.png` contains the final desktop and mobile visual checks.
 
-## Verification before public deployment
+## Publication verification
 
-BoundarySupport is a working title whose public title and status require confirmation. Under-review venues and manuscript statuses reflect the supplied CV. The public arXiv title for `2511.23276` differs from the supplied CV; both checks are retained as internal verification metadata rather than public-facing labels.
+Published and preprint author lists are transcribed from current arXiv, DOI,
+and publisher records. The unpublished ViGen entry intentionally lists only
+the two confirmed co-first authors because its complete author list is not yet
+public. BoundarySupport is identified as ongoing research rather than a public
+paper.
