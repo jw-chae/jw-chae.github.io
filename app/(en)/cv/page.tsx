@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "CV",
-  description: "Curriculum vitae of Joongwon Chae, including five signature visual-inference systems and IELTS 6.5.",
+  description: "Curriculum vitae of Joongwon Chae, including research highlights, verified publications, and IELTS 6.5.",
   alternates: {
     canonical: "/cv/",
     languages: { en: "/cv/", "zh-CN": "/zh/cv/", "x-default": "/cv/" },
@@ -16,7 +16,7 @@ export default function CvPage() {
       <header className="page-heading cv-heading">
         <div>
           <h1>Curriculum Vitae</h1>
-          <p>English CV featuring five first-author signature systems, verified author lists, and IELTS 6.5.</p>
+          <p>English CV with research highlights, verified author lists, and IELTS 6.5.</p>
         </div>
         <div className="cv-actions">
           <a href="/JoongwonChae_CV_EN.pdf" download>download PDF</a>

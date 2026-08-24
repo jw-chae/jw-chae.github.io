@@ -6,7 +6,7 @@ export const profile = {
   thesis:
     "I build training-free visual systems around a central question: which reference evidence should a frozen model retain, route, and trust?",
   statement:
-    "My signature work spans memory composition, projection-consistent selection, continual routing, and retrieval-to-prompt segmentation.",
+    "My work spans memory composition, projection-consistent selection, continual routing, and retrieval-to-prompt segmentation.",
   email: "cai-zy24@mails.tsinghua.edu.cn",
   github: "https://github.com/jw-chae",
   scholar: "https://scholar.google.com/citations?user=W7OpEP0AAAAJ&hl=en",
@@ -38,7 +38,7 @@ export const selectedResearch: ResearchItem[] = [
       "I introduce BoundarySupport: controlled synthetic context changes expose new features at pixel-preserved neighboring patches, which become fixed-budget memory references or reconstruction targets.",
     result:
       "At fixed memory size, near-defect normal patches raised MVTec P-AP from 73.34 to 76.95. BoundarySupport then improved all six settings by 1.76 to 5.01 points.",
-    status: "My first-author preprint, 2026",
+    status: "Preprint, 2026",
     paper: "/papers/what-remains-normal.pdf",
     code: "https://github.com/jw-chae/boundary_support",
     visual: "boundarysupport",
@@ -53,7 +53,7 @@ export const selectedResearch: ResearchItem[] = [
       "I introduce CLEANCON, an out-of-bag cross-image support gate that changes candidate eligibility while keeping the encoder, absolute memory budget, builder, and inference rule fixed.",
     result:
       "Global coverage amplified contamination by 16.04 to 40.61 times. CLEANCON improved macro P-AP in all 12 matched comparisons, yet the cleanest memory was not the best-performing one.",
-    status: "My first-author preprint, 2026",
+    status: "Preprint, 2026",
     paper: "/papers/what-memory-composition-does-not-tell-us.pdf",
     code: "https://github.com/jw-chae/cleancon",
     visual: "cleancon",
@@ -68,7 +68,7 @@ export const selectedResearch: ResearchItem[] = [
       "I introduce ProCon, which replaces a single hard anchor with soft local projection and ranks candidate references by projection consistency, without training the backbone.",
     result:
       "The public preprint reports image AUROC of 99.8%, 99.2%, and 93.2% on MVTec AD, VisA, and Real-IAD with a frozen backbone.",
-    status: "My first-author arXiv preprint, 2026",
+    status: "arXiv preprint, 2026",
     paper: "https://arxiv.org/abs/2607.04894",
     code: "https://github.com/jw-chae/Procon",
     visual: "procon",
@@ -83,7 +83,7 @@ export const selectedResearch: ResearchItem[] = [
       "I introduce geometry-consistent routing, separating cross-head prototype geometry from within-head anomaly scoring so new tasks can be added without retraining old heads.",
     result:
       "Experiments on MVTec AD and VisA report substantially more stable routing and near-zero forgetting without end-to-end representation learning.",
-    status: "My first-author arXiv preprint, 2026",
+    status: "arXiv preprint, 2026",
     paper: "https://arxiv.org/abs/2601.01856",
     code: "https://github.com/jw-chae/GCR",
     visual: "gcr",
@@ -98,7 +98,7 @@ export const selectedResearch: ResearchItem[] = [
       "I introduce retrieval-to-prompt inference: retrieve an exemplar, turn frozen DINOv3 correspondence into contrastive points, and pass them to SAM2 without fine-tuning.",
     result:
       "The public v3 preprint reports 0.9863 mIoU on the mixed test split of a 600-image expert-annotated benchmark, without human clicks or fine-tuning.",
-    status: "My first-author arXiv preprint, 2025",
+    status: "arXiv preprint, 2025",
     paper: "https://arxiv.org/abs/2510.15849",
     code: "https://github.com/jw-chae/memory-sam",
     visual: "memory-sam",
@@ -127,7 +127,7 @@ export const publications: Publication[] = [
     venue: "Preprint",
     area: "Anomaly Detection",
     contribution:
-      "My first-author work introducing BoundarySupport to expose missing near-defect normal evidence under fixed memory and reconstruction settings.",
+      "BoundarySupport exposes missing near-defect normal evidence under fixed memory and reconstruction settings.",
     paper: "/papers/what-remains-normal.pdf",
     code: "https://github.com/jw-chae/boundary_support",
   },
@@ -138,7 +138,7 @@ export const publications: Publication[] = [
     venue: "Preprint",
     area: "Anomaly Detection",
     contribution:
-      "My first-author work separating memory purity from memory utility through controlled candidate-image eligibility.",
+      "CLEANCON separates memory purity from memory utility through controlled candidate-image eligibility.",
     paper: "/papers/what-memory-composition-does-not-tell-us.pdf",
     code: "https://github.com/jw-chae/cleancon",
   },
@@ -250,7 +250,7 @@ export const education = [
     institution: "Tsinghua University, Shenzhen International Graduate School",
     period: "2024-2027 expected",
     detail:
-      "M.S. in Electronic Information (Biomedical Engineering), Institute of Biopharmaceutical and Health Engineering. Advisor: Prof. Peiwu Qin.",
+      "M.S. in Electronic Information (Biomedical Engineering), Institute of Biopharmaceutical and Health Engineering. Advisors: Peiwu Qin and Runming Wang.",
   },
   {
     institution: "Shanghai Jiao Tong University, Department of Automation",

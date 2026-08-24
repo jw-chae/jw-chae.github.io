@@ -90,8 +90,7 @@ export default function ChineseHome() {
 
       <section className="content-section shell" id="research" aria-labelledby="research-title">
         <header className="section-header">
-          <h2 id="research-title">核心代表研究</h2>
-          <p>我的五项第一作者系统，研究冻结视觉模型如何筛选、构成、路由并使用参考证据。</p>
+          <h2 id="research-title">代表性研究</h2>
         </header>
         <div className="research-list">
           {selectedResearchZh.map((item) => <ResearchEntry item={item} key={item.slug} />)}

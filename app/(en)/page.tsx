@@ -99,8 +99,7 @@ export default function Home() {
 
       <section className="content-section shell" id="research" aria-labelledby="research-title">
         <header className="section-header">
-          <h2 id="research-title">Signature Research</h2>
-          <p>Five first-author systems for selecting, composing, routing, and using reference evidence in frozen visual models.</p>
+          <h2 id="research-title">Selected Research</h2>
         </header>
         <div className="research-list">
           {selectedResearch.map((item) => <ResearchEntry item={item} key={item.slug} />)}

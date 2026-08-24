@@ -371,7 +371,7 @@ def build_english(path: Path) -> None:
 
     section(story, "RESEARCH INTERESTS", styles)
     story.append(Paragraph(
-        "I develop training-free visual systems around a central question: which reference evidence should a frozen model retain, route, and trust? My signature work spans memory composition, projection-consistent selection, continual routing, and retrieval-to-prompt segmentation.",
+        "I develop training-free visual systems around a central question: which reference evidence should a frozen model retain, route, and trust? My work spans memory composition, projection-consistent selection, continual routing, and retrieval-to-prompt segmentation.",
         styles["body"],
     ))
 
@@ -380,7 +380,7 @@ def build_english(path: Path) -> None:
         story,
         "<b>Tsinghua University</b> - Shenzhen International Graduate School (SIGS)",
         "2024-2027 (expected)",
-        "M.S. in Electronic Information (Biomedical Engineering), Institute of Biopharmaceutical and Health Engineering · Advisor: Prof. Peiwu Qin · Shenzhen, China",
+        "M.S. in Electronic Information (Biomedical Engineering), Institute of Biopharmaceutical and Health Engineering · Advisors: Peiwu Qin and Runming Wang · Shenzhen, China",
         styles,
         width,
     )
@@ -398,13 +398,13 @@ def build_english(path: Path) -> None:
         story,
         "<b>Master's Student Researcher</b> - Tsinghua University (SIGS)",
         "2024-present",
-        "Independently leading method development under the supervision of Prof. Peiwu Qin.",
+        "Leading method development under the supervision of Peiwu Qin and Runming Wang.",
         styles,
         width,
     )
-    bullet(story, "<b>Signature research - BoundarySupport.</b> I showed that clean images miss useful near-defect normal states and introduced a clean-only altered-context intervention for fixed-budget memory and reconstruction. Near-defect normal patches raised MVTec P-AP from 73.34 to 76.95; BoundarySupport improved all six paired settings by 1.76 to 5.01 points.", styles)
-    bullet(story, "<b>Signature research - CLEANCON.</b> I introduced an out-of-bag cross-image support gate to isolate candidate eligibility while holding the encoder, memory budget, builder, and inference fixed. Global coverage amplified sparse contamination by 16.04 to 40.61 times; CLEANCON improved macro P-AP in all 12 matched comparisons while showing that the cleanest memory was not always best.", styles)
-    bullet(story, "<b>Signature research - ProCon, GCR, and Memory-SAM.</b> I developed projection-consistent memory, task-agnostic geometry-consistent routing, and retrieval-to-prompt SAM2 segmentation, leading each first-author work from problem formulation through open-source release.", styles)
+    bullet(story, "<b>BoundarySupport.</b> I showed that clean images miss useful near-defect normal states and introduced a clean-only altered-context intervention for fixed-budget memory and reconstruction. Near-defect normal patches raised MVTec P-AP from 73.34 to 76.95; BoundarySupport improved all six paired settings by 1.76 to 5.01 points.", styles)
+    bullet(story, "<b>CLEANCON.</b> I introduced an out-of-bag cross-image support gate to isolate candidate eligibility while holding the encoder, memory budget, builder, and inference fixed. Global coverage amplified sparse contamination by 16.04 to 40.61 times; CLEANCON improved macro P-AP in all 12 matched comparisons while showing that the cleanest memory was not always best.", styles)
+    bullet(story, "<b>ProCon, GCR, and Memory-SAM.</b> I developed projection-consistent memory, task-agnostic geometry-consistent routing, and retrieval-to-prompt SAM2 segmentation, leading each project from problem formulation through open-source release.", styles)
 
     dated_item(
         story,
@@ -484,7 +484,7 @@ def build_chinese(path: Path) -> None:
 
     section(story, "研究方向", styles)
     story.append(Paragraph(
-        "我围绕一个核心问题开发免训练视觉系统：冻结模型应保留、路由并信任哪些参考证据？我的核心代表研究涵盖记忆构成、投影一致性筛选、持续学习路由与检索到提示分割。",
+        "我研究冻结视觉模型应如何保留、路由并使用参考证据。<br/>具体方向包括记忆构成、投影一致性筛选、持续学习路由与检索到提示分割。",
         styles["body"],
     ))
 
@@ -493,7 +493,7 @@ def build_chinese(path: Path) -> None:
         story,
         "<b>清华大学深圳国际研究生院</b>",
         "2024-2027（预计）",
-        "电子信息硕士（生物医学工程方向），生物医药与健康工程研究院 · 导师：秦培武教授 · 中国深圳",
+        "电子信息硕士（生物医学工程方向），生物医药与健康工程研究院 · 导师：Peiwu Qin、Runming Wang · 中国深圳",
         styles,
         width,
     )
@@ -511,13 +511,13 @@ def build_chinese(path: Path) -> None:
         story,
         "<b>硕士研究生</b> - 清华大学深圳国际研究生院",
         "2024年至今",
-        "在秦培武教授指导下独立主导方法研发。",
+        "在 Peiwu Qin 与 Runming Wang 指导下主导方法研发。",
         styles,
         width,
     )
-    bullet(story, "<b>核心代表研究 - BoundarySupport：</b>我发现干净图像会遗漏有用的缺陷邻近正常状态，并提出仅使用干净图像的上下文改变方法，服务于固定预算记忆与重建。缺陷邻近正常补丁将 MVTec P-AP 从 73.34 提升至 76.95；BoundarySupport 在全部六个配对设置中提升 1.76 至 5.01 个百分点。", styles)
-    bullet(story, "<b>核心代表研究 - CLEANCON：</b>我提出袋外跨图像支持门控，在保持编码器、记忆容量、构建器与推理规则不变的条件下，仅控制候选图像资格。全局覆盖将稀疏污染放大 16.04 至 40.61 倍；CLEANCON 在全部 12 个匹配比较中提升宏平均 P-AP，同时表明最干净的记忆并不总是最佳。", styles)
-    bullet(story, "<b>核心代表研究 - ProCon、GCR 与 Memory-SAM：</b>我分别开发投影一致性记忆、任务无关几何一致路由与检索到提示的 SAM2 分割，并主导每项第一作者研究从问题定义到开源发布的完整流程。", styles)
+    bullet(story, "<b>BoundarySupport：</b>我发现干净图像会遗漏有用的缺陷邻近正常状态，并提出仅使用干净图像的上下文改变方法，服务于固定预算记忆与重建。缺陷邻近正常补丁将 MVTec P-AP 从 73.34 提升至 76.95；BoundarySupport 在全部六个配对设置中提升 1.76 至 5.01 个百分点。", styles)
+    bullet(story, "<b>CLEANCON：</b>我提出袋外跨图像支持门控，在保持编码器、记忆容量、构建器与推理规则不变的条件下，仅控制候选图像资格。全局覆盖将稀疏污染放大 16.04 至 40.61 倍；CLEANCON 在全部 12 个匹配比较中提升宏平均 P-AP，同时表明最干净的记忆并不总是最佳。", styles)
+    bullet(story, "<b>ProCon、GCR 与 Memory-SAM：</b>我分别开发投影一致性记忆、任务无关几何一致路由与检索到提示的 SAM2 分割，并主导各项目从问题定义到开源发布的完整流程。", styles)
 
     dated_item(
         story,

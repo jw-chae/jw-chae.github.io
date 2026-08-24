@@ -6,14 +6,14 @@ import "../../globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://jw-chae.github.io"),
   title: { default: "Joongwon Chae | 研究主页", template: "%s | Joongwon Chae" },
-  description: "Joongwon Chae 关于记忆、路由、提示与免训练视觉推理的五项核心第一作者系统。",
+  description: "Joongwon Chae 关于记忆构成、路由、视觉提示与免训练推理的研究。",
   alternates: {
     canonical: "/zh/",
     languages: { en: "/", "zh-CN": "/zh/", "x-default": "/" },
   },
   openGraph: {
     title: "Joongwon Chae | 研究主页",
-    description: "关于记忆、路由、提示与免训练视觉推理的五项第一作者系统。",
+    description: "关于记忆构成、路由、视觉提示与免训练推理的研究。",
     url: "/zh/",
     locale: "zh_CN",
     type: "website",
