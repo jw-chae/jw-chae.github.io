@@ -20,10 +20,12 @@ export type ResearchItem = {
   subtitle: string;
   topic: string;
   method: string;
+  algorithm: string;
   result: string;
   status: string;
   paper?: string;
   code?: string;
+  dataset?: string;
   visual: "boundarysupport" | "cleancon" | "procon" | "gcr" | "memory-sam";
 };
 
@@ -36,6 +38,8 @@ export const selectedResearch: ResearchItem[] = [
       "I test whether clean training images contain all normal evidence needed to localize defects, especially for normal patches beside real defects.",
     method:
       "I introduce BoundarySupport: controlled synthetic context changes expose new features at pixel-preserved neighboring patches, which become fixed-budget memory references or reconstruction targets.",
+    algorithm:
+      "I exclude every token footprint with any RGB change, keep the two-token pixel-preserved ring, and use its altered-context features as normal evidence.",
     result:
       "At a fixed memory size, we find that near-defect normal patches raise MVTec P-AP from 73.34 to 76.95. BoundarySupport improves the six evaluated settings by 1.76 to 5.01 points.",
     status: "Preprint, 2026",
@@ -51,6 +55,8 @@ export const selectedResearch: ResearchItem[] = [
       "I examine how coverage-driven memory selection can turn sparse contamination into deployed normal references, and whether a cleaner memory is actually better.",
     method:
       "I introduce CLEANCON, an out-of-bag cross-image support gate that changes candidate eligibility while keeping the encoder, absolute memory budget, builder, and inference rule fixed.",
+    algorithm:
+      "I score each image with top-patch soft-projection residuals from 20 out-of-bag banks, aggregate them by medians, and pass the lower-risk half to the unchanged memory builder.",
     result:
       "We find that global coverage amplifies contamination by 16.04 to 40.61 times. Across 12 matched comparisons, CLEANCON improves macro P-AP, yet the cleanest memory is not the best-performing one.",
     status: "Preprint, 2026",
@@ -65,7 +71,9 @@ export const selectedResearch: ResearchItem[] = [
     topic:
       "I ask how a frozen anomaly detector can select useful reference memory by internal consistency rather than raw nearest-neighbor coverage.",
     method:
-      "I introduce ProCon, which replaces a single hard anchor with soft local projection and ranks candidate references by projection consistency, without training the backbone.",
+      "I introduce ProCon, a training-free, decoder-free reconstruction framework that replaces hard nearest-neighbor lookup with soft projection onto normal memory.",
+    algorithm:
+      "I soft-project each test patch onto a local normal neighborhood, take the median residual across seed-perturbed memory banks, and average the residual maps across feature depths.",
     result:
       "With a frozen backbone, we achieve image AUROC of 99.8% on MVTec AD, 99.2% on VisA, and 93.2% on Real-IAD.",
     status: "arXiv preprint, 2026",
@@ -81,6 +89,8 @@ export const selectedResearch: ResearchItem[] = [
       "I study how a task-agnostic continual detector can route each test image to the correct frozen head without being told its task identity.",
     method:
       "I introduce geometry-consistent routing, separating cross-head prototype geometry from within-head anomaly scoring so new tasks can be added without retraining old heads.",
+    algorithm:
+      "I route each image by the mean nearest-prototype distance over 32 sampled patches in shared frozen space, then compute LogSumExp anomaly energy only within the selected head.",
     result:
       "On MVTec AD and VisA, we show that GCR substantially stabilizes routing and keeps forgetting near zero without end-to-end representation learning.",
     status: "arXiv preprint, 2026",
@@ -93,14 +103,17 @@ export const selectedResearch: ResearchItem[] = [
     title: "Memory-SAM",
     subtitle: "Human-Prompt-Free Tongue Segmentation via Retrieval-to-Prompt",
     topic:
-      "I study how to remove manual clicks from SAM2-based tongue segmentation while preserving instance-specific visual guidance.",
+      "I study how a small labeled memory can generate reliable SAM2 prompts across controlled and unconstrained tongue images without manual prompting or parameter updates.",
     method:
-      "I introduce retrieval-to-prompt inference: retrieve an exemplar, turn frozen DINOv3 correspondence into contrastive points, and pass them to SAM2 without fine-tuning.",
+      "I retrieve candidate exemplars with frozen DINOv3, partition their features with expert masks, and rerank them by foreground-background separability on the query.",
+    algorithm:
+      "I subtract background from foreground DINOv3 similarity, S(i) = s_fg(i) - s_bg(i), select the top three foreground contrast points, and use them as SAM2 prompts.",
     result:
-      "On the mixed test split of our 600-image expert-annotated benchmark, we achieve 0.9863 mIoU without human clicks or fine-tuning.",
+      "We achieve 0.984 mIoU on HIT-Tongue and 0.973 on the 2,155-image SM-Tongue smartphone benchmark. We also release 2,155 de-identified 512 x 512 image-mask pairs for reproducible evaluation.",
     status: "arXiv preprint, 2025",
     paper: "https://arxiv.org/abs/2510.15849",
     code: "https://github.com/jw-chae/memory-sam",
+    dataset: "https://huggingface.co/datasets/Mark-CHAE/SM-Tongue-Public-Original512",
     visual: "memory-sam",
   },
 ];
@@ -117,6 +130,7 @@ export type Publication = {
   arxiv?: string;
   doi?: string;
   code?: string;
+  dataset?: string;
 };
 
 export const publications: Publication[] = [
@@ -196,12 +210,15 @@ export const publications: Publication[] = [
   {
     title: "Memory-SAM: Human-Prompt-Free Tongue Segmentation via Retrieval-to-Prompt",
     year: 2025,
-    authors: "Joongwon Chae; Lihui Luo; Xi Yuan; Dongmei Yu; Zhenglin Chen; Lian Zhang; Peiwu Qin",
+    authors:
+      "Joongwon Chae; Lihui Luo; Yang Liu; Xi Yuan; Dongmei Yu; Zhenglin Chen; Runming Wang; Ilmoon Chae; Lian Zhang; Peiwu Qin",
     venue: "arXiv:2510.15849 [cs.CV]",
     area: "Medical AI",
-    contribution: "Retrieval-to-prompt inference for automatic SAM2 segmentation.",
+    contribution:
+      "Foreground-minus-background DINOv3 contrast generates automatic SAM2 prompts; SM-Tongue releases 2,155 image-mask pairs.",
     arxiv: "2510.15849",
     code: "https://github.com/jw-chae/memory-sam",
+    dataset: "https://huggingface.co/datasets/Mark-CHAE/SM-Tongue-Public-Original512",
   },
   {
     title: "Auditable Context-Aware HFMD Forecasting with Structured LLM Agents",

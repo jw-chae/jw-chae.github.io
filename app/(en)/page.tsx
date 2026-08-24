@@ -14,12 +14,13 @@ import {
 } from "@/data/site";
 
 function ProjectLinks({ item }: { item: ResearchItem }) {
-  if (!item.paper && !item.code) return null;
+  if (!item.paper && !item.code && !item.dataset) return null;
 
   return (
     <div className="resource-links" aria-label={`${item.title} resources`}>
       {item.paper ? <a href={item.paper}>paper</a> : null}
       {item.code ? <a href={item.code}>code</a> : null}
+      {item.dataset ? <a href={item.dataset}>dataset</a> : null}
     </div>
   );
 }
@@ -35,6 +36,7 @@ function ResearchEntry({ item }: { item: ResearchItem }) {
         <dl className="research-signature">
           <div><dt>Topic</dt><dd>{item.topic}</dd></div>
           <div><dt>Method</dt><dd>{item.method}</dd></div>
+          <div><dt>Algorithm</dt><dd>{item.algorithm}</dd></div>
           <div><dt>Result</dt><dd>{item.result}</dd></div>
         </dl>
         <ProjectLinks item={item} />
@@ -109,7 +111,6 @@ export default function Home() {
       <section className="content-section shell" aria-labelledby="recent-title">
         <header className="section-header">
           <h2 id="recent-title">Recent Publications</h2>
-          <p>Author lists and titles checked against current arXiv, DOI, and publisher records.</p>
         </header>
         <div className="publication-list">
           {publications.slice(0, 5).map((publication) => (

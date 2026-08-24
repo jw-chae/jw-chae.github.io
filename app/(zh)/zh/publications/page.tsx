@@ -21,7 +21,7 @@ export default function ChinesePublicationsPage() {
       <header className="page-heading">
         <h1>论文</h1>
         <p>
-          完整作者名单均依据当前 arXiv、DOI 与出版社记录录入。尚未公开的 ViGen 稿件仅列出已确认的两位共同第一作者。 <a href={profile.scholar}>Google Scholar</a>
+          我的论文与预印本涵盖异常检测、医疗人工智能、多模态学习与生成式人工智能。 <a href={profile.scholar}>Google Scholar</a>
         </p>
       </header>
       <div className="publication-groups">

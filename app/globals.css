@@ -358,7 +358,7 @@ nav .language-switch::before {
 
 .research-signature > div {
   display: grid;
-  grid-template-columns: 58px minmax(0, 1fr);
+  grid-template-columns: 86px minmax(0, 1fr);
   gap: 0.8rem;
   padding-block: 0.52rem;
   border-top: 1px solid #e7e9ec;
@@ -767,7 +767,7 @@ nav .language-switch::before {
   }
 
   .research-signature > div {
-    grid-template-columns: 52px minmax(0, 1fr);
+    grid-template-columns: 80px minmax(0, 1fr);
   }
 
   .record-grid {

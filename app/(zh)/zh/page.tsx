@@ -6,12 +6,13 @@ import { profile, type ResearchItem } from "@/data/site";
 import { educationZh, experienceZh, honorsZh, languagesZh, profileZh, publicationsZh, selectedResearchZh } from "@/data/site-zh";
 
 function ProjectLinks({ item }: { item: ResearchItem }) {
-  if (!item.paper && !item.code) return null;
+  if (!item.paper && !item.code && !item.dataset) return null;
 
   return (
     <div className="resource-links" aria-label={`${item.title} 相关链接`}>
       {item.paper ? <a href={item.paper}>论文</a> : null}
       {item.code ? <a href={item.code}>代码</a> : null}
+      {item.dataset ? <a href={item.dataset}>数据集</a> : null}
     </div>
   );
 }
@@ -27,6 +28,7 @@ function ResearchEntry({ item }: { item: ResearchItem }) {
         <dl className="research-signature">
           <div><dt>核心主题</dt><dd>{item.topic}</dd></div>
           <div><dt>方法</dt><dd>{item.method}</dd></div>
+          <div><dt>核心算法</dt><dd>{item.algorithm}</dd></div>
           <div><dt>结果</dt><dd>{item.result}</dd></div>
         </dl>
         <ProjectLinks item={item} />
@@ -100,7 +102,6 @@ export default function ChineseHome() {
       <section className="content-section shell" aria-labelledby="recent-title">
         <header className="section-header">
           <h2 id="recent-title">近期论文</h2>
-          <p>作者顺序与论文标题已根据当前 arXiv、DOI 及出版社记录核对。</p>
         </header>
         <div className="publication-list">
           {publicationsZh.slice(0, 5).map((publication) => (

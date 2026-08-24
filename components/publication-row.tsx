@@ -44,6 +44,7 @@ export function PublicationRow({
           {!publication.paper && publication.arxiv ? <a href={`https://arxiv.org/abs/${publication.arxiv}`}>{isZh ? "论文" : "paper"}</a> : null}
           {publication.doi ? <a href={`https://doi.org/${publication.doi}`}>doi</a> : null}
           {publication.code ? <a href={publication.code}>{isZh ? "代码" : "code"}</a> : null}
+          {publication.dataset ? <a href={publication.dataset}>{isZh ? "数据集" : "dataset"}</a> : null}
         </div>
       </div>
     </article>

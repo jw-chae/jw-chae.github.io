@@ -1,6 +1,6 @@
 # Joongwon Chae Research Website
 
-A bilingual, statically exported Next.js research portfolio built from the supplied CV and verified publication records.
+A bilingual, statically exported Next.js research portfolio built from the supplied CV and publication record.
 
 ## Routes
 
@@ -72,12 +72,10 @@ operating systems.
 - `DESIGN_REFERENCES.md` documents Gao Huang's site and the additional researcher websites reviewed.
 - `public/research/SOURCES.md` records the source of every research figure.
 
-## Publication verification
+## Research content
 
-Published and preprint author lists are transcribed from current arXiv, DOI,
-publisher, and supplied manuscript records. The two new preprints,
-BoundarySupport and CLEANCON, are listed first and their supplied PDFs are
+BoundarySupport and CLEANCON are listed first and their supplied PDFs are
 hosted under `public/papers/`. Together with ProCon, GCR, and Memory-SAM, they
-form the five selected research projects on the home page. The unpublished ViGen entry intentionally lists only
-the two confirmed co-first authors because its complete author list is not yet
-public.
+form the five selected research projects on the home page. The unpublished
+ViGen entry lists only the two co-first authors because its complete author list
+is not yet public.

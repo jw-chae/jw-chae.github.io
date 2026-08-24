@@ -44,9 +44,9 @@ const visualAssets = {
     width: 1800,
     height: 1004,
     alt: "Memory-SAM architecture for exemplar retrieval, contrastive point selection, and SAM2 tongue segmentation",
-    caption: "Memory-SAM converts retrieved visual correspondence into automatic SAM2 prompts.",
+    caption: "Memory-SAM turns foreground-background DINOv3 contrast into automatic SAM2 point prompts.",
     altZh: "Memory-SAM 架构图，展示样例检索、对比点选择与 SAM2 舌体分割",
-    captionZh: "Memory-SAM 将检索得到的视觉对应关系转化为自动 SAM2 提示。",
+    captionZh: "Memory-SAM 将 DINOv3 前景与背景对比转化为自动 SAM2 点提示。",
   },
 } as const;
 

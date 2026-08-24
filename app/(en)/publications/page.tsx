@@ -20,7 +20,7 @@ export default function PublicationsPage() {
       <header className="page-heading">
         <h1>Publications</h1>
         <p>
-          Full author lists are transcribed from current arXiv, DOI, and publisher records. The unpublished ViGen manuscript is limited to the two publicly identified co-first authors. <a href={profile.scholar}>Google Scholar</a>
+          My papers and preprints span anomaly detection, medical AI, multimodal learning, and generative AI. <a href={profile.scholar}>Google Scholar</a>
         </p>
       </header>
       <div className="publication-groups">
