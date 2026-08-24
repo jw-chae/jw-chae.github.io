@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "中文简历",
-  description: "Joongwon Chae 的中文简历，包含研究重点、论文成果与 IELTS 6.5。",
+  description: "Joongwon Chae 的中文简历。",
   alternates: {
     canonical: "/zh/cv/",
     languages: { en: "/cv/", "zh-CN": "/zh/cv/", "x-default": "/cv/" },
@@ -16,7 +16,6 @@ export default function ChineseCvPage() {
       <header className="page-heading cv-heading">
         <div>
           <h1>中文简历</h1>
-          <p>包含研究重点、论文成果与 IELTS 6.5。</p>
         </div>
         <div className="cv-actions">
           <a href="/JoongwonChae_CV_ZH.pdf" download>下载 PDF</a>
