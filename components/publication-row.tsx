@@ -12,8 +12,10 @@ export function PublicationRow({
   showYear?: boolean;
   locale?: "en" | "zh";
 }) {
-  const primaryHref = publication.arxiv
-    ? `https://arxiv.org/abs/${publication.arxiv}`
+  const primaryHref = publication.paper
+    ? publication.paper
+    : publication.arxiv
+      ? `https://arxiv.org/abs/${publication.arxiv}`
     : publication.doi
       ? `https://doi.org/${publication.doi}`
       : undefined;
@@ -38,7 +40,8 @@ export function PublicationRow({
         <p className="publication-venue"><em>{publication.venue}</em>, {publication.year}.</p>
         {compact ? null : <p className="contribution">{publication.contribution}</p>}
         <div className="resource-links" aria-label={publication.title + (isZh ? " 相关链接" : " resources")}>
-          {publication.arxiv ? <a href={`https://arxiv.org/abs/${publication.arxiv}`}>{isZh ? "论文" : "paper"}</a> : null}
+          {publication.paper ? <a href={publication.paper}>{isZh ? "论文" : "paper"}</a> : null}
+          {!publication.paper && publication.arxiv ? <a href={`https://arxiv.org/abs/${publication.arxiv}`}>{isZh ? "论文" : "paper"}</a> : null}
           {publication.doi ? <a href={`https://doi.org/${publication.doi}`}>doi</a> : null}
           {publication.code ? <a href={publication.code}>{isZh ? "代码" : "code"}</a> : null}
         </div>

@@ -4,9 +4,9 @@ export const profile = {
   affiliation: "Tsinghua University, Shenzhen International Graduate School",
   identity: "Computer Vision / Anomaly Detection / Multimodal Learning",
   thesis:
-    "I build training-free visual systems that decide which references matter, then use them without updating the model.",
+    "I build training-free visual systems around a central question: which reference evidence should a frozen model retain, route, and trust?",
   statement:
-    "I study how frozen visual models choose and use reference evidence through memory, retrieval, prompting, routing, and calibration.",
+    "My signature work spans memory composition, projection-consistent selection, continual routing, and retrieval-to-prompt segmentation.",
   email: "cai-zy24@mails.tsinghua.edu.cn",
   github: "https://github.com/jw-chae",
   scholar: "https://scholar.google.com/citations?user=W7OpEP0AAAAJ&hl=en",
@@ -17,54 +17,89 @@ export const profile = {
 export type ResearchItem = {
   slug: string;
   title: string;
-  finding: string;
-  detail: string;
+  subtitle: string;
+  topic: string;
+  method: string;
+  result: string;
   status: string;
-  arxiv?: string;
+  paper?: string;
   code?: string;
-  visual: "boundary" | "procon" | "gcr" | "memory-sam";
+  visual: "boundarysupport" | "cleancon" | "procon" | "gcr" | "memory-sam";
 };
 
 export const selectedResearch: ResearchItem[] = [
   {
     slug: "boundarysupport",
-    title: "BoundarySupport",
-    finding: "Cleaner memory is not always a better anomaly detector.",
-    detail:
-      "Adding useful normal support from defect images improved MVTec AD patch average precision by 3.616 points at a fixed memory size.",
-    status: "Ongoing research",
-    visual: "boundary",
+    title: "What Remains Normal?",
+    subtitle: "BoundarySupport: Clean Images Miss Useful Near-Defect Normal Patches",
+    topic:
+      "I test whether clean training images contain all normal evidence needed to localize defects, especially for normal patches beside real defects.",
+    method:
+      "I introduce BoundarySupport: controlled synthetic context changes expose new features at pixel-preserved neighboring patches, which become fixed-budget memory references or reconstruction targets.",
+    result:
+      "At fixed memory size, near-defect normal patches raised MVTec P-AP from 73.34 to 76.95. BoundarySupport then improved all six settings by 1.76 to 5.01 points.",
+    status: "My first-author preprint, 2026",
+    paper: "/papers/what-remains-normal.pdf",
+    code: "https://github.com/jw-chae/boundary_support",
+    visual: "boundarysupport",
+  },
+  {
+    slug: "cleancon",
+    title: "What Memory Composition Does Not Tell Us",
+    subtitle: "CLEANCON: Memory Purity and Memory Utility Are Different",
+    topic:
+      "I examine how coverage-driven memory selection can turn sparse contamination into deployed normal references, and whether a cleaner memory is actually better.",
+    method:
+      "I introduce CLEANCON, an out-of-bag cross-image support gate that changes candidate eligibility while keeping the encoder, absolute memory budget, builder, and inference rule fixed.",
+    result:
+      "Global coverage amplified contamination by 16.04 to 40.61 times. CLEANCON improved macro P-AP in all 12 matched comparisons, yet the cleanest memory was not the best-performing one.",
+    status: "My first-author preprint, 2026",
+    paper: "/papers/what-memory-composition-does-not-tell-us.pdf",
+    code: "https://github.com/jw-chae/cleancon",
+    visual: "cleancon",
   },
   {
     slug: "procon",
     title: "ProCon",
-    finding: "Projection consistency selects useful anomaly references without training.",
-    detail:
+    subtitle: "Projection-Consistency Memory for Training-Free Anomaly Detection",
+    topic:
+      "I ask how a frozen anomaly detector can select useful reference memory by internal consistency rather than raw nearest-neighbor coverage.",
+    method:
+      "I introduce ProCon, which replaces a single hard anchor with soft local projection and ranks candidate references by projection consistency, without training the backbone.",
+    result:
       "The public preprint reports image AUROC of 99.8%, 99.2%, and 93.2% on MVTec AD, VisA, and Real-IAD with a frozen backbone.",
-    status: "arXiv preprint",
-    arxiv: "2607.04894",
+    status: "My first-author arXiv preprint, 2026",
+    paper: "https://arxiv.org/abs/2607.04894",
     code: "https://github.com/jw-chae/Procon",
     visual: "procon",
   },
   {
     slug: "gcr",
     title: "GCR",
-    finding: "Geometry-consistent routing supports task-agnostic continual anomaly detection.",
-    detail:
-      "Experiments on MVTec AD and VisA report substantially improved routing stability and near-zero forgetting without end-to-end representation learning.",
-    status: "arXiv preprint",
-    arxiv: "2601.01856",
+    subtitle: "Geometry-Consistent Routing for Task-Agnostic Continual Anomaly Detection",
+    topic:
+      "I study how a task-agnostic continual detector can route each test image to the correct frozen head without being told its task identity.",
+    method:
+      "I introduce geometry-consistent routing, separating cross-head prototype geometry from within-head anomaly scoring so new tasks can be added without retraining old heads.",
+    result:
+      "Experiments on MVTec AD and VisA report substantially more stable routing and near-zero forgetting without end-to-end representation learning.",
+    status: "My first-author arXiv preprint, 2026",
+    paper: "https://arxiv.org/abs/2601.01856",
     code: "https://github.com/jw-chae/GCR",
     visual: "gcr",
   },
   {
     slug: "memory-sam",
     title: "Memory-SAM",
-    finding: "Retrieval turns frozen correspondence into automatic SAM2 prompts.",
-    detail:
+    subtitle: "Human-Prompt-Free Tongue Segmentation via Retrieval-to-Prompt",
+    topic:
+      "I study how to remove manual clicks from SAM2-based tongue segmentation while preserving instance-specific visual guidance.",
+    method:
+      "I introduce retrieval-to-prompt inference: retrieve an exemplar, turn frozen DINOv3 correspondence into contrastive points, and pass them to SAM2 without fine-tuning.",
+    result:
       "The public v3 preprint reports 0.9863 mIoU on the mixed test split of a 600-image expert-annotated benchmark, without human clicks or fine-tuning.",
-    status: "arXiv preprint",
-    arxiv: "2510.15849",
+    status: "My first-author arXiv preprint, 2025",
+    paper: "https://arxiv.org/abs/2510.15849",
     code: "https://github.com/jw-chae/memory-sam",
     visual: "memory-sam",
   },
@@ -78,12 +113,35 @@ export type Publication = {
   venue: string;
   area: "Anomaly Detection" | "Medical AI" | "Multimodal Learning" | "Generative AI";
   contribution: string;
+  paper?: string;
   arxiv?: string;
   doi?: string;
   code?: string;
 };
 
 export const publications: Publication[] = [
+  {
+    title: "What Remains Normal? Clean Images Miss Useful Near-Defect Normal Patches for Anomaly Detection",
+    year: 2026,
+    authors: "Joongwon Chae; Runming Wang; Peiwu Qin",
+    venue: "Preprint",
+    area: "Anomaly Detection",
+    contribution:
+      "My first-author work introducing BoundarySupport to expose missing near-defect normal evidence under fixed memory and reconstruction settings.",
+    paper: "/papers/what-remains-normal.pdf",
+    code: "https://github.com/jw-chae/boundary_support",
+  },
+  {
+    title: "What Memory Composition Does Not Tell Us About Anomaly Detection",
+    year: 2026,
+    authors: "Joongwon Chae; Runming Wang; Peiwu Qin",
+    venue: "Preprint",
+    area: "Anomaly Detection",
+    contribution:
+      "My first-author work separating memory purity from memory utility through controlled candidate-image eligibility.",
+    paper: "/papers/what-memory-composition-does-not-tell-us.pdf",
+    code: "https://github.com/jw-chae/cleancon",
+  },
   {
     title: "ProCon: Projection-Consistency Memory for Training-Free Anomaly Detection",
     year: 2026,
@@ -220,3 +278,5 @@ export const honors = [
   "Tsinghua University International Graduate Tuition Scholarship, 2025-2026",
   "Shenzhen Universiade International Scholarship Foundation Scholarship, 2026",
 ];
+
+export const languages = "Korean (native); English (IELTS 6.5); Chinese (HSK 6); Japanese (JLPT N2).";

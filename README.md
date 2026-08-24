@@ -75,7 +75,9 @@ operating systems.
 ## Publication verification
 
 Published and preprint author lists are transcribed from current arXiv, DOI,
-and publisher records. The unpublished ViGen entry intentionally lists only
+publisher, and supplied manuscript records. The two signature preprints,
+BoundarySupport and CLEANCON, are listed first and their supplied PDFs are
+hosted under `public/papers/`. Together with ProCon, GCR, and Memory-SAM, they
+form the five signature projects on the home page. The unpublished ViGen entry intentionally lists only
 the two confirmed co-first authors because its complete author list is not yet
-public. BoundarySupport is identified as ongoing research rather than a public
-paper.
+public.

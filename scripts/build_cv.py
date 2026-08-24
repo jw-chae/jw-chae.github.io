@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from html import escape
 from pathlib import Path
+from shutil import copy2
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT, TA_RIGHT
@@ -25,6 +26,7 @@ from reportlab.platypus import (
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = ROOT / "output" / "pdf"
+PUBLIC_DIR = ROOT / "public"
 ID_PHOTO = ROOT.parent / "JOONGWON_CHAE_ID Photo.jpg"
 
 NAVY = colors.HexColor("#17385f")
@@ -59,6 +61,20 @@ def register_fonts() -> None:
 
 
 PUBLICATIONS = [
+    {
+        "title": "What Remains Normal? Clean Images Miss Useful Near-Defect Normal Patches for Anomaly Detection",
+        "authors": "Joongwon Chae, Runming Wang, Peiwu Qin",
+        "venue": "Preprint, 2026",
+        "url": "https://jw-chae.github.io/papers/what-remains-normal.pdf",
+        "code": "https://github.com/jw-chae/boundary_support",
+    },
+    {
+        "title": "What Memory Composition Does Not Tell Us About Anomaly Detection",
+        "authors": "Joongwon Chae, Runming Wang, Peiwu Qin",
+        "venue": "Preprint, 2026",
+        "url": "https://jw-chae.github.io/papers/what-memory-composition-does-not-tell-us.pdf",
+        "code": "https://github.com/jw-chae/cleancon",
+    },
     {
         "title": "ProCon: Projection-Consistency Memory for Training-Free Anomaly Detection",
         "authors": "Joongwon Chae, Lihui Luo, Yang Liu, Dongmei Yu, Peiwu Qin, Runming Wang, Ilmoon Chae",
@@ -355,7 +371,7 @@ def build_english(path: Path) -> None:
 
     section(story, "RESEARCH INTERESTS", styles)
     story.append(Paragraph(
-        "I develop training-free and gradient-free inference methods that adapt frozen foundation-model representations through memory, retrieval, prompting, routing, and calibration. My work centers on anomaly detection and medical image analysis under limited labels, retraining budgets, and human interaction.",
+        "I develop training-free visual systems around a central question: which reference evidence should a frozen model retain, route, and trust? My signature work spans memory composition, projection-consistent selection, continual routing, and retrieval-to-prompt segmentation.",
         styles["body"],
     ))
 
@@ -386,9 +402,9 @@ def build_english(path: Path) -> None:
         styles,
         width,
     )
-    bullet(story, "<b>Training-free anomaly detection (ProCon, GCR, StructCore).</b> Led three first-author works end-to-end: research questions, method design and implementation, experiments, ablations, and manuscript writing. ProCon reports 99.8%, 99.2%, and 93.2% image AUROC on MVTec AD, VisA, and Real-IAD with a frozen backbone.", styles)
-    bullet(story, "<b>Human-prompt-free medical segmentation (Memory-SAM).</b> Designed retrieval-to-prompt inference that converts frozen DINOv3 correspondence into automatic SAM2 prompts. The public v3 preprint reports 0.9863 mIoU on a mixed expert-annotated test split without manual clicks or fine-tuning.", styles)
-    bullet(story, "Owned the full research cycle from problem formulation through open-source release.", styles)
+    bullet(story, "<b>Signature research - BoundarySupport.</b> I showed that clean images miss useful near-defect normal states and introduced a clean-only altered-context intervention for fixed-budget memory and reconstruction. Near-defect normal patches raised MVTec P-AP from 73.34 to 76.95; BoundarySupport improved all six paired settings by 1.76 to 5.01 points.", styles)
+    bullet(story, "<b>Signature research - CLEANCON.</b> I introduced an out-of-bag cross-image support gate to isolate candidate eligibility while holding the encoder, memory budget, builder, and inference fixed. Global coverage amplified sparse contamination by 16.04 to 40.61 times; CLEANCON improved macro P-AP in all 12 matched comparisons while showing that the cleanest memory was not always best.", styles)
+    bullet(story, "<b>Signature research - ProCon, GCR, and Memory-SAM.</b> I developed projection-consistent memory, task-agnostic geometry-consistent routing, and retrieval-to-prompt SAM2 segmentation, leading each first-author work from problem formulation through open-source release.", styles)
 
     dated_item(
         story,
@@ -441,7 +457,7 @@ def build_english(path: Path) -> None:
     bullet(story, "<b>Systems:</b> Docker, DeepSpeed, multi-GPU training, RAG pipelines, industrial machine-vision cameras", styles)
 
     section(story, "LANGUAGES", styles)
-    story.append(Paragraph("Korean (native) · English (professional working proficiency) · Chinese (HSK 6) · Japanese (JLPT N2)", styles["body"]))
+    story.append(Paragraph("Korean (native) · English (IELTS 6.5) · Chinese (HSK 6) · Japanese (JLPT N2)", styles["body"]))
 
     doc.build(
         story,
@@ -468,7 +484,7 @@ def build_chinese(path: Path) -> None:
 
     section(story, "研究方向", styles)
     story.append(Paragraph(
-        "我致力于开发免训练、无梯度的推理方法，通过记忆、检索、提示、路由与校准机制，使冻结的基础模型表征适应具体任务。研究重点是标签有限、重训练预算受限及人工交互受限条件下的异常检测与医学图像分析。",
+        "我围绕一个核心问题开发免训练视觉系统：冻结模型应保留、路由并信任哪些参考证据？我的核心代表研究涵盖记忆构成、投影一致性筛选、持续学习路由与检索到提示分割。",
         styles["body"],
     ))
 
@@ -499,9 +515,9 @@ def build_chinese(path: Path) -> None:
         styles,
         width,
     )
-    bullet(story, "<b>免训练异常检测（ProCon、GCR、StructCore）：</b>端到端主导三项第一作者研究，包括提出研究问题、设计并实现方法、开展实验与消融研究及撰写论文。ProCon 在冻结骨干网络条件下，于 MVTec AD、VisA 和 Real-IAD 上分别报告 99.8%、99.2% 和 93.2% 的图像级 AUROC。", styles)
-    bullet(story, "<b>无需人工提示的医学图像分割（Memory-SAM）：</b>设计检索到提示方法，将冻结的 DINOv3 对应关系转化为自动 SAM2 提示。公开 v3 预印本在专家标注混合测试集上报告 0.9863 mIoU，无需人工点击或模型微调。", styles)
-    bullet(story, "负责从问题定义、方法设计、实现、实验与消融研究到论文写作及开源发布的完整研究流程。", styles)
+    bullet(story, "<b>核心代表研究 - BoundarySupport：</b>我发现干净图像会遗漏有用的缺陷邻近正常状态，并提出仅使用干净图像的上下文改变方法，服务于固定预算记忆与重建。缺陷邻近正常补丁将 MVTec P-AP 从 73.34 提升至 76.95；BoundarySupport 在全部六个配对设置中提升 1.76 至 5.01 个百分点。", styles)
+    bullet(story, "<b>核心代表研究 - CLEANCON：</b>我提出袋外跨图像支持门控，在保持编码器、记忆容量、构建器与推理规则不变的条件下，仅控制候选图像资格。全局覆盖将稀疏污染放大 16.04 至 40.61 倍；CLEANCON 在全部 12 个匹配比较中提升宏平均 P-AP，同时表明最干净的记忆并不总是最佳。", styles)
+    bullet(story, "<b>核心代表研究 - ProCon、GCR 与 Memory-SAM：</b>我分别开发投影一致性记忆、任务无关几何一致路由与检索到提示的 SAM2 分割，并主导每项第一作者研究从问题定义到开源发布的完整流程。", styles)
 
     dated_item(
         story,
@@ -554,7 +570,7 @@ def build_chinese(path: Path) -> None:
     bullet(story, "<b>系统与工程：</b>Docker、DeepSpeed、多 GPU 训练、RAG 流程、工业机器视觉相机", styles)
 
     section(story, "语言能力", styles)
-    story.append(Paragraph("韩语（母语） · 英语（职业工作水平） · 中文（HSK 6） · 日语（JLPT N2）", styles["body"]))
+    story.append(Paragraph("韩语（母语） · 英语（IELTS 6.5） · 中文（HSK 6） · 日语（JLPT N2）", styles["body"]))
 
     doc.build(
         story,
@@ -566,10 +582,14 @@ def build_chinese(path: Path) -> None:
 def main() -> None:
     register_fonts()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    PUBLIC_DIR.mkdir(parents=True, exist_ok=True)
     english = OUTPUT_DIR / "JoongwonChae_CV_EN.pdf"
     chinese = OUTPUT_DIR / "JoongwonChae_CV_ZH.pdf"
     build_english(english)
     build_chinese(chinese)
+    copy2(english, PUBLIC_DIR / "JoongwonChae_CV_EN.pdf")
+    copy2(english, PUBLIC_DIR / "JoongwonChae_CV.pdf")
+    copy2(chinese, PUBLIC_DIR / "JoongwonChae_CV_ZH.pdf")
 
     print(english)
     print(chinese)

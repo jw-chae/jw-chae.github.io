@@ -3,14 +3,14 @@ import Link from "next/link";
 import { PublicationRow } from "@/components/publication-row";
 import { ResearchVisual } from "@/components/research-visual";
 import { profile, type ResearchItem } from "@/data/site";
-import { educationZh, experienceZh, honorsZh, profileZh, publicationsZh, selectedResearchZh } from "@/data/site-zh";
+import { educationZh, experienceZh, honorsZh, languagesZh, profileZh, publicationsZh, selectedResearchZh } from "@/data/site-zh";
 
 function ProjectLinks({ item }: { item: ResearchItem }) {
-  if (!item.arxiv && !item.code) return null;
+  if (!item.paper && !item.code) return null;
 
   return (
     <div className="resource-links" aria-label={`${item.title} 相关链接`}>
-      {item.arxiv ? <a href={`https://arxiv.org/abs/${item.arxiv}`}>论文</a> : null}
+      {item.paper ? <a href={item.paper}>论文</a> : null}
       {item.code ? <a href={item.code}>代码</a> : null}
     </div>
   );
@@ -23,8 +23,12 @@ function ResearchEntry({ item }: { item: ResearchItem }) {
       <div className="research-entry-copy">
         <p className="entry-status">{item.status}</p>
         <h3 lang="en">{item.title}</h3>
-        <p className="entry-finding">{item.finding}</p>
-        <p>{item.detail}</p>
+        <p className="signature-subtitle">{item.subtitle}</p>
+        <dl className="research-signature">
+          <div><dt>核心主题</dt><dd>{item.topic}</dd></div>
+          <div><dt>方法</dt><dd>{item.method}</dd></div>
+          <div><dt>结果</dt><dd>{item.result}</dd></div>
+        </dl>
         <ProjectLinks item={item} />
       </div>
     </article>
@@ -86,8 +90,8 @@ export default function ChineseHome() {
 
       <section className="content-section shell" id="research" aria-labelledby="research-title">
         <header className="section-header">
-          <h2 id="research-title">代表性研究</h2>
-          <p>近期工作探索冻结视觉模型如何选择、路由并使用参考证据。</p>
+          <h2 id="research-title">核心代表研究</h2>
+          <p>我的五项第一作者系统，研究冻结视觉模型如何筛选、构成、路由并使用参考证据。</p>
         </header>
         <div className="research-list">
           {selectedResearchZh.map((item) => <ResearchEntry item={item} key={item.slug} />)}
@@ -130,6 +134,10 @@ export default function ChineseHome() {
         <div className="honors">
           <h3>荣誉与奖学金</h3>
           <ul>{honorsZh.map((honor) => <li key={honor}>{honor}</li>)}</ul>
+        </div>
+        <div className="languages">
+          <h3>语言能力</h3>
+          <p>{languagesZh}</p>
         </div>
       </section>
     </main>

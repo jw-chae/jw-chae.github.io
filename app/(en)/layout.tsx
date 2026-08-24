@@ -6,14 +6,14 @@ import "../globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://jw-chae.github.io"),
   title: { default: "Joongwon Chae | Research", template: "%s | Joongwon Chae" },
-  description: "Research in training-free anomaly detection, memory-augmented inference, and medical AI.",
+  description: "Joongwon Chae's five signature systems for memory, routing, prompting, and training-free visual inference.",
   alternates: {
     canonical: "/",
     languages: { en: "/", "zh-CN": "/zh/", "x-default": "/" },
   },
   openGraph: {
     title: "Joongwon Chae | Research",
-    description: "Computer vision, anomaly detection, and multimodal learning.",
+    description: "Five first-author systems for memory, routing, prompting, and training-free visual inference.",
     url: "/",
     locale: "en_US",
     type: "website",

@@ -6,6 +6,7 @@ import {
   education,
   experience,
   honors,
+  languages,
   profile,
   publications,
   selectedResearch,
@@ -13,11 +14,11 @@ import {
 } from "@/data/site";
 
 function ProjectLinks({ item }: { item: ResearchItem }) {
-  if (!item.arxiv && !item.code) return null;
+  if (!item.paper && !item.code) return null;
 
   return (
     <div className="resource-links" aria-label={`${item.title} resources`}>
-      {item.arxiv ? <a href={`https://arxiv.org/abs/${item.arxiv}`}>paper</a> : null}
+      {item.paper ? <a href={item.paper}>paper</a> : null}
       {item.code ? <a href={item.code}>code</a> : null}
     </div>
   );
@@ -30,8 +31,12 @@ function ResearchEntry({ item }: { item: ResearchItem }) {
       <div className="research-entry-copy">
         <p className="entry-status">{item.status}</p>
         <h3>{item.title}</h3>
-        <p className="entry-finding">{item.finding}</p>
-        <p>{item.detail}</p>
+        <p className="signature-subtitle">{item.subtitle}</p>
+        <dl className="research-signature">
+          <div><dt>Topic</dt><dd>{item.topic}</dd></div>
+          <div><dt>Method</dt><dd>{item.method}</dd></div>
+          <div><dt>Result</dt><dd>{item.result}</dd></div>
+        </dl>
         <ProjectLinks item={item} />
       </div>
     </article>
@@ -94,8 +99,8 @@ export default function Home() {
 
       <section className="content-section shell" id="research" aria-labelledby="research-title">
         <header className="section-header">
-          <h2 id="research-title">Selected Research</h2>
-          <p>Recent work on how frozen visual models choose, route, and use reference evidence.</p>
+          <h2 id="research-title">Signature Research</h2>
+          <p>Five first-author systems for selecting, composing, routing, and using reference evidence in frozen visual models.</p>
         </header>
         <div className="research-list">
           {selectedResearch.map((item) => <ResearchEntry item={item} key={item.slug} />)}
@@ -138,6 +143,10 @@ export default function Home() {
         <div className="honors">
           <h3>Honors</h3>
           <ul>{honors.map((honor) => <li key={honor}>{honor}</li>)}</ul>
+        </div>
+        <div className="languages">
+          <h3>Languages</h3>
+          <p>{languages}</p>
         </div>
       </section>
     </main>

@@ -13,14 +13,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return routes.flatMap(({ en, zh }) => [
     {
       url: `${base}${en}`,
-      lastModified: new Date("2026-08-23"),
+      lastModified: new Date("2026-08-24"),
       changeFrequency: "monthly" as const,
       priority: en === "/" ? 1 : 0.8,
       alternates: { languages: { en: `${base}${en}`, "zh-CN": `${base}${zh}` } },
     },
     {
       url: `${base}${zh}`,
-      lastModified: new Date("2026-08-23"),
+      lastModified: new Date("2026-08-24"),
       changeFrequency: "monthly" as const,
       priority: zh === "/zh/" ? 0.9 : 0.7,
       alternates: { languages: { en: `${base}${en}`, "zh-CN": `${base}${zh}` } },
