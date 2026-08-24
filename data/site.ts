@@ -37,7 +37,7 @@ export const selectedResearch: ResearchItem[] = [
     method:
       "I introduce BoundarySupport: controlled synthetic context changes expose new features at pixel-preserved neighboring patches, which become fixed-budget memory references or reconstruction targets.",
     result:
-      "At fixed memory size, near-defect normal patches raised MVTec P-AP from 73.34 to 76.95. BoundarySupport then improved all six settings by 1.76 to 5.01 points.",
+      "At a fixed memory size, we find that near-defect normal patches raise MVTec P-AP from 73.34 to 76.95. BoundarySupport improves the six evaluated settings by 1.76 to 5.01 points.",
     status: "Preprint, 2026",
     paper: "/papers/what-remains-normal.pdf",
     code: "https://github.com/jw-chae/boundary_support",
@@ -52,7 +52,7 @@ export const selectedResearch: ResearchItem[] = [
     method:
       "I introduce CLEANCON, an out-of-bag cross-image support gate that changes candidate eligibility while keeping the encoder, absolute memory budget, builder, and inference rule fixed.",
     result:
-      "Global coverage amplified contamination by 16.04 to 40.61 times. CLEANCON improved macro P-AP in all 12 matched comparisons, yet the cleanest memory was not the best-performing one.",
+      "We find that global coverage amplifies contamination by 16.04 to 40.61 times. Across 12 matched comparisons, CLEANCON improves macro P-AP, yet the cleanest memory is not the best-performing one.",
     status: "Preprint, 2026",
     paper: "/papers/what-memory-composition-does-not-tell-us.pdf",
     code: "https://github.com/jw-chae/cleancon",
@@ -67,7 +67,7 @@ export const selectedResearch: ResearchItem[] = [
     method:
       "I introduce ProCon, which replaces a single hard anchor with soft local projection and ranks candidate references by projection consistency, without training the backbone.",
     result:
-      "The public preprint reports image AUROC of 99.8%, 99.2%, and 93.2% on MVTec AD, VisA, and Real-IAD with a frozen backbone.",
+      "With a frozen backbone, we achieve image AUROC of 99.8% on MVTec AD, 99.2% on VisA, and 93.2% on Real-IAD.",
     status: "arXiv preprint, 2026",
     paper: "https://arxiv.org/abs/2607.04894",
     code: "https://github.com/jw-chae/Procon",
@@ -82,7 +82,7 @@ export const selectedResearch: ResearchItem[] = [
     method:
       "I introduce geometry-consistent routing, separating cross-head prototype geometry from within-head anomaly scoring so new tasks can be added without retraining old heads.",
     result:
-      "Experiments on MVTec AD and VisA report substantially more stable routing and near-zero forgetting without end-to-end representation learning.",
+      "On MVTec AD and VisA, we show that GCR substantially stabilizes routing and keeps forgetting near zero without end-to-end representation learning.",
     status: "arXiv preprint, 2026",
     paper: "https://arxiv.org/abs/2601.01856",
     code: "https://github.com/jw-chae/GCR",
@@ -97,7 +97,7 @@ export const selectedResearch: ResearchItem[] = [
     method:
       "I introduce retrieval-to-prompt inference: retrieve an exemplar, turn frozen DINOv3 correspondence into contrastive points, and pass them to SAM2 without fine-tuning.",
     result:
-      "The public v3 preprint reports 0.9863 mIoU on the mixed test split of a 600-image expert-annotated benchmark, without human clicks or fine-tuning.",
+      "On the mixed test split of our 600-image expert-annotated benchmark, we achieve 0.9863 mIoU without human clicks or fine-tuning.",
     status: "arXiv preprint, 2025",
     paper: "https://arxiv.org/abs/2510.15849",
     code: "https://github.com/jw-chae/memory-sam",
