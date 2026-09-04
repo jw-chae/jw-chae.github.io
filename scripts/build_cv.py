@@ -454,7 +454,7 @@ def build_english(path: Path) -> None:
         story,
         "<b>Ratel Soft</b> - Research Intern",
         "Jul 2025-present",
-        "Developing vision-based anomaly-detection pipelines for collaborative-robot assembly-line inspection; benchmarking frozen foundation-model features and building PyTorch data and evaluation tooling.",
+        "Developed vision anomaly-detection pipelines for collaborative-robot assembly-line inspection, benchmarking frozen foundation-model features against task-specific baselines and building PyTorch data-processing and evaluation tools. Performed on-site robot teaching and achieved over 99% assembly accuracy with vision-guided positioning error below 0.1 mm. The resulting algorithm was commercialized through a RMB 150,000 sale.",
         styles,
         width,
     )
@@ -567,7 +567,7 @@ def build_chinese(path: Path) -> None:
         story,
         "<b>Ratel Soft</b> - 研究实习生",
         "2025年7月至今",
-        "开发面向协作机器人装配线检测的视觉异常检测流程；对比冻结基础模型特征与任务专用基线，并使用 PyTorch 构建数据与评估工具。",
+        "开发协作机器人装配线视觉异常检测流程，对比冻结基础模型特征与任务专用基线，并使用 PyTorch 构建数据与评估工具。亲自完成机器人示教，实现 0.1 mm 以内的视觉定位误差与 99% 以上的装配准确率；该算法最终以 15万元人民币完成商业化交付。",
         styles,
         width,
     )
