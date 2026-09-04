@@ -64,61 +64,72 @@ PUBLICATIONS = [
     {
         "title": "What Remains Normal? Clean Images Miss Useful Near-Defect Normal Patches for Anomaly Detection",
         "authors": "Joongwon Chae, Runming Wang, Peiwu Qin",
-        "venue": "Preprint, 2026",
-        "url": "https://jw-chae.github.io/papers/what-remains-normal.pdf",
+        "venue": "Under review at ICLR; arXiv:2608.23299 [cs.CV], 2026",
+        "venue_zh": "ICLR 审稿中；arXiv:2608.23299 [cs.CV]，2026",
+        "url": "https://arxiv.org/abs/2608.23299",
         "code": "https://github.com/jw-chae/boundary_support",
     },
     {
         "title": "What Memory Composition Does Not Tell Us About Anomaly Detection",
         "authors": "Joongwon Chae, Runming Wang, Peiwu Qin",
-        "venue": "Preprint, 2026",
-        "url": "https://jw-chae.github.io/papers/what-memory-composition-does-not-tell-us.pdf",
+        "venue": "Under review at ICLR; arXiv:2608.23295 [cs.CV], 2026",
+        "venue_zh": "ICLR 审稿中；arXiv:2608.23295 [cs.CV]，2026",
+        "url": "https://arxiv.org/abs/2608.23295",
         "code": "https://github.com/jw-chae/cleancon",
     },
     {
         "title": "ProCon: Projection-Consistency Memory for Training-Free Anomaly Detection",
         "authors": "Joongwon Chae, Lihui Luo, Yang Liu, Dongmei Yu, Peiwu Qin, Runming Wang, Ilmoon Chae",
-        "venue": "arXiv:2607.04894 [cs.CV], 2026",
+        "venue": "Under review; arXiv:2607.04894 [cs.CV], 2026",
+        "venue_zh": "审稿中；arXiv:2607.04894 [cs.CV]，2026",
         "url": "https://arxiv.org/abs/2607.04894",
         "code": "https://github.com/jw-chae/Procon",
     },
     {
         "title": "GCR: Geometry-Consistent Routing for Task-Agnostic Continual Anomaly Detection",
         "authors": "Joongwon Chae, Lihui Luo, Yang Liu, Runming Wang, Dongmei Yu, Zeming Liang, Xi Yuan, Dayan Zhang, Zhenglin Chen, Peiwu Qin, Ilmoon Chae",
-        "venue": "arXiv:2601.01856 [cs.CV], 2026",
+        "venue": "Under review; arXiv:2601.01856 [cs.CV], 2026",
+        "venue_zh": "审稿中；arXiv:2601.01856 [cs.CV]，2026",
         "url": "https://arxiv.org/abs/2601.01856",
         "code": "https://github.com/jw-chae/GCR",
     },
     {
         "title": "StructCore: Structure-Aware Image-Level Scoring for Training-Free Unsupervised Anomaly Detection",
         "authors": "Joongwon Chae, Lihui Luo, Yang Liu, Runming Wang, Dongmei Yu, Zeming Liang, Xi Yuan, Dayan Zhang, Zhenglin Chen, Peiwu Qin, Ilmoon Chae",
-        "venue": "arXiv:2602.17048 [cs.CV], 2026",
+        "venue": "Under review at WACV; arXiv:2602.17048 [cs.CV], 2026",
+        "venue_zh": "WACV 审稿中；arXiv:2602.17048 [cs.CV]，2026",
         "url": "https://arxiv.org/abs/2602.17048",
         "code": "https://github.com/jw-chae/structcore",
     },
     {
         "title": "Memory-SAM: Human-Prompt-Free Tongue Segmentation via Retrieval-to-Prompt",
         "authors": "Joongwon Chae, Lihui Luo, Yang Liu, Xi Yuan, Dongmei Yu, Zhenglin Chen, Runming Wang, Ilmoon Chae, Lian Zhang, Peiwu Qin",
-        "venue": "arXiv:2510.15849 [cs.CV], 2025",
+        "venue": "Under review at AAAI 2027; arXiv:2510.15849 [cs.CV], 2025",
+        "venue_zh": "AAAI 2027 审稿中；arXiv:2510.15849 [cs.CV]，2025",
         "url": "https://arxiv.org/abs/2510.15849",
         "code": "https://github.com/jw-chae/memory-sam",
     },
     {
         "title": "MMIR-TCM: Memory-Integrated Multimodal Inference and Retrieval for TCM Clinical Decision Support",
         "authors": "Lihui Luo, Joongwon Chae, Ziyan Chen, Yang Liu, Siyi Cheng, Weihan Gao, Zelin Zeng, Xiaoming Yin, Samaneh Beheshti Kashi, Dongmei Yu, Lian Zhang, Jing Sui, Zeming Liang, Jiansong Ji, Peter E. Lobie, Peiwu Qin",
-        "venue": "arXiv:2607.01814 [cs.AI], 2026",
+        "venue": "Major revision at IEEE JBHI; arXiv:2607.01814 [cs.AI], 2026",
+        "venue_zh": "IEEE JBHI 大修；arXiv:2607.01814 [cs.AI]，2026",
         "url": "https://arxiv.org/abs/2607.01814",
     },
     {
         "title": "Auditable Context-Aware HFMD Forecasting with Structured LLM Agents",
         "authors": "Joongwon Chae, Runming Wang, Chen Xiong, Gong Yunhan, Lian Zhang, Ji Jiansong, Dongmei Yu, Peiwu Qin",
-        "venue": "arXiv:2511.23276 [cs.LG, cs.MA], 2025",
+        "venue": "Under review at IEEE BIBM; arXiv:2511.23276 [cs.LG, cs.MA], 2025",
+        "venue_zh": "IEEE BIBM 审稿中；arXiv:2511.23276 [cs.LG, cs.MA]，2025",
         "url": "https://arxiv.org/abs/2511.23276",
     },
     {
         "title": "ViGen: Video-based Generation with GRPO for Dynamic Image Editing",
         "authors": "Lihui Luo*, Joongwon Chae*",
-        "venue": "Manuscript under review; co-first authors shown; full author list not yet public",
+        "venue": "Under review at AAAI, 2026",
+        "venue_zh": "AAAI 审稿中，2026",
+        "note": "* Co-first author",
+        "note_zh": "* 共同第一作者",
     },
 ]
 
@@ -136,6 +147,7 @@ PEER_REVIEWED = [
         "url": "https://doi.org/10.1109/BIBM66473.2025.11357113",
         "code": "https://github.com/jw-chae/ViTCM_LLM",
         "note": "* Equal contribution",
+        "note_zh": "* 共同第一作者",
     },
 ]
 
@@ -302,14 +314,10 @@ def publication(story: list, index: int, item: dict[str, str], styles: dict[str,
         links.append(f'<link href="{item["url"]}" color="{LINK.hexval()}">{"链接" if is_zh else "link"}</link>')
     if item.get("code"):
         links.append(f'<link href="{item["code"]}" color="{LINK.hexval()}">{"代码" if is_zh else "code"}</link>')
-    note_text = item.get("note", "")
-    if is_zh and note_text == "* Equal contribution":
-        note_text = "* 共同第一作者"
+    note_text = item.get("note_zh", item.get("note", "")) if is_zh else item.get("note", "")
     note = f' <font color="{MUTED.hexval()}">({escape(note_text)})</font>' if note_text else ""
     link_text = f" {' / '.join(links)}" if links else ""
-    venue = item["venue"]
-    if is_zh and item["title"].startswith("ViGen:"):
-        venue = "稿件审阅中；仅列出共同第一作者，完整作者名单尚未公开"
+    venue = item.get("venue_zh", item["venue"]) if is_zh else item["venue"]
     text = (
         f"{index}. {author_markup(item['authors'])}. "
         f'&quot;{escape(item["title"])}.&quot; '
@@ -402,9 +410,9 @@ def build_english(path: Path) -> None:
         styles,
         width,
     )
-    bullet(story, "<b>BoundarySupport.</b> I showed that clean images miss useful near-defect normal states and introduced a clean-only altered-context intervention for fixed-budget memory and reconstruction. Near-defect normal patches raised MVTec P-AP from 73.34 to 76.95; BoundarySupport improved all six paired settings by 1.76 to 5.01 points.", styles)
-    bullet(story, "<b>CLEANCON.</b> I introduced an out-of-bag cross-image support gate to isolate candidate eligibility while holding the encoder, memory budget, builder, and inference fixed. Global coverage amplified sparse contamination by 16.04 to 40.61 times; CLEANCON improved macro P-AP in all 12 matched comparisons while showing that the cleanest memory was not always best.", styles)
-    bullet(story, "<b>ProCon, GCR, and Memory-SAM.</b> I developed soft-projection residuals with bank and depth consensus, 32-patch nearest-prototype routing, and foreground-minus-background DINOv3 contrast that selects three SAM2 prompts. Memory-SAM also releases 2,155 de-identified image-mask pairs.", styles)
+    bullet(story, "<b>BoundarySupport.</b> I showed that clean images miss useful near-defect normal states and introduced a clean-only altered-context intervention for fixed-budget memory and reconstruction. Near-defect normal patches raised MVTec P-AP from 73.34 to 76.95, with a two-cell band recovering 94.70% of the gain; P-AP improved in all six settings across three paired seeds.", styles)
+    bullet(story, "<b>CLEANCON.</b> I introduced an out-of-bag cross-image support gate that scores each image from the top 0.5% of soft-projection patch residuals while holding the encoder, memory budget, builder, and inference fixed. At a 1% budget, Global FF amplified sparse contamination by 16.04 to 40.61 times; CLEANCON drove memory contamination to approximately zero and improved macro P-AP in all 12 matched comparisons.", styles)
+    bullet(story, "<b>ProCon, GCR, and Memory-SAM.</b> I developed soft-projection residuals with bank and depth consensus, 32-patch nearest-prototype routing, and foreground-minus-background DINOv3 contrast that selects three SAM2 prompts. Memory-SAM also releases 2,155 de-identified image-mask pairs; earlier versions averaged 24/28 at ICASSP 2026 and 4.0/5.0 at MICCAI 2026.", styles)
 
     dated_item(
         story,
@@ -515,9 +523,9 @@ def build_chinese(path: Path) -> None:
         styles,
         width,
     )
-    bullet(story, "<b>BoundarySupport：</b>我发现干净图像会遗漏有用的缺陷邻近正常状态，并提出仅使用干净图像的上下文改变方法，服务于固定预算记忆与重建。缺陷邻近正常补丁将 MVTec P-AP 从 73.34 提升至 76.95；BoundarySupport 在全部六个配对设置中提升 1.76 至 5.01 个百分点。", styles)
-    bullet(story, "<b>CLEANCON：</b>我提出袋外跨图像支持门控，在保持编码器、记忆容量、构建器与推理规则不变的条件下，仅控制候选图像资格。全局覆盖将稀疏污染放大 16.04 至 40.61 倍；CLEANCON 在全部 12 个匹配比较中提升宏平均 P-AP，同时表明最干净的记忆并不总是最佳。", styles)
-    bullet(story, "<b>ProCon、GCR 与 Memory-SAM：</b>我分别开发带记忆库中位数与层间均值一致性的软投影残差、基于 32 个采样补丁最近原型距离的路由，以及从 DINOv3 前景减背景对比图中选取三个 SAM2 提示点的算法。Memory-SAM 还公开 2,155 对去标识化图像与掩码。", styles)
+    bullet(story, "<b>BoundarySupport：</b>我发现干净图像会遗漏有用的缺陷邻近正常状态，并提出仅使用干净图像的上下文改变方法，服务于固定预算记忆与重建。缺陷邻近正常补丁将 MVTec P-AP 从 73.34 提升至 76.95，其中两个 token 范围内的邻近区域恢复 94.70% 的增益；经过三个配对随机种子，全部六个设置的 P-AP 均得到提升。", styles)
+    bullet(story, "<b>CLEANCON：</b>我提出袋外跨图像支持门控，以软投影残差最高的 0.5% 补丁为图像评分依据，同时保持编码器、记忆容量、构建器与推理规则不变。在 1% 预算下，全局最远优先选择将稀疏污染放大 16.04 至 40.61 倍；CLEANCON 将记忆污染率降至近零，并在全部 12 个匹配比较中提升宏平均 P-AP。", styles)
+    bullet(story, "<b>ProCon、GCR 与 Memory-SAM：</b>我分别开发带记忆库中位数与层间均值一致性的软投影残差、基于 32 个采样补丁最近原型距离的路由，以及从 DINOv3 前景减背景对比图中选取三个 SAM2 提示点的算法。Memory-SAM 还公开 2,155 对去标识化图像与掩码；此前版本在 ICASSP 2026 与 MICCAI 2026 的平均审稿评分分别为 24/28 和 4.0/5.0。", styles)
 
     dated_item(
         story,

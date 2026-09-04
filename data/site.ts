@@ -39,11 +39,11 @@ export const selectedResearch: ResearchItem[] = [
     method:
       "I introduce BoundarySupport: controlled synthetic context changes expose new features at pixel-preserved neighboring patches, which become fixed-budget memory references or reconstruction targets.",
     algorithm:
-      "I exclude every token footprint with any RGB change, keep the two-token pixel-preserved ring, and use its altered-context features as normal evidence.",
+      "I exclude every token intersecting the nominal insertion or any detected RGB change, keep the pixel-preserved two-token ring, and use its altered-context features as normal evidence.",
     result:
-      "At a fixed memory size, we find that near-defect normal patches raise MVTec P-AP from 73.34 to 76.95. BoundarySupport improves the six evaluated settings by 1.76 to 5.01 points.",
-    status: "Preprint, 2026",
-    paper: "/papers/what-remains-normal.pdf",
+      "At a fixed memory size, near-defect normal patches raise MVTec P-AP from 73.34 to 76.95, and a two-cell band recovers 94.70% of the gain. Across three paired seeds, BoundarySupport improves P-AP in all six memory and reconstruction settings.",
+    status: "Under review at ICLR",
+    paper: "https://arxiv.org/abs/2608.23299",
     code: "https://github.com/jw-chae/boundary_support",
     visual: "boundarysupport",
   },
@@ -56,11 +56,11 @@ export const selectedResearch: ResearchItem[] = [
     method:
       "I introduce CLEANCON, an out-of-bag cross-image support gate that changes candidate eligibility while keeping the encoder, absolute memory budget, builder, and inference rule fixed.",
     algorithm:
-      "I score each image with top-patch soft-projection residuals from 20 out-of-bag banks, aggregate them by medians, and pass the lower-risk half to the unchanged memory builder.",
+      "I score each image by the top 0.5% of patch-wise soft-projection residuals from 20 out-of-bag support banks, take bank medians and a cross-depth mean, and pass the lower-risk half to the unchanged memory builder.",
     result:
-      "We find that global coverage amplifies contamination by 16.04 to 40.61 times. Across 12 matched comparisons, CLEANCON improves macro P-AP, yet the cleanest memory is not the best-performing one.",
-    status: "Preprint, 2026",
-    paper: "/papers/what-memory-composition-does-not-tell-us.pdf",
+      "At a 1% memory budget, Global FF amplifies sparse contamination by 16.04 to 40.61 times. CLEANCON drives final-memory contamination to approximately zero and improves category-macro P-AP in all 12 matched comparisons, while the cleanest memory is not the highest-performing one.",
+    status: "Under review at ICLR",
+    paper: "https://arxiv.org/abs/2608.23295",
     code: "https://github.com/jw-chae/cleancon",
     visual: "cleancon",
   },
@@ -76,7 +76,7 @@ export const selectedResearch: ResearchItem[] = [
       "I soft-project each test patch onto a local normal neighborhood, take the median residual across seed-perturbed memory banks, and average the residual maps across feature depths.",
     result:
       "With a frozen backbone, we achieve image AUROC of 99.8% on MVTec AD, 99.2% on VisA, and 93.2% on Real-IAD.",
-    status: "arXiv preprint, 2026",
+    status: "Under review",
     paper: "https://arxiv.org/abs/2607.04894",
     code: "https://github.com/jw-chae/Procon",
     visual: "procon",
@@ -93,7 +93,7 @@ export const selectedResearch: ResearchItem[] = [
       "I route each image by the mean nearest-prototype distance over 32 sampled patches in shared frozen space, then compute LogSumExp anomaly energy only within the selected head.",
     result:
       "On MVTec AD and VisA, we show that GCR substantially stabilizes routing and keeps forgetting near zero without end-to-end representation learning.",
-    status: "arXiv preprint, 2026",
+    status: "Under review",
     paper: "https://arxiv.org/abs/2601.01856",
     code: "https://github.com/jw-chae/GCR",
     visual: "gcr",
@@ -109,8 +109,8 @@ export const selectedResearch: ResearchItem[] = [
     algorithm:
       "I subtract background from foreground DINOv3 similarity, S(i) = s_fg(i) - s_bg(i), select the top three foreground contrast points, and use them as SAM2 prompts.",
     result:
-      "We achieve 0.984 mIoU on HIT-Tongue and 0.973 on the 2,155-image SM-Tongue smartphone benchmark. We also release 2,155 de-identified 512 x 512 image-mask pairs for reproducible evaluation.",
-    status: "arXiv preprint, 2025",
+      "We achieve 0.984 mIoU on HIT-Tongue and 0.973 on the 2,155-image SM-Tongue smartphone benchmark, and release 2,155 de-identified 512 x 512 image-mask pairs. Earlier versions received average reviewer scores of 24/28 at ICASSP 2026 and 4.0/5.0 at MICCAI 2026.",
+    status: "Under review at AAAI 2027",
     paper: "https://arxiv.org/abs/2510.15849",
     code: "https://github.com/jw-chae/memory-sam",
     dataset: "https://huggingface.co/datasets/Mark-CHAE/SM-Tongue-Public-Original512",
@@ -138,29 +138,29 @@ export const publications: Publication[] = [
     title: "What Remains Normal? Clean Images Miss Useful Near-Defect Normal Patches for Anomaly Detection",
     year: 2026,
     authors: "Joongwon Chae; Runming Wang; Peiwu Qin",
-    venue: "Preprint",
+    venue: "Under review at ICLR",
     area: "Anomaly Detection",
     contribution:
       "BoundarySupport exposes missing near-defect normal evidence under fixed memory and reconstruction settings.",
-    paper: "/papers/what-remains-normal.pdf",
+    arxiv: "2608.23299",
     code: "https://github.com/jw-chae/boundary_support",
   },
   {
     title: "What Memory Composition Does Not Tell Us About Anomaly Detection",
     year: 2026,
     authors: "Joongwon Chae; Runming Wang; Peiwu Qin",
-    venue: "Preprint",
+    venue: "Under review at ICLR",
     area: "Anomaly Detection",
     contribution:
       "CLEANCON separates memory purity from memory utility through controlled candidate-image eligibility.",
-    paper: "/papers/what-memory-composition-does-not-tell-us.pdf",
+    arxiv: "2608.23295",
     code: "https://github.com/jw-chae/cleancon",
   },
   {
     title: "ProCon: Projection-Consistency Memory for Training-Free Anomaly Detection",
     year: 2026,
     authors: "Joongwon Chae; Lihui Luo; Yang Liu; Dongmei Yu; Peiwu Qin; Runming Wang; Ilmoon Chae",
-    venue: "arXiv:2607.04894 [cs.CV]",
+    venue: "Under review",
     area: "Anomaly Detection",
     contribution: "Projection-consistency memory selection for frozen anomaly detectors.",
     arxiv: "2607.04894",
@@ -171,7 +171,7 @@ export const publications: Publication[] = [
     year: 2026,
     authors:
       "Joongwon Chae; Lihui Luo; Yang Liu; Runming Wang; Dongmei Yu; Zeming Liang; Xi Yuan; Dayan Zhang; Zhenglin Chen; Peiwu Qin; Ilmoon Chae",
-    venue: "arXiv:2601.01856 [cs.CV]",
+    venue: "Under review",
     area: "Anomaly Detection",
     contribution: "Cross-head routing for continual anomaly detection without retraining.",
     arxiv: "2601.01856",
@@ -182,7 +182,7 @@ export const publications: Publication[] = [
     year: 2026,
     authors:
       "Joongwon Chae; Lihui Luo; Yang Liu; Runming Wang; Dongmei Yu; Zeming Liang; Xi Yuan; Dayan Zhang; Zhenglin Chen; Peiwu Qin; Ilmoon Chae",
-    venue: "arXiv:2602.17048 [cs.CV]",
+    venue: "Under review at WACV",
     area: "Anomaly Detection",
     contribution: "Structure-aware calibration from anomaly maps to image scores.",
     arxiv: "2602.17048",
@@ -193,7 +193,7 @@ export const publications: Publication[] = [
     year: 2026,
     authors:
       "Lihui Luo; Joongwon Chae; Ziyan Chen; Yang Liu; Siyi Cheng; Weihan Gao; Zelin Zeng; Xiaoming Yin; Samaneh Beheshti Kashi; Dongmei Yu; Lian Zhang; Jing Sui; Zeming Liang; Jiansong Ji; Peter E. Lobie; Peiwu Qin",
-    venue: "arXiv:2607.01814 [cs.AI]",
+    venue: "Major revision at IEEE JBHI",
     area: "Medical AI",
     contribution: "Memory-integrated retrieval for multimodal clinical decision support.",
     arxiv: "2607.01814",
@@ -202,8 +202,8 @@ export const publications: Publication[] = [
     title: "ViGen: Video-based Generation with GRPO for Dynamic Image Editing",
     year: 2026,
     authors: "Lihui Luo*; Joongwon Chae*",
-    authorNote: "Co-first authors shown; the full author list is not yet public.",
-    venue: "Manuscript",
+    authorNote: "Co-first author.",
+    venue: "Under review at AAAI",
     area: "Generative AI",
     contribution: "Video-based generation with GRPO for dynamic image editing.",
   },
@@ -212,10 +212,10 @@ export const publications: Publication[] = [
     year: 2025,
     authors:
       "Joongwon Chae; Lihui Luo; Yang Liu; Xi Yuan; Dongmei Yu; Zhenglin Chen; Runming Wang; Ilmoon Chae; Lian Zhang; Peiwu Qin",
-    venue: "arXiv:2510.15849 [cs.CV]",
+    venue: "Under review at AAAI 2027",
     area: "Medical AI",
     contribution:
-      "Foreground-minus-background DINOv3 contrast generates automatic SAM2 prompts; SM-Tongue releases 2,155 image-mask pairs.",
+      "Foreground-minus-background DINOv3 contrast generates automatic SAM2 prompts; SM-Tongue releases 2,155 image-mask pairs. Earlier versions averaged 24/28 at ICASSP 2026 and 4.0/5.0 at MICCAI 2026.",
     arxiv: "2510.15849",
     code: "https://github.com/jw-chae/memory-sam",
     dataset: "https://huggingface.co/datasets/Mark-CHAE/SM-Tongue-Public-Original512",
@@ -224,7 +224,7 @@ export const publications: Publication[] = [
     title: "Auditable Context-Aware HFMD Forecasting with Structured LLM Agents",
     year: 2025,
     authors: "Joongwon Chae; Runming Wang; Chen Xiong; Gong Yunhan; Lian Zhang; Ji Jiansong; Dongmei Yu; Peiwu Qin",
-    venue: "arXiv:2511.23276 [cs.LG, cs.MA]",
+    venue: "Under review at IEEE BIBM",
     area: "Medical AI",
     contribution: "Structured LLM agents for auditable, context-aware HFMD forecasting.",
     arxiv: "2511.23276",
