@@ -454,7 +454,7 @@ def build_english(path: Path) -> None:
         story,
         "<b>Ratel Soft</b> - Research Intern",
         "Jul 2025-present",
-        "Developed vision anomaly-detection pipelines for collaborative-robot assembly-line inspection, benchmarking frozen foundation-model features against task-specific baselines and building PyTorch data-processing and evaluation tools. Performed on-site robot teaching and achieved over 99% assembly accuracy with vision-guided positioning error below 0.1 mm. The resulting algorithm was commercialized through a RMB 150,000 sale. Also provided Chinese-Korean simultaneous interpretation for dozens of online technical meetings and two on-site assignments at WEIXIN NUO's assembly line in China.",
+        "Developed vision anomaly-detection pipelines for collaborative-robot assembly-line inspection, benchmarking frozen foundation-model features against task-specific baselines and building PyTorch data-processing and evaluation tools. Performed on-site robot teaching and achieved over 99% assembly accuracy with vision-guided positioning error below 0.1 mm. The resulting algorithm was commercialized through a RMB 150,000 sale. Also provided Chinese-Korean simultaneous interpretation for dozens of online technical meetings and two on-site assignments at a Visionox (<font name=\"CVCJK\">维信诺</font>) assembly line in China.",
         styles,
         width,
     )
@@ -567,7 +567,7 @@ def build_chinese(path: Path) -> None:
         story,
         "<b>Ratel Soft</b> - 研究实习生",
         "2025年7月至今",
-        "开发协作机器人装配线视觉异常检测流程，对比冻结基础模型特征与任务专用基线，并使用 PyTorch 构建数据与评估工具。亲自完成机器人示教，实现 0.1 mm 以内的视觉定位误差与 99% 以上的装配准确率；该算法最终以 15万元人民币完成商业化交付。另在数十场线上技术会议中提供中韩同声传译，并两次赴中国 WEIXIN NUO 装配线现场承担口译工作。",
+        "开发协作机器人装配线视觉异常检测流程，对比冻结基础模型特征与任务专用基线，并使用 PyTorch 构建数据与评估工具。亲自完成机器人示教，实现 0.1 mm 以内的视觉定位误差与 99% 以上的装配准确率；该算法最终以 15万元人民币完成商业化交付。另在数十场线上技术会议中提供中韩同声传译，并两次赴维信诺（Visionox）装配线现场承担口译工作。",
         styles,
         width,
     )
