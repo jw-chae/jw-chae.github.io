@@ -425,7 +425,7 @@ def build_english(path: Path) -> None:
     dated_item(
         story,
         "<b>Multimodal medical-AI systems (TCM)</b> - co-first author",
-        "2024-present",
+        "2024",
         "Co-led ViTCM-LLM and MMIR-TCM; co-developed MedTCM, designed the TDEU evaluation metric, and contributed retrieval-augmented reasoning and safety constraints.",
         styles,
         width,
@@ -538,7 +538,7 @@ def build_chinese(path: Path) -> None:
     dated_item(
         story,
         "<b>多模态中医药人工智能系统</b> - 共同第一作者",
-        "2024年至今",
+        "2024",
         "共同主导 ViTCM-LLM 与 MMIR-TCM；共同开发 MedTCM，设计 TDEU 评估指标，并参与检索增强推理与安全约束流程。",
         styles,
         width,
