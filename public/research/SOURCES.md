@@ -10,3 +10,9 @@
 - `cleancon-principle.png`: Figure 1 cropped from the supplied preprint, *What Memory Composition Does Not Tell Us About Anomaly Detection*
 
 All images are derived from the author's official repositories or supplied papers.
+
+## `public/anomaly/` (Anomaly Detection, Visually page)
+
+- `<category>-{input,gt,nn,spm,procon}.webp` for bottle, cable, capsule, carpet, grid: cells cropped from `jw-chae/Procon`, `figures/fig5_a1_mvtec.png` (same source as `procon-qualitative.webp`).
+- `<category>-defect.webp`, `<category>-good.webp`, `<category>-mask.png`, `mask28.json` for leather, hazelnut, tile, screw, carpet: MVTec AD test/train images and ground-truth masks (Bergmann et al., CVPR 2019), licensed CC BY-NC-SA 4.0 and used here non-commercially with attribution. `mask28.json` aligns each mask to the 28 × 28 DINOv2 patch grid (a cell is 1 if any defect pixel falls inside it).
+

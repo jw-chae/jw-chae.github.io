@@ -17,6 +17,7 @@ export function Header({ locale }: { locale: SiteLocale }) {
         <nav aria-label={isZh ? "主导航" : "Primary navigation"}>
           <Link href={home}>{isZh ? "首页" : "Home"}</Link>
           <Link href={research}>{isZh ? "研究" : "Research"}</Link>
+          <Link href={isZh ? "/zh/anomaly" : "/anomaly"}>{isZh ? "异常检测" : "Anomaly"}</Link>
           <Link href={isZh ? "/zh/publications" : "/publications"}>{isZh ? "论文" : "Publications"}</Link>
           <Link href={isZh ? "/zh/cv" : "/cv"}>{isZh ? "简历" : "CV"}</Link>
           <LanguageSwitch locale={locale} />

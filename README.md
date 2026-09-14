@@ -7,9 +7,11 @@ A bilingual, statically exported Next.js research portfolio built from the suppl
 - `/`: English profile, selected research, publications, and academic record
 - `/publications`: English publication archive
 - `/cv`: English CV preview and PDF download
+- `/anomaly`: animated, interactive walkthrough of the memory-based anomaly detection research line
 - `/zh`: Chinese profile and research overview
 - `/zh/publications`: Chinese publication archive
 - `/zh/cv`: Chinese CV preview and PDF download
+- `/zh/anomaly`: Chinese version of the anomaly detection walkthrough
 
 Each page includes a language switch that preserves the current section.
 

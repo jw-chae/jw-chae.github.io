@@ -8,6 +8,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { en: "/", zh: "/zh/" },
     { en: "/publications/", zh: "/zh/publications/" },
     { en: "/cv/", zh: "/zh/cv/" },
+    { en: "/anomaly/", zh: "/zh/anomaly/" },
   ];
 
   return routes.flatMap(({ en, zh }) => [
