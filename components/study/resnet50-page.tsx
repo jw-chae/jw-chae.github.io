@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Formula } from "@/components/anomaly/formula";
 import { useInView } from "@/components/anomaly/lib";
 import { resnetCopy as t, type StudySection } from "./resnet50-copy";
 import { BatchNormScene, BlockOrderScene, BottleneckScene, OneByOneScene, ShapeFlowScene, SkipScene } from "./resnet50-scenes";
@@ -13,15 +14,16 @@ function Reveal({ children, className = "" }: { children: ReactNode; className?:
 
 function Section({ s, index, children }: { s: StudySection; index: number; children: ReactNode }) {
   return (
-    <section className={`ad-stage ${index % 2 === 1 ? "flip" : ""}`} id={s.id} aria-labelledby={`${s.id}-title`}>
+    <section className={`ad-stage st-section ${index % 2 === 1 ? "flip" : ""}`} id={s.id} aria-labelledby={`${s.id}-title`}>
       <Reveal className="ad-stage-copy">
         <p className="ad-num"><span>{s.num}</span> {s.kicker}</p>
-        <h2 id={`${s.id}-title`}>{s.title}</h2>
-        <p className="ad-body">{s.body}</p>
-        <pre className="ad-formula" aria-label="formula">{s.formula}</pre>
-        <p className="ad-note">{s.note}</p>
+        <h2 id={`${s.id}-title`}>{s.question}</h2>
+        {s.steps.map((p, i) => <p className="ad-body" key={i}>{p}</p>)}
+        <Formula tex={s.formula} />
+        <p className="st-takeaway"><span>{t.labels.takeaway}</span>{s.takeaway}</p>
+        <p className="ad-note"><b>{t.labels.see}.</b> {s.see}</p>
       </Reveal>
-      <Reveal className="ad-stage-visual">{children}</Reveal>
+      <Reveal className="ad-stage-visual st-sticky">{children}</Reveal>
     </section>
   );
 }

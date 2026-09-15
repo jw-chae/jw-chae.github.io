@@ -168,3 +168,47 @@
   .st-rules { grid-template-columns: 1fr; }
   .st-chapters li { grid-template-columns: 3rem minmax(0, 1fr); }
 }
+
+/* ---------- section copy ---------- */
+
+.st-section {
+  align-items: start;
+}
+
+.st-section .ad-body {
+  margin-bottom: 0.85rem;
+}
+
+.st-takeaway {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin: 0 0 1rem;
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 700;
+  word-break: keep-all;
+}
+
+.st-takeaway span {
+  flex: 0 0 auto;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--cyan);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.st-section .ad-note b {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+@media (min-width: 961px) {
+  .st-sticky {
+    position: sticky;
+    top: 70px;
+  }
+}

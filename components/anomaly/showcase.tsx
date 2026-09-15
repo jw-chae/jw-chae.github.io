@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { copyEn, copyZh, type Stage } from "./copy";
+import { Formula } from "./formula";
 import { useInView } from "./lib";
 import { Downstream, Lineage, ResultsStrip } from "./results";
 import {
@@ -20,7 +21,7 @@ function StageBlock({ s, children, index }: { s: Stage; children: ReactNode; ind
         <p className="ad-num"><span>{s.num}</span> {s.kicker} <em>· {s.paper}</em></p>
         <h2 id={`${s.id}-title`}>{s.title}</h2>
         <p className="ad-body">{s.body}</p>
-        <pre className="ad-formula" aria-label="formula">{s.formula}</pre>
+        <Formula tex={s.formula} />
         <p className="ad-note">{s.note}</p>
       </Reveal>
       <Reveal className="ad-stage-visual">{children}</Reveal>
