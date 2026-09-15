@@ -688,24 +688,93 @@ export function RoutingScene({ t }: { t: RoutingCopy }) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Scene 7 · What goes into memory: OOB gate + boundary ring           */
+/* Scene · Candidate eligibility (CLEANCON out-of-bag gate)             */
 /* ------------------------------------------------------------------ */
 
-export type CompositionCopy = { gate: string; retain: string; kept: string; dropped: string; badKept: string; steps: [string, string, string, string, string] };
+export type EligibilityCopy = { gate: string; retain: string; kept: string; dropped: string; badKept: string; legend: [string, string, string] };
 
-export function CompositionScene({ t }: { t: CompositionCopy }) {
+export function EligibilityScene({ t }: { t: EligibilityCopy }) {
   const [retain, setRetain] = useState(50);
   const imgs = useMemo(() => {
     const r = rng(51);
-    const arr = Array.from({ length: 26 }, (_, i) => ({ i, bad: false, a: 0.22 + r() * 0.3 }));
+    const arr = Array.from({ length: 26 }, (_, i) => ({ i, bad: false, rare: false, a: 0.22 + r() * 0.3 }));
     [4, 21].forEach((i) => { arr[i].bad = true; arr[i].a = 0.65 + r() * 0.3; });
     arr[13].bad = true; arr[13].a = 0.47;               // a contaminated image whose OOB score is only mildly high
-    arr[17].a = 0.6;                                    // a rare-but-normal image that also scores high
+    arr[17].rare = true; arr[17].a = 0.6;               // a rare-but-normal image that also scores high
     return arr;
   }, []);
   const sorted = useMemo(() => [...imgs].sort((a, b) => a.a - b.a), [imgs]);
   const { ref: box, inView } = useInView<HTMLDivElement>(0.3);
   const t0 = useRef<number | null>(null);
+
+  const ref = useCanvas((ctx, w, h) => {
+    ctx.clearRect(0, 0, w, h);
+    if (inView && t0.current === null) t0.current = performance.now();
+    const el = t0.current === null ? 0 : (performance.now() - t0.current) / 1000;
+    const narrow = w < NARROW;
+    const lx = w * 0.07, lw = w * 0.86, ly = h * 0.16, lh = h * 0.56;
+    const n = sorted.length;
+    const keepN = Math.round((retain / 100) * n);
+    const colW = lw / n;
+    const sortP = smooth(1.6, 2.8, el);
+    imgs.forEach((im, idx) => {
+      const rank = sorted.indexOf(im);
+      const x = lx + lerp(idx, rank, sortP) * colW;
+      const grow = smooth(idx * 0.04, idx * 0.04 + 0.6, el);
+      const bh = im.a * lh * grow;
+      const kept = rank < keepN;
+      const base = im.bad ? palette.anomaly : im.rare ? palette.mint : palette.memory;
+      ctx.save();
+      ctx.globalAlpha = kept ? 1 : 0.32;
+      ctx.fillStyle = base;
+      ctx.fillRect(x + 2, ly + lh - bh, colW - 4, bh);
+      ctx.restore();
+      // tiny "image" tile under each bar
+      ctx.fillStyle = kept ? base : palette.dotOff;
+      ctx.fillRect(x + 2, ly + lh + 6, colW - 4, 6);
+    });
+    const gateP = smooth(2.9, 3.5, el);
+    if (gateP > 0) {
+      const gx = lx + keepN * colW;
+      ctx.strokeStyle = `rgba(${palette.accentRgb},${gateP})`; ctx.setLineDash([6, 4]); ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(gx, ly - 6); ctx.lineTo(gx, ly + lh + 14); ctx.stroke(); ctx.setLineDash([]);
+      label(ctx, `${t.retain} ${retain}%`, gx, ly - 16, palette.accent, 11, "center");
+      const badKept = sorted.slice(0, keepN).filter((s) => s.bad).length;
+      label(ctx, `${t.kept}: ${keepN}   ${t.dropped}: ${n - keepN}   ${t.badKept}: ${badKept}`, lx, ly + lh + 30, badKept > 0 ? palette.anomaly : palette.muted, 11);
+    }
+    label(ctx, t.gate, lx, ly - 40, palette.ink, narrow ? 10 : 12);
+    label(ctx, "a_i = TopMean_0.5%( median_b r_{i,p,b} )", lx, ly + lh + 48, palette.muted, 10);
+    // legend
+    const ly2 = ly + lh + (narrow ? 68 : 66);
+    [[palette.memory, t.legend[0]], [palette.anomaly, t.legend[1]], [palette.mint, t.legend[2]]].forEach(([c, name], j) => {
+      const x = lx + j * (narrow ? w * 0.28 : 150);
+      ctx.fillStyle = c; ctx.fillRect(x, ly2 - 4, 9, 9);
+      label(ctx, name, x + 14, ly2, palette.muted, 10);
+    });
+  });
+
+  return (
+    <div className="ad-scene" ref={box}>
+      <canvas ref={ref} className="ad-canvas" aria-hidden="true" />
+      <div className="ad-controls">
+        <label className="ad-ctl">
+          <span>{t.retain} <b>R = {retain}%</b></span>
+          <input type="range" min={50} max={90} step={10} value={retain} onChange={(e) => setRetain(Number(e.target.value))} />
+        </label>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Scene · Missing support (BoundarySupport ring)                       */
+/* ------------------------------------------------------------------ */
+
+export type SupportCopy = { steps: [string, string, string, string, string]; step: string; auto: string; ring: string; excluded: string };
+
+export function SupportScene({ t }: { t: SupportCopy }) {
+  const [auto, setAuto] = useState(true);
+  const [manual, setManual] = useState(0);
   const masks = useMemo(() => {
     const A = new Uint8Array(784), D = new Uint8Array(784), C = new Uint8Array(784), Rg = new Uint8Array(784);
     for (let y = 0; y < 28; y++) for (let x = 0; x < 28; x++) {
@@ -725,45 +794,18 @@ export function CompositionScene({ t }: { t: CompositionCopy }) {
       const i = y * 28 + x;
       Rg[i] = near && !C[i] ? 1 : 0;
     }
-    return { A, D, C, Rg };
+    return { A, D, C, Rg, nA: A.reduce((a, b) => a + b, 0), nC: C.reduce((a, b) => a + b, 0), nR: Rg.reduce((a, b) => a + b, 0) };
   }, []);
 
   const ref = useCanvas((ctx, w, h, tt) => {
     ctx.clearRect(0, 0, w, h);
-    if (inView && t0.current === null) t0.current = performance.now();
-    const el = t0.current === null ? 0 : (performance.now() - t0.current) / 1000;
+    drawGrid(ctx, w, h, 40);
     const narrow = w < NARROW;
-    const lx = narrow ? w * 0.06 : w * 0.04, lw = narrow ? w * 0.88 : w * 0.5;
-    const ly = narrow ? h * 0.09 : h * 0.12, lh = narrow ? h * 0.3 : h * 0.7;
-    const n = sorted.length;
-    const keepN = Math.round((retain / 100) * n);
-    const colW = lw / n;
-    const sortP = smooth(1.6, 2.8, el);
-    imgs.forEach((im, idx) => {
-      const rank = sorted.indexOf(im);
-      const x = lx + lerp(idx, rank, sortP) * colW;
-      const grow = smooth(idx * 0.04, idx * 0.04 + 0.6, el);
-      const bh = im.a * lh * grow;
-      const kept = rank < keepN;
-      ctx.fillStyle = im.bad ? (kept ? palette.anomaly : palette.anomalySoft) : (kept ? palette.memory : palette.memorySoft);
-      ctx.fillRect(x + 1, ly + lh - bh, colW - 2, bh);
-    });
-    const gateP = smooth(2.9, 3.5, el);
-    if (gateP > 0) {
-      const gx = lx + keepN * colW;
-      ctx.strokeStyle = `rgba(${palette.accentRgb},${gateP})`; ctx.setLineDash([6, 4]); ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(gx, ly - 6); ctx.lineTo(gx, ly + lh + 6); ctx.stroke(); ctx.setLineDash([]);
-      label(ctx, `${t.retain} ${retain}%`, gx, ly - 14, palette.accent, 11, "center");
-      const badKept = sorted.slice(0, keepN).filter((s) => s.bad).length;
-      label(ctx, `${t.kept}: ${keepN}   ${t.dropped}: ${n - keepN}   ${t.badKept}: ${badKept}`, lx, ly + lh + 18, badKept > 0 ? palette.anomaly : palette.muted, 11);
-    }
-    label(ctx, t.gate, lx, ly - 34, palette.ink, narrow ? 10 : 12);
-    label(ctx, "a_i = TopMean_0.5%( median_b r_{i,p,b} )", lx, ly + lh + 36, palette.muted, 10);
-
-    const size = narrow ? Math.min(w * 0.5, h * 0.34) : Math.min(h * 0.72, w * 0.36);
-    const rx = narrow ? (w - size) / 2 : w * 0.62, ry = narrow ? h * 0.57 : h * 0.5 - size / 2, c = size / 28;
-    const step = Math.floor((tt / 1.6) % 5);
+    const step = auto ? Math.floor((tt / 1.8) % 5) : manual;
+    const size = narrow ? Math.min(w * 0.8, h * 0.6) : Math.min(h * 0.74, w * 0.5);
+    const rx = narrow ? (w - size) / 2 : w * 0.08, ry = narrow ? h * 0.06 : (h - size) / 2 - 10, c = size / 28;
     const { A, D, C, Rg } = masks;
+    const pulse = 0.5 + 0.5 * Math.sin(tt * 3);
     for (let i = 0; i < 784; i++) {
       const x = rx + (i % 28) * c, y = ry + Math.floor(i / 28) * c;
       let fill = palette.cell;
@@ -776,23 +818,37 @@ export function CompositionScene({ t }: { t: CompositionCopy }) {
         ctx.strokeStyle = palette.xmark; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(x + 2, y + 2); ctx.lineTo(x + c - 2, y + c - 2); ctx.moveTo(x + c - 2, y + 2); ctx.lineTo(x + 2, y + c - 2); ctx.stroke();
       }
+      if (step >= 4 && Rg[i]) {
+        ctx.save(); ctx.globalAlpha = 0.35 + 0.35 * pulse; ctx.shadowColor = palette.mint; ctx.shadowBlur = 8; ctx.fillStyle = palette.mint;
+        ctx.fillRect(x + 0.5, y + 0.5, c - 1, c - 1); ctx.restore();
+      }
     }
     ctx.strokeStyle = palette.frame; ctx.strokeRect(rx, ry, size, size);
-    label(ctx, t.steps[step], rx + size / 2, ry + size + 16, step === 4 ? palette.mint : palette.ink, narrow ? 10 : 12, "center");
-    for (let s = 0; s < 5; s++) {
-      ctx.fillStyle = s === step ? palette.accent : palette.dotOff;
-      ctx.beginPath(); ctx.arc(rx + size / 2 - 28 + s * 14, ry + size + 34, 3, 0, Math.PI * 2); ctx.fill();
-    }
+    // side panel: step list with counts
+    const px = narrow ? w * 0.08 : rx + size + w * 0.06, py = narrow ? ry + size + 26 : ry + 10;
+    t.steps.forEach((name, s) => {
+      const on = s === step, done = s < step;
+      const y = py + s * (narrow ? 20 : 30);
+      ctx.fillStyle = on ? palette.accent : done ? palette.ink : palette.dotOff;
+      ctx.beginPath(); ctx.arc(px + 5, y, on ? 5 : 3.5, 0, Math.PI * 2); ctx.fill();
+      label(ctx, name, px + 18, y, on ? palette.ink : done ? palette.muted : palette.dotOff, narrow ? 10 : 11);
+    });
+    const cy = py + 5 * (narrow ? 20 : 30) + 8;
+    if (step >= 3) label(ctx, `${t.excluded}: ${masks.nC}`, px + 18, cy, palette.muted, 10);
+    if (step >= 4) label(ctx, `${t.ring}: ${masks.nR}`, px + 18, cy + 16, palette.mint, 10);
   });
 
   return (
-    <div className="ad-scene" ref={box}>
+    <div className="ad-scene">
       <canvas ref={ref} className="ad-canvas" aria-hidden="true" />
       <div className="ad-controls">
-        <label className="ad-ctl">
-          <span>{t.retain} <b>R = {retain}%</b></span>
-          <input type="range" min={50} max={90} step={10} value={retain} onChange={(e) => setRetain(Number(e.target.value))} />
-        </label>
+        <div className="ad-ctl ad-seg" role="group" aria-label={t.step}>
+          <span>{t.step}</span>
+          {[0, 1, 2, 3, 4].map((s) => (
+            <button key={s} type="button" className={!auto && manual === s ? "on" : ""} onClick={() => { setAuto(false); setManual(s); }}>{s === 0 ? "0" : ["A", "D", "C", "R"][s - 1]}</button>
+          ))}
+          <button type="button" className={auto ? "on" : ""} onClick={() => setAuto(true)}>{t.auto}</button>
+        </div>
       </div>
     </div>
   );

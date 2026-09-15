@@ -3,9 +3,9 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { copyEn, copyZh, type Stage } from "./copy";
 import { useInView } from "./lib";
-import { Lineage, ResultsStrip } from "./results";
+import { Downstream, Lineage, ResultsStrip } from "./results";
 import {
-  CompositionScene, ConsensusScene, HeroScene, MapToScoreScene, MemoryScene, ProjectionScene, RoutingScene,
+  ConsensusScene, EligibilityScene, HeroScene, MapToScoreScene, MemoryScene, ProjectionScene, RoutingScene, SupportScene,
 } from "./scenes";
 
 function Reveal({ children, className = "" }: { children: ReactNode; className?: string }) {
@@ -37,13 +37,14 @@ export function AnomalyShowcase({ locale }: { locale: "en" | "zh" }) {
 
   const scene = (id: string) => {
     switch (id) {
-      case "tokens": return <HeroScene src="/anomaly/hazelnut-defect.webp" mask28={mask} labels={t.heroLabels} />;
+      case "tokens": return <TokenGrid />;
+      case "eligibility": return <EligibilityScene t={t.eligibility} />;
+      case "support": return <SupportScene t={t.support} />;
       case "memory": return <MemoryScene t={t.memory} />;
+      case "routing": return <RoutingScene t={t.routing} />;
       case "projection": return <ProjectionScene t={t.projection} />;
       case "consensus": return <ConsensusScene t={t.consensus} />;
       case "map": return <MapToScoreScene t={t.map} />;
-      case "routing": return <RoutingScene t={t.routing} />;
-      case "composition": return <CompositionScene t={t.composition} />;
       default: return null;
     }
   };
@@ -66,16 +67,20 @@ export function AnomalyShowcase({ locale }: { locale: "en" | "zh" }) {
 
       <div className="ad-stages">
         {t.stages.map((s, i) => (
-          <StageBlock s={s} index={i} key={s.id}>
-            {s.id === "tokens" ? <TokenGrid /> : scene(s.id)}
-          </StageBlock>
+          <StageBlock s={s} index={i} key={s.id}>{scene(s.id)}</StageBlock>
         ))}
       </div>
 
-      <section className="ad-results-section" aria-labelledby="ad-results-title">
+      <section className="ad-results-section" aria-labelledby="ad-downstream-title">
         <Reveal>
-          <p className="ad-num"><span>08</span> {t.results.kicker}</p>
-          <h2 id="ad-results-title">{t.results.title}</h2>
+          <p className="ad-num"><span>09</span> {t.downstream.title}</p>
+          <h2 id="ad-downstream-title">{t.downstream.title}</h2>
+          <p className="ad-body ad-lead">{t.downstream.lead}</p>
+        </Reveal>
+        <Downstream t={t.downstream} />
+        <Reveal className="ad-example">
+          <p className="ad-num ad-num-sub">{t.results.kicker}</p>
+          <h3>{t.results.title}</h3>
           <p className="ad-body ad-lead">{t.results.lead}</p>
         </Reveal>
         <ResultsStrip t={t.results} />

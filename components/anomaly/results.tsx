@@ -2,18 +2,68 @@
 
 import Image from "next/image";
 import { useState, type CSSProperties } from "react";
-import { useCountUp, useInView } from "./lib";
+import { useInView } from "./lib";
 
 const CATS = ["bottle", "cable", "capsule", "carpet", "grid"] as const;
 const COLS = ["input", "gt", "nn", "spm", "procon"] as const;
+
+/* ------------------------------------------------------------------ */
+/* Five interventions → five observed consequences                     */
+/* ------------------------------------------------------------------ */
+
+export type DownstreamItem = {
+  paper: string;
+  stages: string;
+  tone: string;
+  intervention: string;
+  consequence: string;
+  label: string;
+  before: number;
+  after: number;
+  unit: string;
+};
+
+export type DownstreamCopy = { title: string; lead: string; before: string; after: string; items: DownstreamItem[] };
+
+function fmt(v: number, unit: string) {
+  const s = v < 1 && v > 0 ? v.toFixed(3) : v === 0 ? "0.0" : v.toFixed(1);
+  return `${s}${unit}`;
+}
+
+export function Downstream({ t }: { t: DownstreamCopy }) {
+  const { ref, inView } = useInView<HTMLOListElement>(0.15);
+  return (
+    <ol className={`ad-downstream ${inView ? "in" : ""}`} ref={ref}>
+      {t.items.map((it, i) => {
+        const hi = Math.max(it.before, it.after, 1e-9);
+        const wB = Math.max(0.06, it.before / hi);
+        const wA = Math.max(0.06, it.after / hi);
+        return (
+          <li key={it.paper} style={{ animationDelay: `${i * 0.12}s`, "--tone": it.tone } as CSSProperties}>
+            <p className="ad-ds-head"><span className="ad-ds-paper">{it.paper}</span><span className="ad-ds-stage">{it.stages}</span></p>
+            <p className="ad-ds-int">{it.intervention}</p>
+            <div className="ad-ds-bars" aria-label={`${it.label}: ${t.before} ${fmt(it.before, it.unit)}, ${t.after} ${fmt(it.after, it.unit)}`}>
+              <span className="ad-ds-label">{it.label}</span>
+              <div className="ad-ds-row"><i>{t.before}</i><b className="before" style={{ width: `${wB * 100}%` }} /><em>{fmt(it.before, it.unit)}</em></div>
+              <div className="ad-ds-row"><i>{t.after}</i><b style={{ width: `${wA * 100}%` }} /><em>{fmt(it.after, it.unit)}</em></div>
+            </div>
+            <p className="ad-ds-con">{it.consequence}</p>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Real ProCon example strip                                            */
+/* ------------------------------------------------------------------ */
 
 export type ResultsCopy = {
   kicker: string;
   title: string;
   lead: string;
   cols: [string, string, string, string, string];
-  metrics: { dataset: string; iauroc: number; pap: number; aupro: number }[];
-  metricNames: [string, string, string];
   source: string;
 };
 
@@ -39,26 +89,13 @@ export function ResultsStrip({ t }: { t: ResultsCopy }) {
         ))}
       </div>
       <p className="ad-source">{t.source}</p>
-      <div className="ad-metrics">
-        {t.metrics.map((m) => <MetricCard key={m.dataset} m={m} names={t.metricNames} active={inView} />)}
-      </div>
     </div>
   );
 }
 
-function MetricCard({ m, names, active }: { m: ResultsCopy["metrics"][number]; names: [string, string, string]; active: boolean }) {
-  const a = useCountUp(m.iauroc, active, 1600);
-  const b = useCountUp(m.pap, active, 1900);
-  const c = useCountUp(m.aupro, active, 2200);
-  return (
-    <div className="ad-metric">
-      <h4>{m.dataset}</h4>
-      <div><span>{names[0]}</span><b>{a.toFixed(1)}</b></div>
-      <div><span>{names[1]}</span><b>{b.toFixed(1)}</b></div>
-      <div><span>{names[2]}</span><b>{c.toFixed(1)}</b></div>
-    </div>
-  );
-}
+/* ------------------------------------------------------------------ */
+/* Lineage                                                              */
+/* ------------------------------------------------------------------ */
 
 export type LineageItem = { name: string; year: string; question: string; answer: string; paper: string; code?: string; tone: string };
 
