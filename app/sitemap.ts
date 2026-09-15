@@ -11,7 +11,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { en: "/anomaly/", zh: "/zh/anomaly/" },
   ];
 
-  return routes.flatMap(({ en, zh }) => [
+  const koOnly = ["/study/", "/study/resnet50/"].map((url) => ({
+    url: `${base}${url}`,
+    lastModified: new Date("2026-09-15"),
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  }));
+
+  return koOnly.concat(routes.flatMap(({ en, zh }) => [
     {
       url: `${base}${en}`,
       lastModified: new Date("2026-08-24"),
@@ -26,5 +33,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: zh === "/zh/" ? 0.9 : 0.7,
       alternates: { languages: { en: `${base}${en}`, "zh-CN": `${base}${zh}` } },
     },
-  ]);
+  ]));
 }
