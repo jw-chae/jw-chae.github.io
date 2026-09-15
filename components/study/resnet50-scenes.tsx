@@ -7,6 +7,93 @@ import { resnetCopy as t } from "./resnet50-copy";
 const NARROW = 560;
 
 /* ------------------------------------------------------------------ */
+/* 00 · Convolution basics: a 3x3 kernel sliding over one channel      */
+/* ------------------------------------------------------------------ */
+
+export function ConvBasicsScene() {
+  const N = 8, K = 3;
+  const [stride, setStride] = useState(1);
+  const [playing, setPlaying] = useState(true);
+  const data = useMemo(() => {
+    const r = rng(3);
+    const img = Array.from({ length: N * N }, (_, i) => {
+      const x = i % N;
+      const edge = x === 3 || x === 4 ? 1 : 0;                        // a vertical stripe
+      return clamp(edge * 0.8 + 0.15 + gauss(r) * 0.08, 0, 1);
+    });
+    const kernel = [-1, 0, 1, -2, 0, 2, -1, 0, 1].map((v) => v / 4);   // vertical-edge detector (Sobel)
+    return { img, kernel };
+  }, []);
+  const outN = Math.floor((N - K) / stride) + 1;
+  const out = useMemo(() => {
+    const o = new Array(outN * outN).fill(0);
+    for (let oy = 0; oy < outN; oy++) for (let ox = 0; ox < outN; ox++) {
+      let acc = 0;
+      for (let u = 0; u < K; u++) for (let v = 0; v < K; v++) acc += data.kernel[u * K + v] * data.img[(oy * stride + u) * N + ox * stride + v];
+      o[oy * outN + ox] = acc;
+    }
+    return o;
+  }, [data, outN, stride]);
+  const tRef = useRef(0);
+
+  const ref = useCanvas((ctx, w, h, tt) => {
+    ctx.clearRect(0, 0, w, h);
+    drawGrid(ctx, w, h, 40);
+    if (playing) tRef.current = tt;
+    const step = Math.floor((tRef.current * 2.2) % (outN * outN));
+    const oy = Math.floor(step / outN), ox = step % outN;
+    const narrow = w < NARROW;
+    const cell = narrow ? Math.min(22, (w - 60) / (N + outN + 4)) : Math.min(34, (w - 120) / (N + outN + 6));
+    const ix = narrow ? 20 : w * 0.06, iy = h * 0.5 - (N * cell) / 2;
+    const gray = (v: number) => `rgb(${Math.round(30 + v * 200)},${Math.round(30 + v * 200)},${Math.round(30 + v * 200)})`;
+    for (let i = 0; i < N * N; i++) {
+      ctx.fillStyle = gray(data.img[i]);
+      ctx.fillRect(ix + (i % N) * cell + 1, iy + Math.floor(i / N) * cell + 1, cell - 2, cell - 2);
+    }
+    // sliding window
+    const wx = ix + ox * stride * cell, wy = iy + oy * stride * cell;
+    ctx.strokeStyle = palette.accent; ctx.lineWidth = 3; ctx.strokeRect(wx, wy, K * cell, K * cell);
+    label(ctx, t.conv.input, ix + (N * cell) / 2, iy - 12, palette.muted, 10, "center");
+    // kernel
+    const kx = ix + N * cell + (narrow ? 14 : 34), ky = h * 0.5 - (K * cell) / 2;
+    for (let i = 0; i < K * K; i++) {
+      const v = data.kernel[i];
+      ctx.fillStyle = v > 0 ? `rgba(${palette.normalRgb},${0.25 + Math.abs(v)})` : v < 0 ? `rgba(${palette.anomalyRgb},${0.25 + Math.abs(v)})` : palette.track;
+      ctx.fillRect(kx + (i % K) * cell + 1, ky + Math.floor(i / K) * cell + 1, cell - 2, cell - 2);
+      label(ctx, v.toFixed(2), kx + (i % K) * cell + cell / 2, ky + Math.floor(i / K) * cell + cell / 2, palette.ink, narrow ? 8 : 9, "center");
+    }
+    label(ctx, t.conv.kernel, kx + (K * cell) / 2, ky - 12, palette.muted, 10, "center");
+    label(ctx, "×, Σ", kx + (K * cell) / 2, ky + K * cell + 14, palette.muted, 11, "center");
+    // output
+    const oxp = kx + K * cell + (narrow ? 14 : 34), oyp = h * 0.5 - (outN * cell) / 2;
+    const mx = Math.max(...out.map(Math.abs), 1e-6);
+    for (let i = 0; i < outN * outN; i++) {
+      const done = i <= step;
+      const v = out[i] / mx;
+      ctx.fillStyle = done ? (v >= 0 ? `rgba(${palette.normalRgb},${0.15 + Math.abs(v) * 0.85})` : `rgba(${palette.anomalyRgb},${0.15 + Math.abs(v) * 0.85})`) : palette.track;
+      ctx.fillRect(oxp + (i % outN) * cell + 1, oyp + Math.floor(i / outN) * cell + 1, cell - 2, cell - 2);
+    }
+    ctx.strokeStyle = palette.accent; ctx.lineWidth = 3; ctx.strokeRect(oxp + ox * cell, oyp + oy * cell, cell, cell);
+    label(ctx, `${t.conv.output}  ${outN}×${outN}`, oxp + (outN * cell) / 2, oyp - 12, palette.muted, 10, "center");
+    label(ctx, `out(${oy},${ox}) = ${out[step].toFixed(2)}`, oxp + (outN * cell) / 2, oyp + outN * cell + 14, palette.ink, 11, "center");
+    label(ctx, `${N}×${N}  →  ${outN}×${outN}   (stride ${stride})`, w / 2, h - 18, palette.muted, 11, "center");
+  });
+
+  return (
+    <div className="ad-scene">
+      <canvas ref={ref} className="ad-canvas" aria-hidden="true" />
+      <div className="ad-controls">
+        <div className="ad-ctl ad-seg" role="group" aria-label={t.conv.stride}>
+          <span>{t.conv.stride}</span>
+          {[1, 2].map((v) => <button key={v} type="button" className={stride === v ? "on" : ""} onClick={() => setStride(v)}>{v}</button>)}
+        </div>
+        <button type="button" className="ad-btn" onClick={() => setPlaying((p) => !p)}>{playing ? t.conv.pause : t.conv.play}</button>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* 01 · Tensor shape flow                                              */
 /* ------------------------------------------------------------------ */
 

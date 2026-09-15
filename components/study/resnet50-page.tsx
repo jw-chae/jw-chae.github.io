@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { Formula } from "@/components/anomaly/formula";
 import { useInView } from "@/components/anomaly/lib";
 import { resnetCopy as t, type StudySection } from "./resnet50-copy";
-import { BatchNormScene, BlockOrderScene, BottleneckScene, OneByOneScene, ShapeFlowScene, SkipScene } from "./resnet50-scenes";
+import { BatchNormScene, BlockOrderScene, BottleneckScene, ConvBasicsScene, OneByOneScene, ShapeFlowScene, SkipScene } from "./resnet50-scenes";
 
 function Reveal({ children, className = "" }: { children: ReactNode; className?: string }) {
   const { ref, inView } = useInView<HTMLDivElement>(0.18);
@@ -29,6 +29,7 @@ function Section({ s, index, children }: { s: StudySection; index: number; child
 }
 
 const scenes: Record<string, () => ReactNode> = {
+  basics: () => <ConvBasicsScene />,
   flow: () => <ShapeFlowScene />,
   bottleneck: () => <BottleneckScene />,
   onebyone: () => <OneByOneScene />,
