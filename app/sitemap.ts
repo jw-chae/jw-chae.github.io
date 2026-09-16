@@ -11,7 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { en: "/anomaly/", zh: "/zh/anomaly/" },
   ];
 
-  const koOnly = ["/study/", "/study/resnet50/"].map((url) => ({
+  const koOnly = ["/study/", "/study/resnet50/", "/projects/"].map((url) => ({
     url: `${base}${url}`,
     lastModified: new Date("2026-09-15"),
     changeFrequency: "monthly" as const,
