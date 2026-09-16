@@ -8,7 +8,6 @@ A bilingual, statically exported Next.js research portfolio built from the suppl
 - `/publications`: English publication archive
 - `/cv`: English CV preview and PDF download
 - `/anomaly`: animated, interactive walkthrough of the memory-based anomaly detection research line
-- `/study`: Korean-only visual study notes (chapter 01: ResNet-50)
 - `/projects` and `/zh/projects`: two ongoing side projects in one line each (fly-brain anomaly detection, ResearchOS)
 - `/zh`: Chinese profile and research overview
 - `/zh/publications`: Chinese publication archive

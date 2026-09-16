@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { ProjectsPage } from "@/components/projects/projects-page";
 import "../../anomaly.css";
-import "../../study.css";
 import "../../projects.css";
 
 export const metadata: Metadata = {

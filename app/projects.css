@@ -1,5 +1,22 @@
 /* Ongoing side projects — two short cards with an illustration each. */
 
+.pj-page {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.st-hero {
+  padding: 4rem 0 2.5rem;
+}
+
+.st-hero h1 {
+  max-width: 22ch;
+  margin: 0 0 1.2rem;
+  font-size: clamp(2rem, 4.6vw, 3.4rem);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+}
+
 .pj-page .ad-sub,
 .pj-page .pj-question,
 .pj-page .pj-blurb {
