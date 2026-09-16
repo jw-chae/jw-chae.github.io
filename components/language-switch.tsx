@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 export function LanguageSwitch({ locale }: { locale: "en" | "zh" }) {
   const pathname = usePathname();
-  if (pathname.startsWith("/study") || pathname.startsWith("/projects")) return null;   // Korean-only sections
+  if (pathname.startsWith("/study")) return null;          // study notes are Korean-only
   const target = locale === "zh"
     ? pathname.replace(/^\/zh(?=\/|$)/, "") || "/"
     : `/zh${pathname === "/" ? "" : pathname}`;

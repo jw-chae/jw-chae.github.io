@@ -16,9 +16,6 @@ All images are derived from the author's official repositories or supplied paper
 - `<category>-{input,gt,nn,spm,procon}.webp` for bottle, cable, capsule, carpet, grid: cells cropped from `jw-chae/Procon`, `figures/fig5_a1_mvtec.png` (same source as `procon-qualitative.webp`).
 - `<category>-defect.webp`, `<category>-good.webp`, `<category>-mask.png`, `mask28.json` for leather, hazelnut, tile, screw, carpet: MVTec AD test/train images and ground-truth masks (Bergmann et al., CVPR 2019), licensed CC BY-NC-SA 4.0 and used here non-commercially with attribution. `mask28.json` aligns each mask to the 28 × 28 DINOv2 patch grid (a cell is 1 if any defect pixel falls inside it).
 
-## `public/projects/` (진행 중인 프로젝트 page)
+## `public/projects/` (Projects page)
 
-- `flymem-pap.webp`: crop of the author's own `lab/flymem/figs/fig1_pap_vs_nimage.png`, MVTec AD metal_nut/tile (CC BY-NC-SA 4.0).
-- `flyvis-maps.webp`: crop of the author's own `lab/flyvis/results/exp2_leather_flow_0000_000/figure.png` (flyvis pretrained optic-lobe model; MVTec AD leather).
-- `flymem-mascot.webp`, `researchos-art.webp`: author-supplied illustrations (`E:\OneDrive\Documents\THU\CVly_dino.png`, `agent_graph.png`).
-
+- `flymem-mascot.webp`, `researchos-art.webp`: author-supplied illustrations (`E:\OneDrive\Documents\THU\CV\fly_dino.png`, `agent_graph.png`).

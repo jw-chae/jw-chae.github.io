@@ -1,110 +1,56 @@
-export type ProjectFigure = { src: string; alt: string; caption: string; width: number; height: number };
-
-export type ProjectSection = {
-  id: string;
-  label: string;
-  title: string;
-  paras: string[];
-  formula?: string;
-  figure?: ProjectFigure;
-  table?: { head: string[]; rows: string[][]; note?: string };
-};
-
 export type Project = {
   id: string;
-  num: string;
-  status: string;
   title: string;
-  hook: string;
-  lead: string;
-  mascot?: { src: string; alt: string; wide?: boolean };
-  sections: ProjectSection[];
-  honest: string;
-  next: string;
-  links: { label: string; href: string }[];
-  tone: string;
+  question: string;
+  blurb?: string;
+  image: { src: string; alt: string; width: number; height: number };
 };
 
-export const projectsCopy = {
+export type ProjectsCopy = {
+  kicker: string;
+  title: string;
+  sub: string;
+  projects: Project[];
+};
+
+export const projectsEn: ProjectsCopy = {
   kicker: "Projects",
-  title: "진행 중인 프로젝트",
-  sub: "논문과 별개로, 그냥 재밌어서 만지고 있는 것들. 짧게만 적는다.",
-  labels: { hook: "왜 시작했나", honest: "지금까지 알게 된 것", next: "다음", links: "관련 자료" },
+  title: "Ongoing side projects",
+  sub: "Things I tinker with for fun, outside the papers.",
+  projects: [
+    {
+      id: "flymem",
+      title: "Anomaly detection with a fruit-fly brain",
+      question: "Could a fruit fly's brain do anomaly detection?",
+      blurb: "A fruit fly has a tiny brain, yet it notices when a smell is new. It does not store every smell separately; each familiar smell just presses down a few synapses a little more. Industrial defect inspection does the opposite: it stores whole patches of normal images and compares against them. If we switched to the fly's way, memory would shrink by hundreds of times. Would defects still be found?",
+      image: { src: "/projects/flymem-mascot.webp", alt: "A fruit fly wearing DINO goggles", width: 640, height: 640 },
+    },
+    {
+      id: "researchos",
+      title: "ResearchOS",
+      question: "We forget what we study, and research inspiration often comes from another field. Could I build a research agent of my own on top of my own research trajectory?",
+      image: { src: "/projects/researchos-art.webp", alt: "A small AI agent exploring a universe of graphs", width: 1200, height: 900 },
+    },
+  ],
 };
 
-export const projects: Project[] = [
-  {
-    id: "researchos",
-    num: "01",
-    status: "만드는 중 · 내 컴퓨터에서만 돌아감",
-    title: "ResearchOS",
-    hook: "공부를 하면 까먹는다. 그리고 연구의 영감은 종종 다른 분야에서 나온다. 내 연구 궤적을 기반으로 나만의 연구 에이전트를 만들 수 없을까?",
-    lead: "AI와 나눈 대화가 그냥 흘러가지 않고 내 컴퓨터에 쌓여서, 다음 질문이 지난 이해 위에서 이어지게 하는 개인용 연구 노트 프로그램이다. 어떤 비유로 이해했는지, 어디까지 맞는 비유였는지, 나중에 무엇을 고쳤는지까지 다시 꺼내 볼 수 있어야 한다는 게 출발점이다.",
-    tone: "#0e7fc7",
-    mascot: { src: "/projects/researchos-art.webp", alt: "그래프 우주를 탐험하는 작은 AI 에이전트 삽화", wide: true },
-    sections: [
-      {
-        id: "what", label: "무엇을 하나", title: "대화가 노트가 되고, 노트가 다음 대화의 기억이 된다",
-        paras: [
-          "질문하고 답을 받으면 원문은 그대로 남고, 그 안의 설명·비유·계산·미해결 질문이 주제별 노트에 추가된다. 나중에 비슷한 걸 물으면 그 노트와 원래 대화를 찾아와 이어서 답한다. 잘못 정리된 부분은 지우지 않고 \"정정\"으로 덮어서 언제 왜 바뀌었는지 남는다.",
-          "논문을 넣으면 같은 저장소에 근거·가정·실패·실험 계획이 기록되고, 이것이 다음 연구 방향을 생각할 때의 재료가 된다. 등록해 둔 작은 실험은 직접 실행해서 결과를 노트에 되돌려 넣는다.",
-        ],
-      },
-      {
-        id: "tried", label: "해 본 것", title: "과거 논문만 주고 다음 논문의 방향을 맞힐 수 있는지",
-        paras: [
-          "최신 논문 20편을 정답으로 숨기고, 그 이전 논문 몇 편만 준 뒤 \"다음에 무엇을 시도해야 하나\"를 열 개씩 제안하게 했다. 방향이 대략 맞는 제안이 하나라도 나온 논문은 20편 중 16편, 핵심 원리까지 정확히 맞힌 경우는 1편, 첫 번째로 추천한 것이 맞은 경우는 없었다. 읽을 자료를 1.5배로 늘려도 나아지지 않았다.",
-        ],
-        table: {
-          head: ["", "대략 맞음", "정확히 맞음", "1순위가 맞음"],
-          rows: [["20편 중", "16", "1", "0"]],
-        },
-      },
-    ],
-    honest: "대화를 쌓고, 정정하고, 다음 대화에서 다시 쓰는 것까지는 실제로 돌아간다. 하지만 이것이 그냥 잘 정리된 Markdown 폴더보다 연구에 더 도움이 된다는 것은 아직 보이지 못했다. 같은 조건으로 비교했을 때 차이가 나지 않았다.",
-    next: "인위적인 테스트를 늘리는 대신, 실제로 내가 헷갈렸던 사례를 모아서 어디서 도움이 되고 어디서 안 되는지를 본다.",
-    links: [{ label: "내 컴퓨터에서만 실행 (비공개)", href: "#" }],
-  },
-  {
-    id: "flymem",
-    num: "02",
-    status: "첫 실험 끝 · 다음 실험 준비 중",
-    title: "초파리 뇌 기반 이상탐지",
-    hook: "초파리의 뇌를 기반으로 이상탐지를 할 수는 없을까?",
-    lead: "초파리는 뇌가 아주 작은데도 처음 맡는 냄새를 \"낯설다\"고 알아챈다. 냄새 하나하나를 따로 저장하는 게 아니라, 익숙한 냄새가 지나갈 때마다 시냅스를 조금씩 눌러 두는 방식이다. 산업 결함 검사는 정반대로 정상 사진 조각을 통째로 저장해 두고 비교한다. 초파리 방식으로 바꾸면 메모리는 수백 배 줄어드는데, 결함은 여전히 찾을 수 있을까.",
-    tone: "#c27300",
-    mascot: { src: "/projects/flymem-mascot.webp", alt: "DINO 고글을 쓴 초파리 마스코트" },
-    sections: [
-      {
-        id: "setup", label: "어떻게 했나", title: "같은 정상 사진을, 따로 저장할 때와 합쳐서 저장할 때",
-        paras: [
-          "사진을 작은 조각으로 나눠 숫자로 바꾼 뒤(여기까지는 보통의 이상탐지와 같다), 초파리 방식대로 아주 성긴 코드로 바꾼다. 1만 개 스위치 중 10개만 켜지는 코드다. 그 다음이 갈림길이다. 코드를 조각마다 따로 저장하느냐, 아니면 \"한 번이라도 켜진 스위치\" 하나로 전부 합쳐 버리느냐. 새 사진의 조각이 들어오면, 따로 저장한 쪽은 가장 비슷한 조각을 찾고, 합친 쪽은 \"안 켜졌던 스위치가 얼마나 켜지나\"만 본다.",
-          "정상 사진을 1장, 4장, 16장, 64장으로 늘려 가며 결함을 얼마나 잘 찾는지(P-AP, 높을수록 좋음) 쟀다.",
-        ],
-      },
-      {
-        id: "found", label: "본 것", title: "합쳐서 저장하면 정상 사진이 늘수록 오히려 나빠진다",
-        paras: [
-          "따로 저장한 쪽은 사진이 늘어도 성능이 그대로다. 합쳐서 저장한 쪽은 사진이 늘수록 내려가서, 64장에서는 따로 저장한 쪽보다 26점 낮았다. 정상 사진을 많이 보여 줄수록 스위치가 거의 다 켜져서, 결함 조각도 \"익숙하다\"고 판단해 버리기 때문이다.",
-          "왜 그런지 한 가지 더 확인했다. 어떤 스위치가 어떤 조각에서 같이 켜지는지만 섞어 버리면(각 스위치가 켜진 총 횟수는 그대로), 따로 저장한 쪽도 똑같이 무너진다. 따로 저장할 때 살아남는 정보는 \"이 스위치들이 한 조각에서 함께 켜졌다\"는 조합이고, 합치는 순간 그 조합이 사라진다.",
-        ],
-        table: {
-          head: ["정상 사진", "보통 방식", "따로 저장(초파리 코드)", "합쳐서 저장"],
-          rows: [["1장", "65.0", "49.3", "46.0"], ["64장", "78.5", "68.5", "42.4"]],
-          note: "MVTec metal_nut, P-AP, seed 3개 평균.",
-        },
-        figure: { src: "/projects/flymem-pap.webp", alt: "정상 사진 수에 따른 네 가지 저장 방식의 P-AP", caption: "정상 사진 수를 늘릴 때. 검정이 보통 방식, 파랑이 따로 저장, 빨강·주황이 합쳐서 저장.", width: 1400, height: 520 },
-      },
-      {
-        id: "circuit", label: "다른 갈래", title: "진짜 초파리 시각 회로에 사진을 넣어 보기",
-        paras: [
-          "초파리 눈 뒤의 신경 회로를 그대로 본뜬 공개 모델(flyvis)에 결함 있는 사진을 넣고 시간에 따라 반응을 봤다. 넣자마자 읽으면 결함이 잘 안 보이고, 0.1~0.2초 지나야 결함 신호가 가장 선명하다. 무작위로 연결한 비슷한 크기의 회로에서는 반대로 시간이 갈수록 신호가 퍼져 흐려진다. 다만 이 회로만으로는 요즘 방식(DINOv2)의 발끝에도 못 미친다.",
-        ],
-        figure: { src: "/projects/flyvis-maps.webp", alt: "가죽 결함 사진과 초파리 회로를 시점별로 읽은 결함 지도", caption: "가죽의 접힘 결함. 왼쪽부터 원본, 밝기만 쓴 기준, 초파리 회로를 0.02초 / 0.1초 / 1.5초에 읽은 것.", width: 1400, height: 244 },
-      },
-    ],
-    honest: "\"초파리 방식이 이상탐지에 좋다\"는 결과는 없다. 메모리는 확실히 줄지만(40 KB 대 1.3 MB) 그 대가로 결함을 놓친다. 다만 왜 놓치는지는 꽤 분명하게 봤다. 합치는 순간 조합 정보가 사라진다.",
-    next: "코드를 만드는 방식을 바꿔서, 켜지는 스위치가 소수에 몰리지 않게 한 뒤 같은 비교를 다시 한다. 그래도 격차가 남으면 합치기 자체의 한계다.",
-    links: [{ label: "PatchCore (보통 방식)", href: "https://arxiv.org/abs/2106.08265" }, { label: "초파리 후각 회로의 해싱 (Dasgupta 2017)", href: "https://www.science.org/doi/10.1126/science.aam9868" }, { label: "flyvis", href: "https://github.com/TuragaLab/flyvis" }],
-  },
-];
+export const projectsZh: ProjectsCopy = {
+  kicker: "Projects",
+  title: "进行中的项目",
+  sub: "论文之外，纯粹因为有趣而在折腾的东西。",
+  projects: [
+    {
+      id: "flymem",
+      title: "基于果蝇大脑的异常检测",
+      question: "能不能用果蝇的大脑来做异常检测？",
+      blurb: "果蝇的大脑非常小，却能察觉一种气味是否陌生。它并不把每种气味分别存起来，而是每当熟悉的气味经过，就把几个突触再压低一点。工业缺陷检测恰恰相反：把正常图像的碎片整块存下来再逐一比对。如果改用果蝇的方式，记忆会缩小几百倍。那么缺陷还找得到吗？",
+      image: { src: "/projects/flymem-mascot.webp", alt: "戴着 DINO 护目镜的果蝇", width: 640, height: 640 },
+    },
+    {
+      id: "researchos",
+      title: "ResearchOS",
+      question: "学过的东西会忘，而研究的灵感往往来自别的领域。能不能以我自己的研究轨迹为基础，做一个属于我的研究智能体？",
+      image: { src: "/projects/researchos-art.webp", alt: "在图的宇宙中探索的小型 AI 智能体", width: 1200, height: 900 },
+    },
+  ],
+};

@@ -9,9 +9,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { en: "/publications/", zh: "/zh/publications/" },
     { en: "/cv/", zh: "/zh/cv/" },
     { en: "/anomaly/", zh: "/zh/anomaly/" },
+    { en: "/projects/", zh: "/zh/projects/" },
   ];
 
-  const koOnly = ["/study/", "/study/resnet50/", "/projects/"].map((url) => ({
+  const koOnly = ["/study/", "/study/resnet50/"].map((url) => ({
     url: `${base}${url}`,
     lastModified: new Date("2026-09-15"),
     changeFrequency: "monthly" as const,

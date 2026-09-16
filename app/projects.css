@@ -1,255 +1,65 @@
-/* Ongoing toy projects — long-form Korean write-ups on the study/anomaly visual system. */
+/* Ongoing side projects — two short cards with an illustration each. */
 
-.pj-toc {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  margin-top: 1.4rem;
-}
-
-.pj-toc a {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 40px;
-  padding: 0.3rem 0.9rem 0.3rem 0.5rem;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--panel);
-  color: var(--ink);
-  font-weight: 700;
+.pj-page .ad-sub,
+.pj-page .pj-question,
+.pj-page .pj-blurb {
   word-break: keep-all;
-}
-
-.pj-toc a:hover {
-  border-color: var(--cyan);
-  text-decoration: none;
-}
-
-.pj-toc a span {
-  display: inline-grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 999px;
-  background: var(--cyan);
-  color: #ffffff;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.72rem;
 }
 
 .pj-list {
   padding-bottom: 5rem;
 }
 
-.pj-project {
-  --tone: var(--cyan);
-  padding: 4rem 0 3rem;
+.pj-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 3rem;
+  align-items: center;
+  padding: 3.5rem 0;
   border-top: 1px solid var(--line);
 }
 
-.pj-project .ad-num span {
-  border-color: var(--tone);
-}
-
-.pj-head {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 2rem;
-  align-items: start;
-}
-
-.pj-head h2 {
+.pj-card h2 {
   margin: 0 0 1rem;
-  font-size: clamp(1.9rem, 3.6vw, 2.8rem);
+  font-size: clamp(1.7rem, 3.2vw, 2.4rem);
   font-weight: 700;
   letter-spacing: -0.02em;
-  word-break: keep-all;
 }
 
-.pj-hook {
-  margin: 0 0 1.2rem;
-  padding: 1rem 1.2rem;
-  border-left: 4px solid var(--tone);
-  border-radius: 0 10px 10px 0;
-  background: var(--panel);
-  box-shadow: var(--shadow);
+.pj-question {
+  max-width: 34ch;
+  margin: 0 0 1.1rem;
   color: var(--ink);
-  font-size: 1.05rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  line-height: 1.6;
-  word-break: keep-all;
+  line-height: 1.5;
+  text-wrap: balance;
 }
 
-.pj-hook span,
-.pj-label {
-  display: block;
-  margin-bottom: 0.35rem;
-  color: var(--tone);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.pj-lead {
-  max-width: 72ch;
-  font-size: 1.02rem;
-}
-
-.pj-mascot {
-  width: 260px;
-  padding-top: 1.5rem;
-}
-
-.pj-mascot img {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-.pj-mascot.wide {
-  width: 380px;
-  padding-top: 0.4rem;
-}
-
-.pj-mascot.wide img {
-  border-radius: 14px;
-  box-shadow: var(--shadow);
-}
-
-.pj-sections {
-  display: grid;
-  gap: 2.4rem;
-  max-width: 860px;
-  margin-top: 2.4rem;
-}
-
-.pj-section h3 {
-  margin: 0 0 0.8rem;
-  font-size: 1.35rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  word-break: keep-all;
-}
-
-.pj-section .ad-body {
-  max-width: 78ch;
-  margin-bottom: 0.85rem;
-  word-break: keep-all;
-}
-
-.pj-table-wrap {
-  margin: 0.6rem 0 1rem;
-  overflow-x: auto;
-}
-
-.pj-table {
-  border-collapse: collapse;
-  font-size: 0.9rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.pj-table th,
-.pj-table td {
-  padding: 0.4rem 0.8rem;
-  border-bottom: 1px solid var(--line);
-  text-align: right;
-  white-space: nowrap;
-}
-
-.pj-table th:first-child,
-.pj-table td:first-child {
-  text-align: left;
-}
-
-.pj-table th {
-  color: var(--muted);
-  font-weight: 600;
-}
-
-.pj-table-note {
-  margin: 0.5rem 0 0;
-  color: var(--muted);
-  font-size: 0.82rem;
-  word-break: keep-all;
-}
-
-.pj-figure {
-  margin: 0.8rem 0 0;
-}
-
-.pj-figure img {
-  width: 100%;
-  height: auto;
-  display: block;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: #ffffff;
-}
-
-.pj-figure figcaption {
-  margin-top: 0.5rem;
-  color: var(--muted);
-  font-size: 0.8rem;
-  word-break: keep-all;
-}
-
-.pj-closing {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-  max-width: 860px;
-  margin-top: 2.6rem;
-}
-
-.pj-honest,
-.pj-next {
-  padding: 1.1rem 1.2rem;
-  border: 1px solid var(--line);
-  border-top: 3px solid var(--tone);
-  border-radius: 12px;
-  background: linear-gradient(180deg, var(--panel), var(--bg-2));
-}
-
-.pj-honest p:last-child,
-.pj-next p:last-child {
-  margin: 0;
-  color: var(--ink);
-  font-size: 0.92rem;
-  line-height: 1.6;
-  word-break: keep-all;
-}
-
-.pj-links {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem 1rem;
-  margin: 0.4rem 0 0;
-  font-size: 0.86rem;
-}
-
-.pj-links .pj-label {
-  display: inline;
+.pj-blurb {
+  max-width: 62ch;
   margin: 0;
 }
 
-.pj-links a::before,
-.pj-links em::before { content: "["; color: var(--muted); }
-.pj-links a::after,
-.pj-links em::after { content: "]"; color: var(--muted); }
+.pj-card-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 16px;
+}
 
-.pj-links em {
-  color: var(--muted);
-  font-style: normal;
+#researchos .pj-card-image img {
+  box-shadow: var(--shadow);
 }
 
 @media (max-width: 760px) {
-  .pj-head { grid-template-columns: 1fr; }
-  .pj-mascot { width: 180px; padding-top: 0; }
-  .pj-mascot.wide { width: 100%; }
-  .pj-closing { grid-template-columns: 1fr; }
+  .pj-card {
+    grid-template-columns: 1fr;
+    gap: 1.4rem;
+    padding: 2.6rem 0;
+  }
+  .pj-card-image {
+    order: -1;
+    max-width: 320px;
+  }
 }
