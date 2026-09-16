@@ -5,9 +5,6 @@ import type { CSSProperties, ReactNode } from "react";
 import { useInView } from "@/components/anomaly/lib";
 import { projects, projectsCopy as t, type Project, type ProjectSection } from "./projects-copy";
 
-/** Flip to true after saving the mascot image to public/projects/flymem-mascot.png */
-const MASCOT_AVAILABLE = false;
-
 function Reveal({ children, className = "" }: { children: ReactNode; className?: string }) {
   const { ref, inView } = useInView<HTMLDivElement>(0.15);
   return <div ref={ref} className={`ad-reveal ${inView ? "in" : ""} ${className}`}>{children}</div>;
@@ -41,18 +38,19 @@ function Section({ s }: { s: ProjectSection }) {
 }
 
 function ProjectBlock({ p }: { p: Project }) {
-  const showMascot = p.mascot && MASCOT_AVAILABLE;
   return (
     <article className="pj-project" id={p.id} style={{ "--tone": p.tone } as CSSProperties} aria-labelledby={`${p.id}-title`}>
-      <Reveal className="pj-head">
+      <Reveal className={`pj-head ${p.mascot?.wide ? "wide" : ""}`}>
         <div className="pj-head-text">
           <p className="ad-num"><span>{p.num}</span> {p.status}</p>
           <h2 id={`${p.id}-title`}>{p.title}</h2>
           <blockquote className="pj-hook"><span>{t.labels.hook}</span>{p.hook}</blockquote>
           <p className="ad-body pj-lead">{p.lead}</p>
         </div>
-        {showMascot && p.mascot ? (
-          <div className="pj-mascot"><Image src={p.mascot.src} alt={p.mascot.alt} width={640} height={640} sizes="(max-width: 760px) 40vw, 260px" /></div>
+        {p.mascot ? (
+          <div className={`pj-mascot ${p.mascot.wide ? "wide" : ""}`}>
+            <Image src={p.mascot.src} alt={p.mascot.alt} width={p.mascot.wide ? 1200 : 640} height={p.mascot.wide ? 900 : 640} sizes={p.mascot.wide ? "(max-width: 760px) calc(100vw - 32px), 380px" : "(max-width: 760px) 40vw, 260px"} />
+          </div>
         ) : null}
       </Reveal>
 

@@ -20,5 +20,5 @@ All images are derived from the author's official repositories or supplied paper
 
 - `flymem-pap.webp`: crop of the author's own `lab/flymem/figs/fig1_pap_vs_nimage.png`, MVTec AD metal_nut/tile (CC BY-NC-SA 4.0).
 - `flyvis-maps.webp`: crop of the author's own `lab/flyvis/results/exp2_leather_flow_0000_000/figure.png` (flyvis pretrained optic-lobe model; MVTec AD leather).
-- `flymem-mascot.png` (optional): author-supplied mascot illustration.
+- `flymem-mascot.webp`, `researchos-art.webp`: author-supplied illustrations (`E:\OneDrive\Documents\THU\CVly_dino.png`, `agent_graph.png`).
 

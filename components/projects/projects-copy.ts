@@ -17,7 +17,7 @@ export type Project = {
   title: string;
   hook: string;
   lead: string;
-  mascot?: { src: string; alt: string };
+  mascot?: { src: string; alt: string; wide?: boolean };
   sections: ProjectSection[];
   honest: string;
   next: string;
@@ -41,6 +41,7 @@ export const projects: Project[] = [
     hook: "공부를 하면 까먹는다. 그리고 연구의 영감은 종종 다른 분야에서 나온다. 내 연구 궤적을 기반으로 나만의 연구 에이전트를 만들 수 없을까?",
     lead: "AI와 나눈 대화가 그냥 흘러가지 않고 내 컴퓨터에 쌓여서, 다음 질문이 지난 이해 위에서 이어지게 하는 개인용 연구 노트 프로그램이다. 어떤 비유로 이해했는지, 어디까지 맞는 비유였는지, 나중에 무엇을 고쳤는지까지 다시 꺼내 볼 수 있어야 한다는 게 출발점이다.",
     tone: "#0e7fc7",
+    mascot: { src: "/projects/researchos-art.webp", alt: "그래프 우주를 탐험하는 작은 AI 에이전트 삽화", wide: true },
     sections: [
       {
         id: "what", label: "무엇을 하나", title: "대화가 노트가 되고, 노트가 다음 대화의 기억이 된다",
@@ -72,7 +73,7 @@ export const projects: Project[] = [
     hook: "초파리의 뇌를 기반으로 이상탐지를 할 수는 없을까?",
     lead: "초파리는 뇌가 아주 작은데도 처음 맡는 냄새를 \"낯설다\"고 알아챈다. 냄새 하나하나를 따로 저장하는 게 아니라, 익숙한 냄새가 지나갈 때마다 시냅스를 조금씩 눌러 두는 방식이다. 산업 결함 검사는 정반대로 정상 사진 조각을 통째로 저장해 두고 비교한다. 초파리 방식으로 바꾸면 메모리는 수백 배 줄어드는데, 결함은 여전히 찾을 수 있을까.",
     tone: "#c27300",
-    mascot: { src: "/projects/flymem-mascot.png", alt: "DINO 고글을 쓴 초파리 마스코트" },
+    mascot: { src: "/projects/flymem-mascot.webp", alt: "DINO 고글을 쓴 초파리 마스코트" },
     sections: [
       {
         id: "setup", label: "어떻게 했나", title: "같은 정상 사진을, 따로 저장할 때와 합쳐서 저장할 때",

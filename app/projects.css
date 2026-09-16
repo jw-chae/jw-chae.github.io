@@ -109,6 +109,16 @@
   display: block;
 }
 
+.pj-mascot.wide {
+  width: 380px;
+  padding-top: 0.4rem;
+}
+
+.pj-mascot.wide img {
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+
 .pj-sections {
   display: grid;
   gap: 2.4rem;
@@ -240,5 +250,6 @@
 @media (max-width: 760px) {
   .pj-head { grid-template-columns: 1fr; }
   .pj-mascot { width: 180px; padding-top: 0; }
+  .pj-mascot.wide { width: 100%; }
   .pj-closing { grid-template-columns: 1fr; }
 }
