@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import type { CSSProperties, ReactNode } from "react";
-import { Formula } from "@/components/anomaly/formula";
 import { useInView } from "@/components/anomaly/lib";
 import { projects, projectsCopy as t, type Project, type ProjectSection } from "./projects-copy";
 
@@ -21,7 +20,6 @@ function Section({ s }: { s: ProjectSection }) {
         <p className="pj-label">{s.label}</p>
         <h3>{s.title}</h3>
         {s.paras.map((p, i) => <p className="ad-body" key={i}>{p}</p>)}
-        {s.formula ? <Formula tex={s.formula} /> : null}
         {s.table ? (
           <div className="pj-table-wrap">
             <table className="pj-table">
