@@ -9,7 +9,6 @@ export function ProjectsPage({ locale }: { locale: "en" | "zh" }) {
         <div className="ad-hero-inner">
           <p className="ad-kicker">{t.kicker}</p>
           <h1 id="pj-title">{t.title}</h1>
-          <p className="ad-sub">{t.sub}</p>
         </div>
       </section>
       <div className="ad-stages pj-list">
@@ -18,7 +17,6 @@ export function ProjectsPage({ locale }: { locale: "en" | "zh" }) {
             <div className="pj-card-text">
               <h2 id={`${p.id}-title`}>{p.title}</h2>
               <p className="pj-question">{p.question}</p>
-              {p.blurb ? <p className="ad-body pj-blurb">{p.blurb}</p> : null}
             </div>
             <div className="pj-card-image">
               <Image src={p.image.src} alt={p.image.alt} width={p.image.width} height={p.image.height} sizes="(max-width: 760px) calc(100vw - 32px), 420px" />
