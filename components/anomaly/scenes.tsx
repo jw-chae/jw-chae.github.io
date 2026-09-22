@@ -46,7 +46,7 @@ export function HeroScene({ src, mask28, labels }: { src: string; mask28: string
           let tx: number, ty: number;
           if (defect) {
             const ang = -0.9 + (di++ % 7) * 0.32 + gauss(r) * 0.08;
-            const rad = 1.05 + 0.25 * r();
+            const rad = 0.86 + 0.2 * r();
             tx = Math.cos(ang) * rad; ty = Math.sin(ang) * rad;
           } else {
             // schematic embedding: brightness/chroma → position on a curved normal manifold
@@ -75,7 +75,8 @@ export function HeroScene({ src, mask28, labels }: { src: string; mask28: string
     const S = narrow ? Math.min(h * 0.42, w * 0.42) : Math.min(h - 56, w * 0.36);
     const x0 = narrow ? w * 0.06 : w * 0.08, y0 = narrow ? h * 0.06 : (h - S) / 2;
     const cx = narrow ? w * 0.55 : w * 0.7, cy = narrow ? h * 0.72 : h * 0.5;
-    const R = narrow ? Math.min(w * 0.36, h * 0.2) : Math.min(S * 0.55, w * 0.22);
+    // keep the anomalous arc (radius up to ~1.06 R) and its label inside the canvas
+    const R = Math.min(narrow ? Math.min(w * 0.36, h * 0.2) : Math.min(S * 0.55, w * 0.22), (cy - 30) / 1.08, (w - cx - 8) / 1.08);
     const cell = S / 28;
 
     const showImg = smooth(0, 1.2, tt) * (1 - smooth(11.6, 12.8, tt));
@@ -110,8 +111,21 @@ export function HeroScene({ src, mask28, labels }: { src: string; mask28: string
     if (flyP > 0.05 || cloudP > 0) label(ctx, labels[2], cx, cy + R + 28, palette.muted, 11, "center");
     if (gridP > 0.5 && flyP < 0.4) label(ctx, labels[1], x0 + S / 2, y0 - 12, palette.memory, 11, "center");
 
+    const anomalyPulse = 0.5 + 0.5 * Math.sin(t * 4);
+    const dotR = Math.max(2, cell * 0.28);
+    if (cells && gridP > 0 && flyP <= 0) {
+      // grid phase: mark the tokens that overlap the ground-truth defect on the image itself
+      ctx.save();
+      ctx.globalAlpha = gridP;
+      for (let i = 0; i < cells.length; i++) {
+        if (!cells[i].defect) continue;
+        const row = Math.floor(i / 28), col = i % 28;
+        glowDot(ctx, x0 + col * cell + cell / 2, y0 + row * cell + cell / 2, dotR + 0.6 * anomalyPulse, palette.anomaly, 4);
+      }
+      ctx.restore();
+    }
+
     if (cells && (flyP > 0 || back < 1)) {
-      const anomalyPulse = 0.5 + 0.5 * Math.sin(t * 4);
       for (let i = 0; i < cells.length; i++) {
         const c = cells[i];
         const row = Math.floor(i / 28), col = i % 28;
@@ -120,13 +134,12 @@ export function HeroScene({ src, mask28, labels }: { src: string; mask28: string
         const local = clamp((flyP - c.delay * 0.55) / 0.45, 0, 1);
         const p = easeOut(local) * (1 - back);
         if (p <= 0 && flyP <= 0) continue;
-        const mx = (sx + ex) / 2, my = Math.min(sy, ey) - 80 - (i % 9) * 6;
+        const mx = (sx + ex) / 2, my = Math.min(sy, ey) - 36 - (i % 9) * 4;
         const x = (1 - p) * (1 - p) * sx + 2 * (1 - p) * p * mx + p * p * ex;
         const y = (1 - p) * (1 - p) * sy + 2 * (1 - p) * p * my + p * p * ey;
         const size = lerp(cell * 0.9, 5, p);
-        if (c.defect && p > 0.6) {
-          const a = (p - 0.6) / 0.4;
-          glowDot(ctx, x, y, 4 + 2 * anomalyPulse * a, palette.anomaly, 5);
+        if (c.defect) {
+          glowDot(ctx, x, y, lerp(dotR, 4, p) + 2 * anomalyPulse * Math.max(p, 0.3), palette.anomaly, 5);
         } else {
           ctx.save();
           if (p > 0.85) {
@@ -149,10 +162,10 @@ export function HeroScene({ src, mask28, labels }: { src: string; mask28: string
         ctx.stroke();
         ctx.restore();
         label(ctx, labels[3], cx - R * 0.25, cy + R * 0.15 + R * 0.62 + 14, `rgba(${palette.memoryRgb},${cloudP})`, 11, "center");
-        label(ctx, labels[4], cx + R * 0.9, cy - R * 0.9, `rgba(${palette.anomalyRgb},${cloudP})`, 11, "center");
+        label(ctx, labels[4], cx + R * 0.62, cy - R * 1.02 - 14, `rgba(${palette.anomalyRgb},${cloudP})`, 11, "center");
       }
     }
-  });
+  }, { still: 9.4 });
   return <canvas ref={ref} className="ad-canvas ad-canvas-hero" aria-hidden="true" />;
 }
 

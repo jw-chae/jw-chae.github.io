@@ -66,11 +66,12 @@ export const palette: Palette = {
 /** Canvas sized to its CSS box with DPR scaling; returns ctx via callback each frame. */
 export function useCanvas(
   draw: (ctx: CanvasRenderingContext2D, w: number, h: number, t: number) => void,
-  opts?: { running?: boolean; fps?: number },
+  opts?: { running?: boolean; fps?: number; still?: number },
 ) {
   const ref = useRef<HTMLCanvasElement | null>(null);
   const drawRef = useRef(draw);
   const running = opts?.running ?? true;
+  const still = opts?.still ?? 0;
   useEffect(() => {
     drawRef.current = draw;
   });
@@ -100,9 +101,15 @@ export function useCanvas(
     });
     ro.observe(canvas);
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let last = -1e9;
     const frame = (now: number) => {
-      drawRef.current(ctx, w, h, (now - start) / 1000);
-      if (running && !reduce) raf = requestAnimationFrame(frame);
+      if (reduce) {
+        // Reduced motion: hold one representative instant, but keep repainting slowly so controls still respond.
+        if (now - last > 200) { last = now; drawRef.current(ctx, w, h, still); }
+      } else {
+        drawRef.current(ctx, w, h, (now - start) / 1000);
+      }
+      if (running) raf = requestAnimationFrame(frame);
     };
     start = performance.now();
     raf = requestAnimationFrame(frame);
@@ -110,7 +117,7 @@ export function useCanvas(
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [running]);
+  }, [running, still]);
 
   return ref;
 }
