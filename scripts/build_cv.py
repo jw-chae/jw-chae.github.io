@@ -117,13 +117,6 @@ PUBLICATIONS = [
         "url": "https://arxiv.org/abs/2607.01814",
     },
     {
-        "title": "Auditable Context-Aware HFMD Forecasting with Structured LLM Agents",
-        "authors": "Joongwon Chae, Runming Wang, Chen Xiong, Gong Yunhan, Lian Zhang, Ji Jiansong, Dongmei Yu, Peiwu Qin",
-        "venue": "Under review at IEEE BIBM; arXiv:2511.23276 [cs.LG, cs.MA], 2025",
-        "venue_zh": "IEEE BIBM 审稿中；arXiv:2511.23276 [cs.LG, cs.MA]，2025",
-        "url": "https://arxiv.org/abs/2511.23276",
-    },
-    {
         "title": "ViGen: Video-based Generation with GRPO for Dynamic Image Editing",
         "authors": "Lihui Luo*, Joongwon Chae*",
         "venue": "Under review at AAAI, 2026",

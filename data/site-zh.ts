@@ -114,10 +114,6 @@ const publicationTranslations: Array<Pick<Publication, "venue" | "contribution">
     contribution: "以前景与背景对比图生成自动 SAM2 提示，并公开 2,155 对图像与掩码；此前版本在 ICASSP 2026 与 MICCAI 2026 的平均审稿评分分别为 24/28 和 4.0/5.0。",
   },
   {
-    venue: "IEEE BIBM 审稿中",
-    contribution: "面向可审计、情境感知 HFMD 预测的结构化大语言模型智能体。",
-  },
-  {
     venue: "2025 IEEE 生物信息学与生物医学国际会议（BIBM），第 3894-3899 页",
     contribution: "面向中医临床决策支持的多模态 RAG 与评估框架。",
     authorNote: "* 共同第一作者。",

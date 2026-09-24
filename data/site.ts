@@ -221,15 +221,6 @@ export const publications: Publication[] = [
     dataset: "https://huggingface.co/datasets/Mark-CHAE/SM-Tongue-Public-Original512",
   },
   {
-    title: "Auditable Context-Aware HFMD Forecasting with Structured LLM Agents",
-    year: 2025,
-    authors: "Joongwon Chae; Runming Wang; Chen Xiong; Gong Yunhan; Lian Zhang; Ji Jiansong; Dongmei Yu; Peiwu Qin",
-    venue: "Under review at IEEE BIBM",
-    area: "Medical AI",
-    contribution: "Structured LLM agents for auditable, context-aware HFMD forecasting.",
-    arxiv: "2511.23276",
-  },
-  {
     title: "ViTCM-LLM: A Multimodal RAG Framework for Advanced TCM Clinical Decision Support",
     year: 2025,
     authors:
