@@ -458,7 +458,7 @@ def build_english(path: Path) -> None:
     bullet(story, "<b>Systems:</b> Docker, DeepSpeed, multi-GPU training, RAG pipelines, industrial machine-vision cameras", styles)
 
     section(story, "LANGUAGES", styles)
-    story.append(Paragraph("Korean (native) · English (IELTS 6.5) · Chinese (HSK 6) · Japanese (JLPT N2)", styles["body"]))
+    story.append(Paragraph("Korean (native) · English (IELTS 7.0) · Chinese (HSK 6) · Japanese (JLPT N2)", styles["body"]))
 
     doc.build(
         story,
@@ -571,7 +571,7 @@ def build_chinese(path: Path) -> None:
     bullet(story, "<b>系统与工程：</b>Docker、DeepSpeed、多 GPU 训练、RAG 流程、工业机器视觉相机", styles)
 
     section(story, "语言能力", styles)
-    story.append(Paragraph("韩语（母语） · 英语（IELTS 6.5） · 中文（HSK 6） · 日语（JLPT N2）", styles["body"]))
+    story.append(Paragraph("韩语（母语） · 英语（IELTS 7.0） · 中文（HSK 6） · 日语（JLPT N2）", styles["body"]))
 
     doc.build(
         story,

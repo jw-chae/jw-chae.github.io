@@ -287,4 +287,4 @@ export const honors = [
   "Shenzhen Universiade International Scholarship Foundation Scholarship, 2026",
 ];
 
-export const languages = "Korean (native); English (IELTS 6.5); Chinese (HSK 6); Japanese (JLPT N2).";
+export const languages = "Korean (native); English (IELTS 7.0); Chinese (HSK 6); Japanese (JLPT N2).";

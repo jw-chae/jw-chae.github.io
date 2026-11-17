@@ -166,4 +166,4 @@ export const honorsZh = [
   "深圳大运留学基金会奖学金，2026",
 ];
 
-export const languagesZh = "韩语（母语）；英语（IELTS 6.5）；中文（HSK 6）；日语（JLPT N2）。";
+export const languagesZh = "韩语（母语）；英语（IELTS 7.0）；中文（HSK 6）；日语（JLPT N2）。";
