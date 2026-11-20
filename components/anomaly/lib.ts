@@ -97,7 +97,7 @@ export function useCanvas(
     resize();
     const ro = new ResizeObserver(() => {
       resize();
-      if (!running) drawRef.current(ctx, w, h, (performance.now() - start) / 1000);
+      if (!running) drawRef.current(ctx, w, h, Math.max(0, (performance.now() - start) / 1000));
     });
     ro.observe(canvas);
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -107,7 +107,7 @@ export function useCanvas(
         // Reduced motion: hold one representative instant, but keep repainting slowly so controls still respond.
         if (now - last > 200) { last = now; drawRef.current(ctx, w, h, still); }
       } else {
-        drawRef.current(ctx, w, h, (now - start) / 1000);
+        drawRef.current(ctx, w, h, Math.max(0, (now - start) / 1000));
       }
       if (running) raf = requestAnimationFrame(frame);
     };
