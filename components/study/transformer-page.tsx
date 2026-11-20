@@ -15,5 +15,5 @@ const scenes: Record<string, () => ReactNode> = {
 };
 
 export function TransformerPage() {
-  return <ChapterPage slug="transformer" title={t.title} sub={t.sub} sections={t.sections} scenes={scenes} related={t.related} />;
+  return <ChapterPage slug="transformer" title={t.title} sub={t.sub} prologue={t.prologue} sections={t.sections} scenes={scenes} related={t.related} />;
 }

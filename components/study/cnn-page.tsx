@@ -16,5 +16,5 @@ const scenes: Record<string, () => ReactNode> = {
 };
 
 export function CnnPage() {
-  return <ChapterPage slug="cnn" title={t.title} sub={t.sub} sections={t.sections} scenes={scenes} related={t.related} />;
+  return <ChapterPage slug="cnn" title={t.title} sub={t.sub} prologue={t.prologue} sections={t.sections} scenes={scenes} />;
 }

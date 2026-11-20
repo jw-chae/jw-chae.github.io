@@ -21,6 +21,7 @@ export function ResNet50Page() {
       slug="resnet50"
       title={t.title}
       sub={t.sub}
+      prologue={t.prologue}
       sections={t.sections}
       scenes={scenes}
       related={t.related}

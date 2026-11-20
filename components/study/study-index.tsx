@@ -15,7 +15,7 @@ export function StudyIndex() {
         <ol className="st-chapters">
           {chapters.map((c) => (
             <li key={c.slug}>
-              <span className="st-ch-num">{c.num}</span>
+              <span className="st-ch-num">{c.num}<span className="st-era">{c.era}</span></span>
               <div>
                 <h2><Link href={c.href}>{c.title}</Link></h2>
                 <p>{c.desc}</p>

@@ -4,11 +4,20 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Formula } from "@/components/anomaly/formula";
 import { useInView } from "@/components/anomaly/lib";
-import { chapterBySlug, chapterLabels as L, neighbors, type StudySection } from "./chapters";
+import { chapterBySlug, chapterLabels as L, neighbors, type Prologue, type StudySection } from "./chapters";
 
 export function Reveal({ children, className = "" }: { children: ReactNode; className?: string }) {
-  const { ref, inView } = useInView<HTMLDivElement>(0.18);
+  const { ref, inView } = useInView<HTMLDivElement>(0.12);
   return <div ref={ref} className={`ad-reveal ${inView ? "in" : ""} ${className}`}>{children}</div>;
+}
+
+function StoryPart({ n, name, paragraphs }: { n: number; name: string; paragraphs: string[] }) {
+  return (
+    <div className="st-part">
+      <h3><span>{n}</span>{name}</h3>
+      {paragraphs.map((p, i) => <p className="ad-body" key={i}>{p}</p>)}
+    </div>
+  );
 }
 
 function Section({ s, index, children }: { s: StudySection; index: number; children: ReactNode }) {
@@ -17,10 +26,14 @@ function Section({ s, index, children }: { s: StudySection; index: number; child
       <Reveal className="ad-stage-copy">
         <p className="ad-num"><span>{s.num}</span> {s.kicker}</p>
         <h2 id={`${s.id}-title`}>{s.question}</h2>
-        {s.steps.map((p, i) => <p className="ad-body" key={i}>{p}</p>)}
+        <StoryPart n={1} name={L.origin} paragraphs={s.story.origin} />
+        <StoryPart n={2} name={L.need} paragraphs={s.story.need} />
+        <p className="st-analogy"><span>{L.analogy}</span>{s.analogy}</p>
+        <StoryPart n={3} name={L.how} paragraphs={s.story.how} />
         <Formula tex={s.formula} />
         <p className="st-takeaway"><span>{L.takeaway}</span>{s.takeaway}</p>
         <p className="ad-note"><b>{L.see}.</b> {s.see}</p>
+        <p className="st-bridge"><span>{L.bridge}</span>{s.bridge}</p>
       </Reveal>
       <Reveal className="ad-stage-visual st-sticky">{children}</Reveal>
     </section>
@@ -29,11 +42,12 @@ function Section({ s, index, children }: { s: StudySection; index: number; child
 
 export type Related = { title: string; text: string; link: string; linkText: string };
 
-/** Shared chapter layout: hero with a question list, question → figure sections, related note, prev/next. */
-export function ChapterPage({ slug, title, sub, sections, scenes, heroExtra, related }: {
+/** Shared chapter layout: hero, the story so far, a question list, story sections with figures, prev/next. */
+export function ChapterPage({ slug, title, sub, prologue, sections, scenes, heroExtra, related }: {
   slug: string;
   title: string;
   sub: string;
+  prologue: Prologue;
   sections: StudySection[];
   scenes: Record<string, () => ReactNode>;
   heroExtra?: ReactNode;
@@ -45,10 +59,24 @@ export function ChapterPage({ slug, title, sub, sections, scenes, heroExtra, rel
     <main id="main" className="ad-page st-page" lang="ko">
       <section className="st-hero" aria-labelledby="st-title">
         <div className="ad-hero-inner">
-          <p className="ad-kicker"><Link href="/study/">Study</Link> · {chapter.num}</p>
+          <p className="ad-kicker"><Link href="/study/">Study</Link> · {chapter.num} · {chapter.era}</p>
           <h1 id="st-title">{title}</h1>
           <p className="ad-sub">{sub}</p>
           {heroExtra}
+        </div>
+      </section>
+
+      <section className="st-prologue" aria-labelledby="st-prologue-title">
+        <div className="st-prologue-text">
+          <h2 id="st-prologue-title">{prologue.title}</h2>
+          {prologue.paragraphs.map((p, i) => <p className="ad-body" key={i}>{p}</p>)}
+        </div>
+        <div className="st-prologue-side">
+          <ol className="st-timeline">
+            {prologue.timeline.map((t) => (
+              <li key={t.year + t.text}><b>{t.year}</b><span>{t.text}</span></li>
+            ))}
+          </ol>
           <nav className="st-toc" aria-label={L.toc}>
             <p>{L.toc}</p>
             <ol>
