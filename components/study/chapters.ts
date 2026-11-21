@@ -73,7 +73,12 @@ export const chapters: Chapter[] = [
     href: "/study/diffusion/", tags: ["확률 기초", "DDPM", "guidance"], figures: 7,
   },
   {
-    slug: "anomaly", num: "08", era: "지금", title: "Memory-bank anomaly detection",
+    slug: "lora", num: "08", era: "2021 · 2023", title: "LoRA는 거대 모델을 어떻게 싸게 고쳐 쓰나",
+    desc: "모델이 너무 커져서 내 일에 맞게 고쳐 쓸 수가 없게 됐다. 모델은 한 글자도 고치지 않고, 바뀌어야 할 양만 작은 표 두 장으로 적어 덧붙인다. 행렬과 랭크의 기초부터 시작해 합치기와 QLoRA까지.",
+    href: "/study/lora/", tags: ["행렬 기초", "low-rank", "QLoRA"], figures: 8,
+  },
+  {
+    slug: "anomaly", num: "09", era: "지금", title: "Memory-bank anomaly detection",
     desc: "위에서 만든 토큰 위에서 정상 증거를 어떻게 모으고, 남기고, 믿는가. 내 연구 페이지로 이어진다.",
     href: "/anomaly/", tags: ["DINOv2", "memory bank"], figures: 0, external: true,
   },

@@ -12,7 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { en: "/projects/", zh: "/zh/projects/" },
   ];
 
-  const koOnly = ["/study/", "/study/cnn/", "/study/resnet50/", "/study/unet/", "/study/transformer/", "/study/vit/", "/study/llm/", "/study/diffusion/"].map((url) => ({
+  const koOnly = ["/study/", "/study/cnn/", "/study/resnet50/", "/study/unet/", "/study/transformer/", "/study/vit/", "/study/llm/", "/study/diffusion/", "/study/lora/"].map((url) => ({
     url: `${base}${url}`,
     lastModified: new Date("2026-11-20"),
     changeFrequency: "monthly" as const,
