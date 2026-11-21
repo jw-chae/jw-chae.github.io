@@ -13,7 +13,7 @@ A bilingual, statically exported Next.js research portfolio built from the suppl
 - `/zh/publications`: Chinese publication archive
 - `/zh/cv`: Chinese CV preview and PDF download
 - `/zh/anomaly`: Chinese version of the anomaly detection walkthrough
-- `/study`: Korean-only visual study notes with a chapter index (CNN, ResNet-50, U-Net, Transformer, ViT, LLM, Diffusion, LoRA)
+- `/study`: Korean-only visual study notes with a chapter index (CNN, ResNet-50, U-Net, Transformer, ViT, LLM, Diffusion, modern image and video generators, LoRA)
 
 Each page includes a language switch that preserves the current section.
 

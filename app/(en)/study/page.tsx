@@ -5,7 +5,7 @@ import "../../study.css";
 
 export const metadata: Metadata = {
   title: "Study",
-  description: "Korean visual study notes with interactive figures: CNN, ResNet-50, U-Net, the Transformer, ViT, LLMs, diffusion models and LoRA, each told from the problem it solved.",
+  description: "Korean visual study notes with interactive figures: CNN, ResNet-50, U-Net, the Transformer, ViT, LLMs, diffusion models, modern image and video generators and LoRA, each told from the problem it solved.",
   alternates: { canonical: "/study/" },
 };
 
