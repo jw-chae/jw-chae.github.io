@@ -58,7 +58,12 @@ export const chapters: Chapter[] = [
     href: "/study/transformer/", tags: ["patch token", "self-attention", "ViT"], figures: 6,
   },
   {
-    slug: "anomaly", num: "05", era: "지금", title: "Memory-bank anomaly detection",
+    slug: "diffusion", num: "05", era: "2015 · 2020", title: "Diffusion 모델은 어떻게 그림을 만드나",
+    desc: "그림을 망가뜨리기는 쉽고 되살리기는 어렵다. 잡음을 조금씩 섞는 길을 정해 두고 그 길을 한 걸음씩 거꾸로 걷는 법을 배운다. 분포, 가우시안, 베이즈 규칙 같은 확률 기초부터 시작한다.",
+    href: "/study/diffusion/", tags: ["확률 기초", "DDPM", "guidance"], figures: 7,
+  },
+  {
+    slug: "anomaly", num: "06", era: "지금", title: "Memory-bank anomaly detection",
     desc: "위에서 만든 토큰 위에서 정상 증거를 어떻게 모으고, 남기고, 믿는가. 내 연구 페이지로 이어진다.",
     href: "/anomaly/", tags: ["DINOv2", "memory bank"], figures: 0, external: true,
   },
