@@ -53,17 +53,27 @@ export const chapters: Chapter[] = [
     href: "/study/unet/", tags: ["segmentation", "encoder-decoder", "skip connection"], figures: 6,
   },
   {
-    slug: "transformer", num: "04", era: "2017 · 2020", title: "Transformer는 어떻게 작동하는가",
-    desc: "한 단어씩 차례로 읽던 기계는 앞 내용을 잊었고 느렸다. 차례를 버리고 모든 토큰이 서로를 한 번에 보게 한 구조가, 사진을 조각 내면서 이미지까지 넘어왔다.",
-    href: "/study/transformer/", tags: ["patch token", "self-attention", "ViT"], figures: 6,
+    slug: "transformer", num: "04", era: "2017", title: "Transformer는 어떻게 작동하는가",
+    desc: "한 단어씩 차례로 읽던 기계는 앞 내용을 잊었고 느렸다. 차례를 버리고 모든 토큰이 서로를 한 번에 보게 한 구조를, 단어를 숫자로 바꾸는 데서부터 마지막에 단어가 나오는 곳까지 부품 하나씩 조립한다.",
+    href: "/study/transformer/", tags: ["self-attention", "positional encoding", "encoder-decoder"], figures: 10,
   },
   {
-    slug: "diffusion", num: "05", era: "2015 · 2020", title: "Diffusion 모델은 어떻게 그림을 만드나",
+    slug: "vit", num: "05", era: "2020 · 2023", title: "ViT는 사진을 어떻게 읽나",
+    desc: "문장을 위해 만든 구조에 사진을 잘라 넣었다. 조각 토큰, 요약 토큰, 평면에서의 자리, 라벨 없이 학습하는 DINO, 그리고 그 토큰으로 결함을 찾는 원리까지.",
+    href: "/study/vit/", tags: ["patch token", "DINOv2", "memory bank"], figures: 6,
+  },
+  {
+    slug: "llm", num: "06", era: "2018 · 2022", title: "LLM은 어떻게 글을 쓰나",
+    desc: "다음에 올 토큰의 확률을 맞히는 놀이가 전부다. 토큰을 쪼개는 법, 번역기의 절반만 떼어 낸 구조, 확률에서 고르는 법, 그럴듯한 거짓말이 나오는 이유, 그리고 왜 거대해야 하는지.",
+    href: "/study/llm/", tags: ["next token", "BPE", "sampling"], figures: 6,
+  },
+  {
+    slug: "diffusion", num: "07", era: "2015 · 2020", title: "Diffusion 모델은 어떻게 그림을 만드나",
     desc: "그림을 망가뜨리기는 쉽고 되살리기는 어렵다. 잡음을 조금씩 섞는 길을 정해 두고 그 길을 한 걸음씩 거꾸로 걷는 법을 배운다. 분포, 가우시안, 베이즈 규칙 같은 확률 기초부터 시작한다.",
     href: "/study/diffusion/", tags: ["확률 기초", "DDPM", "guidance"], figures: 7,
   },
   {
-    slug: "anomaly", num: "06", era: "지금", title: "Memory-bank anomaly detection",
+    slug: "anomaly", num: "08", era: "지금", title: "Memory-bank anomaly detection",
     desc: "위에서 만든 토큰 위에서 정상 증거를 어떻게 모으고, 남기고, 믿는가. 내 연구 페이지로 이어진다.",
     href: "/anomaly/", tags: ["DINOv2", "memory bank"], figures: 0, external: true,
   },

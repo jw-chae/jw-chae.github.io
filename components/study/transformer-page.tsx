@@ -2,19 +2,24 @@
 
 import type { ReactNode } from "react";
 import { ChapterPage } from "./chapter-page";
-import { tfDoubts } from "./doubts";
 import { tfCopy as t } from "./tf-copy";
-import { AttentionScene, BlockScene, CompareScene, HeadsScene, OrderScene, PatchScene } from "./tf-scenes";
+import { tfDoubts } from "./tf-doubts";
+import { AttentionScene, BlockScene, HeadsScene, OrderScene } from "./tf-scenes";
+import { EmbedScene, EncDecScene, MaskScene, OutputScene, PositionScene, RnnFadeScene } from "./tf-scenes2";
 
 const scenes: Record<string, () => ReactNode> = {
-  patch: () => <PatchScene />,
+  rnn: () => <RnnFadeScene />,
+  embed: () => <EmbedScene />,
   attention: () => <AttentionScene />,
   heads: () => <HeadsScene />,
   order: () => <OrderScene />,
+  posenc: () => <PositionScene />,
   block: () => <BlockScene />,
-  compare: () => <CompareScene />,
+  mask: () => <MaskScene />,
+  encdec: () => <EncDecScene />,
+  output: () => <OutputScene />,
 };
 
 export function TransformerPage() {
-  return <ChapterPage slug="transformer" title={t.title} sub={t.sub} prologue={t.prologue} sections={t.sections} scenes={scenes} doubts={tfDoubts} related={t.related} />;
+  return <ChapterPage slug="transformer" title={t.title} sub={t.sub} prologue={t.prologue} sections={t.sections} scenes={scenes} doubts={tfDoubts} />;
 }

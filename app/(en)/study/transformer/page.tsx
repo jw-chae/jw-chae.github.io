@@ -5,7 +5,7 @@ import "../../../study.css";
 
 export const metadata: Metadata = {
   title: "Transformer는 어떻게 작동하는가",
-  description: "Transformer and ViT study notes with interactive figures: patch tokens, one attention step, multiple heads, positional information, one block, and how it differs from a CNN.",
+  description: "Transformer study notes with interactive figures: why RNNs fell short, embeddings, one attention step, multiple heads, positional encoding, one block, the causal mask, encoder and decoder, and the output layer.",
   alternates: { canonical: "/study/transformer/" },
 };
 

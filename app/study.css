@@ -581,3 +581,22 @@
   line-height: 1.75;
   word-break: keep-all;
 }
+
+/* the tiny corpus behind the language-model figures */
+.st-corpus {
+  flex-basis: 100%;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.st-corpus summary {
+  cursor: pointer;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.74rem;
+}
+
+.st-corpus p {
+  margin: 0.5rem 0 0;
+  line-height: 1.7;
+  word-break: keep-all;
+}
