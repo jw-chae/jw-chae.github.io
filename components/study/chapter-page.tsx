@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { Formula } from "@/components/anomaly/formula";
 import { useInView } from "@/components/anomaly/lib";
 import { chapterBySlug, chapterLabels as L, neighbors, type Prologue, type StudySection } from "./chapters";
+import type { Doubt, Doubts } from "./doubts";
 
 export function Reveal({ children, className = "" }: { children: ReactNode; className?: string }) {
   const { ref, inView } = useInView<HTMLDivElement>(0.12);
@@ -20,7 +21,7 @@ function StoryPart({ n, name, paragraphs }: { n: number; name: string; paragraph
   );
 }
 
-function Section({ s, index, children }: { s: StudySection; index: number; children: ReactNode }) {
+function Section({ s, index, doubts, children }: { s: StudySection; index: number; doubts: Doubt[]; children: ReactNode }) {
   return (
     <section className={`ad-stage st-section ${index % 2 === 1 ? "flip" : ""}`} id={s.id} aria-labelledby={`${s.id}-title`}>
       <Reveal className="ad-stage-copy">
@@ -33,6 +34,17 @@ function Section({ s, index, children }: { s: StudySection; index: number; child
         <Formula tex={s.formula} />
         <p className="st-takeaway"><span>{L.takeaway}</span>{s.takeaway}</p>
         <p className="ad-note"><b>{L.see}.</b> {s.see}</p>
+        {doubts.length > 0 ? (
+          <div className="st-doubts">
+            <h3>{L.doubts}</h3>
+            {doubts.map((d) => (
+              <div className="st-doubt" key={d.q}>
+                <p className="st-doubt-q"><span>Q</span>{d.q}</p>
+                {d.a.map((p, i) => <p className="st-doubt-a" key={i}>{p}</p>)}
+              </div>
+            ))}
+          </div>
+        ) : null}
         <p className="st-bridge"><span>{L.bridge}</span>{s.bridge}</p>
       </Reveal>
       <Reveal className="ad-stage-visual st-sticky">{children}</Reveal>
@@ -43,13 +55,14 @@ function Section({ s, index, children }: { s: StudySection; index: number; child
 export type Related = { title: string; text: string; link: string; linkText: string };
 
 /** Shared chapter layout: hero, the story so far, a question list, story sections with figures, prev/next. */
-export function ChapterPage({ slug, title, sub, prologue, sections, scenes, heroExtra, related }: {
+export function ChapterPage({ slug, title, sub, prologue, sections, scenes, doubts, heroExtra, related }: {
   slug: string;
   title: string;
   sub: string;
   prologue: Prologue;
   sections: StudySection[];
   scenes: Record<string, () => ReactNode>;
+  doubts: Doubts;
   heroExtra?: ReactNode;
   related?: Related;
 }) {
@@ -90,7 +103,7 @@ export function ChapterPage({ slug, title, sub, prologue, sections, scenes, hero
 
       <div className="ad-stages">
         {sections.map((s, i) => (
-          <Section s={s} index={i} key={s.id}>{scenes[s.id]?.()}</Section>
+          <Section s={s} index={i} doubts={doubts[s.id] ?? []} key={s.id}>{scenes[s.id]?.()}</Section>
         ))}
       </div>
 

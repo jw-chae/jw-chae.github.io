@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { ChapterPage } from "./chapter-page";
+import { resnetDoubts } from "./doubts";
 import { resnetCopy as t } from "./resnet50-copy";
 import { BatchNormScene, BlockOrderScene, BottleneckScene, ConvBasicsScene, OneByOneScene, ShapeFlowScene, SkipScene } from "./resnet50-scenes";
 
@@ -24,6 +25,7 @@ export function ResNet50Page() {
       prologue={t.prologue}
       sections={t.sections}
       scenes={scenes}
+      doubts={resnetDoubts}
       related={t.related}
       heroExtra={(
         <>

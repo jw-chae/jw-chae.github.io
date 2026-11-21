@@ -525,3 +525,59 @@
 @media (max-width: 700px) {
   .st-prologue { width: min(100% - 32px, 1120px); }
 }
+
+/* ---------- the doubts a reader raises, answered in place ---------- */
+
+.st-doubts {
+  margin: 1.6rem 0 0;
+  padding: 1.1rem 1.2rem 0.4rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--violet);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.st-doubts h3 {
+  margin: 0 0 0.9rem;
+  color: var(--violet);
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.st-doubt {
+  padding-bottom: 0.9rem;
+}
+
+.st-doubt + .st-doubt {
+  padding-top: 1rem;
+  border-top: 1px dashed var(--line);
+}
+
+.st-doubt-q {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  margin: 0 0 0.55rem;
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
+.st-doubt-q span {
+  flex: 0 0 auto;
+  color: var(--violet);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+}
+
+.st-doubt-a {
+  margin: 0 0 0.6rem;
+  padding-left: 1.45rem;
+  color: var(--body);
+  font-size: 0.97rem;
+  line-height: 1.75;
+  word-break: keep-all;
+}
