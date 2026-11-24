@@ -27,11 +27,19 @@ function Section({ s, index, doubts, children }: { s: StudySection; index: numbe
       <Reveal className="ad-stage-copy">
         <p className="ad-num"><span>{s.num}</span> {s.kicker}</p>
         <h2 id={`${s.id}-title`}>{s.question}</h2>
-        <StoryPart n={1} name={L.origin} paragraphs={s.story.origin} />
-        <StoryPart n={2} name={L.need} paragraphs={s.story.need} />
-        <p className="st-analogy"><span>{L.analogy}</span>{s.analogy}</p>
-        <StoryPart n={3} name={L.how} paragraphs={s.story.how} />
-        <Formula tex={s.formula} />
+        {s.lead?.map((p, i) => <p className="ad-body" key={i}>{p}</p>)}
+        {s.walk?.map((st, i) => (
+          <div className="st-part st-step" key={st.q}>
+            <h3><span>{i + 1}</span>{st.q}</h3>
+            {st.a.map((p, j) => <p className="ad-body" key={j}>{p}</p>)}
+          </div>
+        ))}
+        {s.story ? <StoryPart n={1} name={L.origin} paragraphs={s.story.origin} /> : null}
+        {s.story ? <StoryPart n={2} name={L.need} paragraphs={s.story.need} /> : null}
+        {s.analogy ? <p className="st-analogy"><span>{L.analogy}</span>{s.analogy}</p> : null}
+        {s.story ? <StoryPart n={3} name={L.how} paragraphs={s.story.how} /> : null}
+        {s.formula ? <Formula tex={s.formula} /> : null}
+        {s.symbols ? <ul className="st-symbols">{s.symbols.map((t) => <li key={t}>{t}</li>)}</ul> : null}
         <p className="st-takeaway"><span>{L.takeaway}</span>{s.takeaway}</p>
         <p className="ad-note"><b>{L.see}.</b> {s.see}</p>
         {doubts.length > 0 ? (

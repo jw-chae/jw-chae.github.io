@@ -600,3 +600,100 @@
   line-height: 1.7;
   word-break: keep-all;
 }
+
+/* ---------- question-led steps (walk form) ---------- */
+
+.st-step h3 {
+  align-items: flex-start;
+  margin-top: 1.7rem;
+  color: var(--ink);
+  font-size: 1.02rem;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+
+.st-step h3 span {
+  flex: none;
+  margin-top: 0.15rem;
+}
+
+.st-symbols {
+  margin: 0.2rem 0 1rem;
+  padding-left: 1.1rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.7;
+}
+
+/* ---------- a scene built from HTML instead of a canvas ---------- */
+
+.st-dom {
+  display: grid;
+  align-content: center;
+  gap: 1rem;
+  min-height: 440px;
+  padding: 1.4rem 1.1rem;
+}
+
+.st-dom-label {
+  margin: 0 0 0.4rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.74rem;
+}
+
+.st-dom-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.st-word {
+  position: relative;
+  min-height: 56px;
+  padding: 0.5rem 0.4rem;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--ink);
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+button.st-word { cursor: pointer; }
+button.st-word:hover { background: var(--hover); }
+button.st-word:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.st-word.eye { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(42, 111, 214, 0.15); }
+.st-word.hand { border-color: var(--amber); border-style: dashed; background: rgba(255, 181, 71, 0.1); }
+.st-word.done { border-color: var(--amber); }
+.st-word.blank { color: var(--muted); border-style: dashed; }
+
+.st-word small {
+  position: absolute;
+  top: -0.62rem;
+  left: 50%;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.st-word.eye small { color: var(--cyan); }
+.st-word.hand small { color: var(--amber); }
+
+.st-dom-say {
+  min-height: 4.6em;
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+@media (max-width: 900px) {
+  .st-dom { min-height: 0; }
+}

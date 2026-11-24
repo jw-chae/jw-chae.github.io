@@ -257,12 +257,16 @@ export function MaskScene() {
 /* 09 · Encoder, decoder, and cross-attention across a word-order gap   */
 /* ------------------------------------------------------------------ */
 
-const SRC_V: [number, number][] = [[1, 0], [0, 1], [-0.707, -0.707]];      // 나는, 고양이를, 좋아한다
-const TGT_Q: [number, number][] = [[1, 0], [-0.707, -0.707], [0, 1]];      // I, like, cats
+const SRC_V: [number, number][] = [[1, 0], [-0.707, -0.707], [0, 1]];      // I, love, cats
+const TGT_Q: [number, number][] = [[1, 0], [0, 1], [-0.707, -0.707]];      // 나는, 고양이를, 사랑한다
 const CROSS = TGT_Q.map((q) => softmax(SRC_V.map((k) => 4 * dot(q, k))));
+const TGT_E: [number, number][] = [[0.4, 0.4], ...TGT_Q];                  // <start>, then the written words
+/** Masked self-attention of the slot being written: only the tokens already on the line can be read. */
+const selfWeights = (s: number) => softmax(TGT_E.slice(0, s).map((e) => 2 * dot(TGT_E[s - 1], e)));
 
 export function EncDecScene() {
   const [step, setStep] = useState<number | null>(null);
+  const [own, setOwn] = useState(false);
 
   const ref = useCanvas((ctx, w, h, tt) => {
     ctx.clearRect(0, 0, w, h);
@@ -288,13 +292,22 @@ export function EncDecScene() {
       label(ctx, visible ? t : "?", tx(j), yt + bh / 2, visible ? palette.ink : palette.dotOff, 13, "center");
     });
 
-    if (s >= 1) {
+    if (s >= 1 && own) {
+      selfWeights(s).forEach((wt, j) => {
+        ctx.save(); ctx.strokeStyle = `rgba(${palette.accentRgb},${0.25 + 0.75 * wt})`; ctx.lineWidth = 1 + 7 * wt;
+        ctx.beginPath(); ctx.moveTo(tx(s), yt - 2); ctx.quadraticCurveTo((tx(s) + tx(j)) / 2, yt - 54, tx(j), yt - 2); ctx.stroke(); ctx.restore();
+        label(ctx, `${(wt * 100).toFixed(0)}%`, tx(j), yt - 12, palette.accent, 11, "center");
+      });
+      label(ctx, U.encdec.masked, w / 2, (yt + ys + bh) / 2 - 18, palette.muted, 11, "center");
+    } else if (s >= 1) {
       const wts = CROSS[s - 1];
       wts.forEach((wt, i) => {
         if (wt < 0.01) return;
         line(ctx, tx(s), yt - 2, sx(i), ys + bh + 2, `rgba(${palette.accentRgb},${0.25 + 0.75 * wt})`, 1 + 9 * wt);
         if (wt > 0.1) label(ctx, `${(wt * 100).toFixed(0)}%`, (tx(s) + sx(i)) / 2 + 12, (yt + ys + bh) / 2, palette.accent, 11);
       });
+    }
+    if (s >= 1) {
       label(ctx, `${U.encdec.writing}: ${U.encdec.tgt[s - 1]}`, w / 2, h - 30, palette.ink, 13, "center");
     } else {
       label(ctx, U.encdec.start, w / 2, h - 30, palette.muted, 13, "center");
@@ -309,6 +322,11 @@ export function EncDecScene() {
           <span>{U.encdec.step}</span>
           {[0, 1, 2, 3].map((i) => <button key={i} type="button" className={step === i ? "on" : ""} onClick={() => setStep(i)}>{i}</button>)}
           <button type="button" className={step === null ? "on" : ""} onClick={() => setStep(null)}>{U.encdec.auto}</button>
+        </div>
+        <div className="ad-ctl ad-seg" role="group" aria-label={U.encdec.reads}>
+          <span>{U.encdec.reads}</span>
+          <button type="button" className={!own ? "on" : ""} onClick={() => setOwn(false)}>{U.encdec.cross}</button>
+          <button type="button" className={own ? "on" : ""} onClick={() => setOwn(true)}>{U.encdec.self}</button>
         </div>
       </div>
     </div>

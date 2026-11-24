@@ -5,17 +5,21 @@ export type StudySection = {
   id: string;
   num: string;
   kicker: string;
-  question: string;      // 이 절이 답하는 질문
-  story: {
-    origin: string[];    // 왜 나왔나: 그 전에는 어떻게 했고 무엇이 막혔나
-    need: string[];      // 왜 필요한가: 무엇이 있어야 풀리나
-    how: string[];       // 무엇을 어떻게 했나
+  question: string;
+  story?: {
+    origin: string[];
+    need: string[];
+    how: string[];
   };
-  analogy: string;       // 일상의 비유 한 단락
-  formula: string;       // LaTeX, 줄바꿈은 \n
-  takeaway: string;      // 한 줄 결론
-  see: string;           // 그림에서 직접 확인할 것
-  bridge: string;        // 다음 절로 넘어가는 질문
+  lead?: string[];                          // walk form: where the reader stands before the first step
+  walk?: { q: string; a: string[] }[];      // walk form: each answer raises the next question
+  analogy?: string;
+  formula?: string;      // LaTeX, newline = 
+
+  symbols?: string[];    // each symbol of the formula tied back to the scene
+  takeaway: string;
+  see: string;
+  bridge: string;
 };
 
 export type Prologue = {
@@ -55,12 +59,12 @@ export const chapters: Chapter[] = [
   {
     slug: "transformer", num: "04", era: "2017", title: "Transformer는 어떻게 작동하는가",
     desc: "한 단어씩 차례로 읽던 기계는 앞 내용을 잊었고 느렸다. 차례를 버리고 모든 토큰이 서로를 한 번에 보게 한 구조를, 단어를 숫자로 바꾸는 데서부터 마지막에 단어가 나오는 곳까지 부품 하나씩 조립한다.",
-    href: "/study/transformer/", tags: ["self-attention", "positional encoding", "encoder-decoder"], figures: 10,
+    href: "/study/transformer/", tags: ["self-attention", "positional encoding", "encoder-decoder"], figures: 14,
   },
   {
     slug: "vit", num: "05", era: "2020 · 2023", title: "ViT는 사진을 어떻게 읽나",
     desc: "문장을 위해 만든 구조에 사진을 잘라 넣었다. 조각 토큰, 요약 토큰, 평면에서의 자리, 라벨 없이 학습하는 DINO, 그리고 그 토큰으로 결함을 찾는 원리까지.",
-    href: "/study/vit/", tags: ["patch token", "DINOv2", "memory bank"], figures: 6,
+    href: "/study/vit/", tags: ["patch token", "DINOv2", "memory bank"], figures: 8,
   },
   {
     slug: "llm", num: "06", era: "2018 · 2022", title: "LLM은 어떻게 글을 쓰나",

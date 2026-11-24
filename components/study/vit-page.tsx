@@ -5,10 +5,14 @@ import { ChapterPage } from "./chapter-page";
 import { CompareScene, PatchScene } from "./tf-scenes";
 import { vitCopy as t } from "./vit-copy";
 import { vitDoubts } from "./vit-doubts";
+import { vitWalkDoubts } from "./vit-walk-copy";
+import { PatchLookScene, PatchSwapScene } from "./vit-walk-scenes";
 import { ClsScene, DinoScene, MemoryScene, Pos2DScene } from "./vit-scenes";
 
 const scenes: Record<string, () => ReactNode> = {
   patch: () => <PatchScene />,
+  look: () => <PatchLookScene />,
+  swap: () => <PatchSwapScene />,
   cls: () => <ClsScene />,
   pos2d: () => <Pos2DScene />,
   compare: () => <CompareScene />,
@@ -17,5 +21,5 @@ const scenes: Record<string, () => ReactNode> = {
 };
 
 export function VitPage() {
-  return <ChapterPage slug="vit" title={t.title} sub={t.sub} prologue={t.prologue} sections={t.sections} scenes={scenes} doubts={vitDoubts} related={t.related} />;
+  return <ChapterPage slug="vit" title={t.title} sub={t.sub} prologue={t.prologue} sections={t.sections} scenes={scenes} doubts={{ ...vitWalkDoubts, ...vitDoubts }} related={t.related} />;
 }

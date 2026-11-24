@@ -4,10 +4,16 @@ import type { ReactNode } from "react";
 import { ChapterPage } from "./chapter-page";
 import { tfCopy as t } from "./tf-copy";
 import { tfDoubts } from "./tf-doubts";
+import { tfWalkDoubts } from "./tf-walk-copy";
+import { LearnScene, QkvScene, TranslateScene, TwoHeadScene } from "./tf-walk-scenes";
 import { AttentionScene, BlockScene, HeadsScene, OrderScene } from "./tf-scenes";
 import { EmbedScene, EncDecScene, MaskScene, OutputScene, PositionScene, RnnFadeScene } from "./tf-scenes2";
 
 const scenes: Record<string, () => ReactNode> = {
+  hand: () => <TranslateScene />,
+  where: () => <QkvScene />,
+  twohead: () => <TwoHeadScene />,
+  learn: () => <LearnScene />,
   rnn: () => <RnnFadeScene />,
   embed: () => <EmbedScene />,
   attention: () => <AttentionScene />,
@@ -21,5 +27,5 @@ const scenes: Record<string, () => ReactNode> = {
 };
 
 export function TransformerPage() {
-  return <ChapterPage slug="transformer" title={t.title} sub={t.sub} prologue={t.prologue} sections={t.sections} scenes={scenes} doubts={tfDoubts} />;
+  return <ChapterPage slug="transformer" title={t.title} sub={t.sub} prologue={t.prologue} sections={t.sections} scenes={scenes} doubts={{ ...tfWalkDoubts, ...tfDoubts }} />;
 }

@@ -1,4 +1,5 @@
 import type { Prologue, StudySection } from "./chapters";
+import { vitWalkSections } from "./vit-walk-copy";
 
 const prologue: Prologue = {
   title: "이야기의 시작: 문장을 위해 만든 구조에 사진을 넣다",
@@ -39,10 +40,11 @@ const sections: StudySection[] = [
     formula: "z_p = E\\,\\mathrm{vec}(x_p), \\qquad x_p \\in \\mathbb{R}^{14\\times14\\times3},\\quad E \\in \\mathbb{R}^{768\\times588}\nN = \\left(\\tfrac{392}{14}\\right)^{2} = 784",
     takeaway: "사진을 격자로 자르고, 조각마다 같은 행렬을 곱해 벡터로 만든다. 그 벡터들의 줄이 입력이다.",
     see: "조각 크기를 바꾸면 토큰 수가 16, 49, 196, 784로 바뀐다. 사진 위의 조각을 누르면 그 조각이 확대되고, 픽셀을 편 줄과 거기서 나온 토큰 벡터(카드)가 보인다. 여기서 곱하는 행렬은 임의 값이다. 실제로는 학습된다.",
-    bridge: "카드 784장이 12개 블록을 지나면 다시 784장이 나온다. 그런데 분류의 답은 하나여야 한다. 784장에서 어떻게 답 하나를 꺼내나?",
+    bridge: "카드가 줄을 섰다. 앞 챕터대로라면 이제 카드끼리 attention을 한다. 그런데 잘린 조각 하나가 다른 조각을 \"본다\"는 것은 실제로 무슨 계산인가?",
   },
+  ...vitWalkSections,
   {
-    id: "cls", num: "02", kicker: "요약",
+    id: "cls", num: "04", kicker: "요약",
     question: "토큰 784개에서 답 하나는 어떻게 나오나?",
     story: {
       origin: [
@@ -66,7 +68,7 @@ const sections: StudySection[] = [
     bridge: "카드를 한 줄로 늘어놓았다. 그런데 사진은 줄이 아니라 평면이다. 28번째 카드와 29번째 카드는 줄에서는 이웃이지만 사진에서는 반대편 끝이다. 평면에서의 자리는 어떻게 알려 주나?",
   },
   {
-    id: "pos2d", num: "03", kicker: "자리",
+    id: "pos2d", num: "05", kicker: "자리",
     question: "평면에서의 자리는 어떻게 알려 주나?",
     story: {
       origin: [
@@ -89,7 +91,7 @@ const sections: StudySection[] = [
     bridge: "토큰, 요약, 자리. 재료는 CNN과 전혀 다르다. 그러면 사진을 보는 방식은 CNN과 무엇이 다른가?",
   },
   {
-    id: "compare", num: "04", kicker: "비교",
+    id: "compare", num: "06", kicker: "비교",
     question: "CNN과 무엇이 다른가?",
     story: {
       origin: [
@@ -113,7 +115,7 @@ const sections: StudySection[] = [
     bridge: "ViT에는 사진이 아주 많이 필요하다. 그런데 사람이 라벨을 붙인 사진은 비싸고 적다. 라벨 없이 학습할 수는 없을까?",
   },
   {
-    id: "dino", num: "05", kicker: "라벨 없는 학습",
+    id: "dino", num: "07", kicker: "라벨 없는 학습",
     question: "라벨 없이 어떻게 학습하나?",
     story: {
       origin: [
@@ -138,7 +140,7 @@ const sections: StudySection[] = [
     bridge: "라벨 없이 학습한 ViT가 조각마다 좋은 토큰을 내준다. 이것으로 무엇을 할 수 있나. 내 연구가 시작되는 곳이다.",
   },
   {
-    id: "memory", num: "06", kicker: "쓰임",
+    id: "memory", num: "08", kicker: "쓰임",
     question: "이 토큰으로 어떻게 결함을 찾나?",
     story: {
       origin: [
