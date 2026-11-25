@@ -87,7 +87,37 @@ export const chapters: Chapter[] = [
     href: "/study/lora/", tags: ["행렬 기초", "low-rank", "QLoRA"], figures: 11,
   },
   {
-    slug: "anomaly", num: "10", era: "지금", title: "Memory-bank anomaly detection",
+    slug: "efficiency", num: "10", era: "기초", title: "빠른 모델은 무엇으로 재나",
+    desc: "파라미터 수, 곱셈-덧셈 수, 옮기는 바이트, 지연 시간, 처리량은 서로 다른 숫자이고 자주 어긋난다. ResNet-50의 3×3 conv 하나를 직접 세고 손으로 정한 장치에서 시간을 계산한 뒤, 곱셈이 적은데 느린 경우가 왜 생기는지 따라간다. 그 말로 RepViT와 YOLOv10의 표를 읽는다.",
+    href: "/study/efficiency/", tags: ["FLOPs", "latency", "roofline"], figures: 8,
+  },
+  {
+    slug: "reparam", num: "11", era: "2021 · 2025", title: "학습할 때와 쓸 때 모양이 다른 모델: RepVGG에서 LSNet까지",
+    desc: "학습할 때는 갈래가 셋인 블록이 배우고, 쓸 때는 그것을 3×3 conv 하나로 바꿔 돌린다. 5×5 사진 한 장에서 세 갈래와 BatchNorm을 커널 하나로 접는 계산을 손으로 한 뒤 RepVGG, RepViT, PBConv를 읽고, 자리마다 커널이 달라지는 LSNet에서 합치기가 멈추는 곳까지 간다.",
+    href: "/study/reparam/", tags: ["re-parameterization", "RepViT", "LSNet"], figures: 8,
+  },
+  {
+    slug: "yolo", num: "12", era: "2016 · 2025", title: "실시간 검출은 어떻게 빨라졌나: YOLOv10과 YOLOE",
+    desc: "사진 한 장에서 물체 여럿의 상자와 이름을 한 번에 낸다. 고양이와 컵이 있는 사진 한 장으로 IoU와 NMS를 손으로 계산하고, YOLOv10이 정답을 나눠 주는 규칙을 바꿔 NMS를 없앤 방법과 YOLOE가 이름을 벡터로 받아 쓸 때는 접어 넣는 방법을 따라간다.",
+    href: "/study/yolo/", tags: ["detection", "NMS-free", "open vocabulary"], figures: 8,
+  },
+  {
+    slug: "tokens", num: "13", era: "2022 · 2025", title: "토큰을 덜 쓰면 얼마나 빨라지나: 가지치기와 합치기",
+    desc: "토큰 수를 반으로 줄이면 계산은 대개 반쯤 준다. 무엇을 버리고 무엇을 합칠지가 남는다. [CLS]가 보는 곳으로 고르는 법, 비슷한 토큰을 평균 내는 법, 영상을 장면 단위로 끊는 법, KV 캐시를 층마다 다르게 줄이는 법.",
+    href: "/study/tokens/", tags: ["token pruning", "token merging", "KV cache"], figures: 8,
+  },
+  {
+    slug: "compress", num: "14", era: "2015 · 2026", title: "큰 모델을 작게: 증류와 양자화",
+    desc: "큰 모델의 답을 작은 모델에게 베끼게 하는 증류, 숫자를 적는 비트를 줄이는 양자화. 고양이 사진 한 장의 세 확률에서 학생이 라벨에 없는 무엇을 베끼는지, 가중치 하나가 float 값, 저장된 정수, 되돌린 값으로 어떻게 갈라지는지 계산하고 DINO-PCB, CAIT, Quantized Prompt로 간다.",
+    href: "/study/compress/", tags: ["distillation", "quantization"], figures: 9,
+  },
+  {
+    slug: "skip", num: "15", era: "2017 · 2026", title: "매번 다 계산하지 않기: MoE와 diffusion 캐싱",
+    desc: "토큰마다 전문가 몇만 계산하는 MoE, 이웃한 걸음의 계산을 다시 쓰는 diffusion 캐싱. 토큰 하나와 점 하나를 손으로 따라가며 건너뛰어도 답이 거의 그대로인 때와 오차가 쌓이는 때를 본다. MaskMoE, CartesianMoE, DSMoE, PoSTCache, RA-CFGCache까지.",
+    href: "/study/skip/", tags: ["mixture of experts", "diffusion cache"], figures: 9,
+  },
+  {
+    slug: "anomaly", num: "16", era: "지금", title: "Memory-bank anomaly detection",
     desc: "위에서 만든 토큰 위에서 정상 증거를 어떻게 모으고, 남기고, 믿는가. 내 연구 페이지로 이어진다.",
     href: "/anomaly/", tags: ["DINOv2", "memory bank"], figures: 0, external: true,
   },
