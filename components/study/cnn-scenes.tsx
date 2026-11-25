@@ -1,21 +1,19 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { clamp, drawGrid, gauss, label, palette, rng, useCanvas } from "@/components/anomaly/lib";
+import { useMemo, useState } from "react";
+import { clamp, drawGrid, label, palette, rng, useCanvas } from "@/components/anomaly/lib";
 import { cnnCopy } from "./cnn-copy";
-import { CORNER_RULES, KERNELS, SHAPES, conv, grid, maxOf, pool, receptiveField, runTinyNet, type Grid } from "./cnn-math";
-import { act, arrow, bar, cellText, cells, fmt, frame, gray, line, signed, type Ctx } from "./kit";
+import { CORNER_RULES, KERNELS, PLUS, SHAPES, conv, grid, maxOf, pool, receptiveField, runTinyNet, type Grid } from "./cnn-math";
+import { act, arrow, bar, cellText, cells, frame, gray, line, type Ctx } from "./kit";
 
 const U = cnnCopy.ui;
 const PAD = 18;
 const isPortrait = (w: number, h: number) => h > w * 1.15;
-const short = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2).replace(/^(-?)0\./, "$1."));
 
 /* ------------------------------------------------------------------ */
-/* 01 · One fully connected neuron vs one shared 3×3 kernel            */
+/* 04 · One fully connected neuron vs one shared 3×3 kernel            */
 /* ------------------------------------------------------------------ */
 
-const PLUS = [0, 1, 0, 1, 1, 1, 0, 1, 0];
 const HOME: [number, number] = [3, 3];
 const TOUR: [number, number][] = [[3, 3], [3, 4], [3, 6], [5, 6], [6, 2], [1, 1]];
 const stamp = (p: [number, number]) =>
@@ -116,82 +114,7 @@ export function WhyConvScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 02 · What one kernel computes: window × kernel, summed              */
-/* ------------------------------------------------------------------ */
-
-const KIMG: Grid = (() => {
-  const r = rng(5);
-  return grid(9, (y, x) => clamp((y >= 2 && y <= 5 && x >= 2 && x <= 5 ? 0.85 : 0.12) + gauss(r) * 0.03, 0, 1));
-})();
-const KLIST: number[][] = [[...KERNELS.vertical], [...KERNELS.horizontal], [...KERNELS.blur], [...KERNELS.sharpen]];
-
-export function KernelScene() {
-  const [ki, setKi] = useState(0);
-  const [playing, setPlaying] = useState(true);
-  const [manual, setManual] = useState(16);
-  const idxRef = useRef(16);
-  const out = useMemo(() => conv(KIMG, KLIST[ki]), [ki]);
-
-  const ref = useCanvas((ctx, w, h, tt) => {
-    ctx.clearRect(0, 0, w, h);
-    drawGrid(ctx, w, h, 40);
-    const idx = playing ? Math.floor(tt * 2.2) % 49 : manual;
-    idxRef.current = idx;
-    const oy = Math.floor(idx / 7), ox = idx % 7;
-    const k = KLIST[ki];
-    const c = Math.min(24, (w - 2 * PAD - 36) / 16, (h * 0.5 - 36) / 9);
-    const x0 = (w - (16 * c + 36)) / 2, iy = 34;
-    const outX = x0 + 9 * c + 36, outY = iy + c;
-    const mAbs = Math.max(...out.d.map(Math.abs), 1e-6);
-
-    label(ctx, U.kernel.input, x0 + 4.5 * c, iy - 14, palette.muted, 11, "center");
-    cells(ctx, x0, iy, c, 9, 9, (r, cc) => gray(KIMG.d[r * 9 + cc]));
-    frame(ctx, x0 + ox * c, iy + oy * c, 3 * c, 3 * c, palette.accent, 2.5);
-    label(ctx, U.kernel.output, outX + 3.5 * c, iy - 14, palette.muted, 11, "center");
-    cells(ctx, outX, outY, c, 7, 7, (r, cc) => signed(out.d[r * 7 + cc], mAbs));
-    frame(ctx, outX + ox * c, outY + oy * c, c, c, palette.accent, 2.5);
-    arrow(ctx, x0 + 9 * c + 8, iy + 4.5 * c, outX - 8, iy + 4.5 * c, palette.muted);
-
-    // the arithmetic for the current window
-    const m = Math.min(34, (w - 2 * PAD - 48) / 9, (h - (iy + 9 * c) - 96) / 3);
-    const bx = (w - (9 * m + 48)) / 2, by = iy + 9 * c + 46;
-    const win = Array.from({ length: 9 }, (_, i) => KIMG.d[(oy + Math.floor(i / 3)) * 9 + ox + (i % 3)]);
-    const prod = win.map((v, i) => v * k[i]);
-    const pAbs = Math.max(...prod.map(Math.abs), 1e-6), kAbs = Math.max(...k.map(Math.abs));
-    const blocks: [string, (i: number) => string, (i: number) => string, (i: number) => string][] = [
-      [U.kernel.window, (i) => gray(win[i]), (i) => win[i].toFixed(2).replace(/^0\./, "."), (i) => (win[i] > 0.5 ? palette.ink : "#ffffff")],
-      [U.kernel.kernel, (i) => signed(k[i], kAbs), (i) => short(k[i]), () => palette.ink],
-      [U.kernel.product, (i) => signed(prod[i], pAbs), (i) => short(prod[i]), () => palette.ink],
-    ];
-    blocks.forEach(([name, fill, text, color], b) => {
-      const gx = bx + b * (3 * m + 24);
-      label(ctx, name, gx + 1.5 * m, by - 12, palette.muted, 11, "center");
-      cells(ctx, gx, by, m, 3, 3, (r, cc) => fill(r * 3 + cc), 2);
-      for (let i = 0; i < 9; i++) cellText(ctx, text(i), gx + (i % 3) * m, by + Math.floor(i / 3) * m, m, color(i));
-      if (b < 2) label(ctx, b === 0 ? "×" : "=", gx + 3 * m + 12, by + 1.5 * m, palette.muted, 15, "center");
-    });
-    label(ctx, `${U.kernel.sum} = ${fmt(out.d[idx])}   →   (${oy}, ${ox})`, w / 2, by + 3 * m + 22, palette.accent, 13, "center");
-  });
-
-  return (
-    <div className="ad-scene">
-      <canvas ref={ref} className="ad-canvas" aria-hidden="true" />
-      <div className="ad-controls">
-        <div className="ad-ctl ad-seg" role="group" aria-label={U.kernel.pick}>
-          <span>{U.kernel.pick}</span>
-          {U.kernel.names.map((n, i) => <button key={n} type="button" className={ki === i ? "on" : ""} onClick={() => setKi(i)}>{n}</button>)}
-        </div>
-        <div className="ad-ctl ad-seg" role="group">
-          <button type="button" className="ad-btn" onClick={() => { setManual(idxRef.current); setPlaying((p) => !p); }}>{playing ? U.kernel.pause : U.kernel.play}</button>
-          <button type="button" className="ad-btn" onClick={() => { setManual((idxRef.current + 1) % 49); setPlaying(false); }}>{U.kernel.step}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* 03 · Stride and padding set the output size                         */
+/* 05 · Stride and padding set the output size                         */
 /* ------------------------------------------------------------------ */
 
 const SIMG = grid(7, (r, c) => clamp(0.12 + 0.85 * Math.exp(-((r - 2.6) ** 2 + (c - 3.4) ** 2) / 5), 0, 1));
@@ -256,7 +179,7 @@ export function StridePadScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 04 · Receptive field grows with depth, faster after a stride        */
+/* 07 · Receptive field grows with depth, faster after a stride        */
 /* ------------------------------------------------------------------ */
 
 export function ReceptiveFieldScene() {
@@ -330,7 +253,7 @@ export function ReceptiveFieldScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 05 · Pooling keeps "was it here" and drops "exactly where"          */
+/* 08 · Pooling keeps "was it here" and drops "exactly where"          */
 /* ------------------------------------------------------------------ */
 
 const PBG: Grid = (() => {
@@ -378,7 +301,7 @@ export function PoolScene() {
     arrow(ctx, x0 + 8 * c + 8, y0 + 4 * c, ox - 8, y0 + 4 * c, palette.muted);
 
     const ty = y0 + 8 * c + 30;
-    label(ctx, `${U.pool.at} (${p[0]}, ${p[1]})  →  ${U.pool.out} (${R}, ${C}) = ${out.d[R * 4 + C].toFixed(2)}`, w / 2, ty, palette.ink, 12, "center");
+    label(ctx, `${U.pool.at} ${p[0] + 1}${U.board.row} ${p[1] + 1}${U.board.col}  →  ${U.pool.out} ${R + 1}${U.board.row} ${C + 1}${U.board.col} = ${out.d[R * 4 + C].toFixed(2)}`, w / 2, ty, palette.ink, 12, "center");
     label(ctx, U.pool.same, w / 2, ty + 22, palette.mint, 12, "center");
     label(ctx, "8×8 = 64  →  4×4 = 16", w / 2, ty + 44, palette.muted, 12, "center");
   });
@@ -406,7 +329,7 @@ export function PoolScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 06 · Edges combine into corners (a hand-built two-layer network)    */
+/* 09 · Edges combine into corners (a hand-built two-layer network)    */
 /* ------------------------------------------------------------------ */
 
 function drawMap(ctx: Ctx, g: Grid, x: number, y: number, cell: number, max: number, name: string, on: boolean) {
@@ -474,7 +397,7 @@ export function HierarchyScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 07 · From maps to one answer: average, linear layer, softmax        */
+/* 10 · From maps to one answer: average, linear layer, softmax        */
 /* ------------------------------------------------------------------ */
 
 const PIPE_KEYS = ["vstripes", "hstripes", "box", "boxMoved"] as const;

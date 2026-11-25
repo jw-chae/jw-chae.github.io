@@ -61,6 +61,15 @@ export function nextDist(model: NGram, history: string[]): Dist {
   return [...m.entries()].map(([token, count]) => ({ token, count, p: count / total })).sort((a, b) => b.count - a.count || a.token.localeCompare(b.token));
 }
 
+/** Every distinct token of the corpus in order of first appearance: the whole vocabulary of these models. */
+export const VOCAB: string[] = [...new Set(CORPUS.flat())];
+
+/** The next-token distribution spread over the whole vocabulary: one probability per entry, zeros included. */
+export function vocabDist(model: NGram, history: string[]): number[] {
+  const d = nextDist(model, history);
+  return VOCAB.map((tok) => d.find((e) => e.token === tok)?.p ?? 0);
+}
+
 /** Reshape a distribution: p^(1/T), keep the k most likely, renormalise. */
 export function reshape(d: Dist, temperature: number, topK: number): Dist {
   const kept = d.slice(0, Math.max(1, topK));
@@ -101,10 +110,47 @@ export function teacherForcing(ctx: number, sent: string[]): { seen: string[]; t
   });
 }
 
+/* ---- the same probabilities reached by training instead of counting ---- */
+
+/** Every training problem in the corpus whose last visible token is `prev`, with the token the text really has next. */
+export function problemsAfter(prev: string): { sentence: number; answer: string }[] {
+  const out: { sentence: number; answer: string }[] = [];
+  CORPUS.forEach((sent, si) => sent.forEach((tok, i) => { if (i > 0 && sent[i - 1] === prev) out.push({ sentence: si, answer: tok }); }));
+  return out;
+}
+
+export const TRAIN_STEPS = [0, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 3000];
+export type RowSnapshot = { step: number; probs: number[]; loss: number };
+
+/** Gradient descent on one row of scores, one score per vocabulary entry, for the context "… prev".
+ *  Starts from all zeros (every token equally likely). Each step lowers every score by (given probability − share of problems whose answer it is). */
+export function trainRow(prev: string, lr = 1): RowSnapshot[] {
+  const answers = problemsAfter(prev).map((q) => VOCAB.indexOf(q.answer));
+  const share = VOCAB.map((_, k) => answers.filter((a) => a === k).length / answers.length);
+  let z = VOCAB.map(() => 0);
+  const out: RowSnapshot[] = [];
+  const last = TRAIN_STEPS[TRAIN_STEPS.length - 1];
+  for (let t = 0; t <= last; t++) {
+    const m = Math.max(...z), e = z.map((v) => Math.exp(v - m)), sum = e.reduce((a, b) => a + b, 0), p = e.map((v) => v / sum);
+    if (TRAIN_STEPS.includes(t)) out.push({ step: t, probs: p, loss: answers.reduce((a, k) => a - Math.log(p[k]), 0) / answers.length });
+    z = z.map((v, k) => v - lr * (p[k] - share[k]));
+  }
+  return out;
+}
+
+/** The row after `step` training steps as a sorted distribution: the model the sampling scene draws from. It still leaves a little on every token. */
+export function trainedDist(prev: string, step: number): Dist {
+  const snap = trainRow(prev).find((r) => r.step === step)!;
+  const counts = problemsAfter(prev);
+  return VOCAB.map((token, k) => ({ token, count: counts.filter((q) => q.answer === token).length, p: snap.probs[k] }))
+    .sort((a, b) => b.p - a.p || a.token.localeCompare(b.token));
+}
+
 /* ---- byte-pair encoding on the classic four-word corpus ---- */
 
 export const BPE_WORDS: [string, number][] = [["low", 5], ["lower", 2], ["newest", 6], ["widest", 3]];
-export type BpeState = { merges: [string, string][]; words: { word: string; freq: number; pieces: string[] }[]; vocab: string[] };
+export type BpePair = { a: string; b: string; count: number };
+export type BpeState = { merges: [string, string][]; words: { word: string; freq: number; pieces: string[] }[]; vocab: string[]; counts: BpePair[][] };
 
 const split = (w: string) => [...w.split(""), "_"];          // "_" marks the end of a word
 
@@ -120,22 +166,24 @@ function applyMerge(pieces: string[], a: string, b: string): string[] {
 export function bpe(steps: number): BpeState {
   let words = BPE_WORDS.map(([word, freq]) => ({ word, freq, pieces: split(word) }));
   const merges: [string, string][] = [];
-  for (let s = 0; s < steps; s++) {
-    const counts = new Map<string, number>();
+  const counts: BpePair[][] = [];             // counts[s] = how often each adjacent pair occurs before merge s + 1, most frequent first
+  for (let s = 0; s <= steps; s++) {
+    const tally = new Map<string, number>();
     for (const w of words) for (let i = 0; i < w.pieces.length - 1; i++) {
       const k = w.pieces[i] + " " + w.pieces[i + 1];
-      counts.set(k, (counts.get(k) ?? 0) + w.freq);
+      tally.set(k, (tally.get(k) ?? 0) + w.freq);
     }
-    if (!counts.size) break;
-    const [best] = [...counts.entries()].sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0]))[0];
-    const [a, b] = best.split(" ");
+    const sorted = [...tally.entries()].sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0]));
+    counts.push(sorted.map(([k, count]) => ({ a: k.split(" ")[0], b: k.split(" ")[1], count })));
+    if (s === steps || !sorted.length) break;
+    const [a, b] = sorted[0][0].split(" ");
     merges.push([a, b]);
     words = words.map((w) => ({ ...w, pieces: applyMerge(w.pieces, a, b) }));
   }
   const vocab = new Set<string>();
   for (const [w] of BPE_WORDS) for (const ch of split(w)) vocab.add(ch);
   for (const [a, b] of merges) vocab.add(a + b);
-  return { merges, words, vocab: [...vocab] };
+  return { merges, words, vocab: [...vocab], counts };
 }
 
 /** Tokenize a word the tokenizer has never seen, replaying the learned merges in order. */

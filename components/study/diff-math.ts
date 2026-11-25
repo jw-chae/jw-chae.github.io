@@ -24,13 +24,14 @@ export const normalPdf = (x: number, mu = 0, sd = 1) => Math.exp(-0.5 * ((x - mu
 
 export type Dist1 = { name: string; pdf: (x: number) => number; draw: (r: () => number) => number; mean: number; sd: number };
 export const BELL: Dist1 = { name: "bell", pdf: (x) => normalPdf(x, 0, 1), draw: (r) => normal(r), mean: 0, sd: 1 };
-/** Two bumps: 40% around −1.4, 60% around +1.1. */
+/** One-number "pictures": 40% dark ones around -1, 60% bright ones around +1. Hand-set. */
+const BUMP_SD = 0.3, BUMP_MEAN = 0.4 * -1 + 0.6 * 1;
 export const TWO_BUMPS: Dist1 = {
   name: "two",
-  pdf: (x) => 0.4 * normalPdf(x, -1.4, 0.45) + 0.6 * normalPdf(x, 1.1, 0.6),
-  draw: (r) => (r() < 0.4 ? -1.4 + 0.45 * normal(r) : 1.1 + 0.6 * normal(r)),
-  mean: 0.4 * -1.4 + 0.6 * 1.1,
-  sd: Math.sqrt(0.4 * (0.45 ** 2 + 1.4 ** 2) + 0.6 * (0.6 ** 2 + 1.1 ** 2) - (0.4 * -1.4 + 0.6 * 1.1) ** 2),
+  pdf: (x) => 0.4 * normalPdf(x, -1, BUMP_SD) + 0.6 * normalPdf(x, 1, BUMP_SD),
+  draw: (r) => (r() < 0.4 ? -1 + BUMP_SD * normal(r) : 1 + BUMP_SD * normal(r)),
+  mean: BUMP_MEAN,
+  sd: Math.sqrt(BUMP_SD ** 2 + 1 - BUMP_MEAN ** 2),
 };
 
 export function drawSamples(d: Dist1, n: number, seed: number): number[] {
@@ -202,4 +203,83 @@ export function guidedStats(xs: P2[], mix: Mixture, cls: number): { hit: number;
   const cx = own.reduce((a, p) => a + p[0], 0) / Math.max(1, own.length), cy = own.reduce((a, p) => a + p[1], 0) / Math.max(1, own.length);
   const spread = Math.sqrt(own.reduce((a, p) => a + (p[0] - cx) ** 2 + (p[1] - cy) ** 2, 0) / Math.max(1, own.length));
   return { hit: hit / xs.length, spread };
+}
+
+/* ---- the walk of 05-07 · six two-number pictures, one of them followed ---- */
+
+/** Six training "pictures" of two numbers each. s = 0: the data is exactly these six points. Hand-set. */
+export const SIX: Mixture = { mu: [[-0.7, 0.5], [0, 0.75], [0.7, 0.45], [-0.6, -0.45], [0.05, -0.7], [0.7, -0.35]], s: 0 };
+/** The picture the walk follows (index 2 is "3번"), the step it is noised to, and the noise drawn for it in the text. */
+export const TRACK = 2;
+export const TRAIN_T = 5;
+export const TRAIN_EPS: P2 = [1.1, -0.9];
+
+/** One training problem, with every quantity kept apart: clean, noise, noisy, guessed noise, implied clean. */
+export function trainStep(mix: Mixture, sch: Schedule, i: number, eps: P2, t: number) {
+  const ab = sch.abar[t], ra = Math.sqrt(ab), rn = Math.sqrt(1 - ab);
+  const x0 = mix.mu[i], xt = noised(x0, eps, ab), d = denoise(xt, ab, mix);
+  /** the noise each training point would have needed to land on this same x_t */
+  const cand = mix.mu.map((m) => [(xt[0] - ra * m[0]) / rn, (xt[1] - ra * m[1]) / rn] as P2);
+  const loss = (d.eps[0] - eps[0]) ** 2 + (d.eps[1] - eps[1]) ** 2;
+  return { ab, ra, rn, x0, xt, shrunk: [ra * x0[0], ra * x0[1]] as P2, w: d.w, epsHat: d.eps, x0Hat: d.x0, cand, loss };
+}
+
+export type RevStep = {
+  t: number; x: P2; eps: P2; x0: P2; w: number[];
+  cut: number; grow: number; sigma: number;      // x_{t-1} = grow * (x - cut * eps) + sigma * z
+  mean: P2; z: P2; next: P2;
+};
+
+/** One sample followed through ancestral sampling. steps[0] is t = T (pure noise); the last `next` is the result. */
+export function reverseTrace(mix: Mixture, sch: Schedule, seed: number): RevStep[] {
+  const r = mulberry(seed);
+  let x: P2 = [normal(r), normal(r)];
+  const steps: RevStep[] = [];
+  for (let t = sch.T; t >= 1; t--) {
+    const cut = sch.beta[t] / Math.sqrt(1 - sch.abar[t]), grow = 1 / Math.sqrt(sch.alpha[t]);
+    const sigma = t > 1 ? Math.sqrt((sch.beta[t] * (1 - sch.abar[t - 1])) / (1 - sch.abar[t])) : 0;
+    const d = denoise(x, sch.abar[t], mix);
+    const mean: P2 = [grow * (x[0] - cut * d.eps[0]), grow * (x[1] - cut * d.eps[1])];
+    const z: P2 = [normal(r), normal(r)];
+    const next: P2 = [mean[0] + sigma * z[0], mean[1] + sigma * z[1]];
+    steps.push({ t, x, eps: d.eps, x0: d.x0, w: d.w, cut, grow, sigma, mean, z, next });
+    x = next;
+  }
+  return steps;
+}
+
+/** How many samples ended nearest to each training point. */
+export function landing(xs: P2[], mix: Mixture): number[] {
+  const c = new Array<number>(mix.mu.length).fill(0);
+  for (const x of xs) {
+    let best = Infinity, bi = 0;
+    mix.mu.forEach((m, i) => { const d = Math.hypot(x[0] - m[0], x[1] - m[1]); if (d < best) { best = d; bi = i; } });
+    c[bi]++;
+  }
+  return c;
+}
+
+/** The one noisy point (and its step) at which the guidance walk compares the two predictions. Hand-set. */
+export const GUIDE_X: P2 = [0.2, 0.1];
+export const GUIDE_T = 16;
+
+/** Guidance at one noisy point: the two predictions, their difference, and the mix for weight w. */
+export function guideAt(x: P2, t: number, cls: number, w: number, mix: Mixture = TWO_CLASSES, sch: Schedule = TOY) {
+  const ab = sch.abar[t], ra = Math.sqrt(ab), rn = Math.sqrt(1 - ab);
+  const u = denoise(x, ab, mix), c = denoise(x, ab, mix, cls);
+  const diff: P2 = [c.eps[0] - u.eps[0], c.eps[1] - u.eps[1]];
+  const e: P2 = [u.eps[0] + w * diff[0], u.eps[1] + w * diff[1]];
+  return { eu: u.eps, ec: c.eps, diff, e, x0u: u.x0, x0c: c.x0, x0g: [(x[0] - rn * e[0]) / ra, (x[1] - rn * e[1]) / ra] as P2 };
+}
+
+/** Photo scene: side of the square picture, and the cell (row, column) whose red value the text follows. */
+export const PHOTO_N = 72;
+export const PHOTO_CELL: [number, number] = [18, 30];
+export const PHOTO_SEED = 99;
+
+/** The fixed noise the photo scene mixes in: one standard normal draw per number of an n × n × 3 picture. */
+export function pixelNoise(n: number, seed: number): Float32Array {
+  const r = mulberry(seed), a = new Float32Array(n * n * 3);
+  for (let i = 0; i < a.length; i++) a[i] = normal(r);
+  return a;
 }

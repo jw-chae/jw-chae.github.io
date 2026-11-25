@@ -2,11 +2,16 @@
 
 import type { ReactNode } from "react";
 import { ChapterPage } from "./chapter-page";
-import { unetDoubts } from "./doubts";
 import { unetCopy as t } from "./unet-copy";
+import { unetDoubts } from "./unet-doubts";
 import { DeformScene, DownUpScene, SkipFuseScene, UShapeScene, UpsampleScene, WindowScene } from "./unet-scenes";
+import { BridgeScene, PixelScene, TraceScene, TrainScene } from "./unet-walk-scenes";
 
 const scenes: Record<string, () => ReactNode> = {
+  one: () => <PixelScene />,
+  trace: () => <TraceScene />,
+  fuse: () => <BridgeScene />,
+  learn: () => <TrainScene />,
   window: () => <WindowScene />,
   down: () => <DownUpScene />,
   up: () => <UpsampleScene />,

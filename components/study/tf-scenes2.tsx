@@ -4,11 +4,15 @@ import { useMemo, useState } from "react";
 import { drawGrid, label, palette, useCanvas } from "@/components/anomaly/lib";
 import { arrow, bar, frame, line, rbox, signed, type Ctx } from "./kit";
 import { tfCopy } from "./tf-copy";
-import { TOY_HEAD, attention, dot, embed, norm, sinusoid, softmax } from "./tf-math";
+import { CROSS_OTHER, OUT_ANSWER, OUT_Z0, TABLE, VOCAB, cosine, dot, idOf, maskedWeights, memoShare, outStep, posSim, sinusoid, softmax } from "./tf-math";
+import { fillBlank } from "./walk-math";
 
 const U = tfCopy.ui;
 const PAD = 18;
+const READ = palette.normal;
 const isPortrait = (w: number, h: number) => h > w * 1.15;
+const pc = (v: number) => `${v < 0.01 && v > 0 ? (v * 100).toFixed(1) : Math.round(v * 100)}%`;
+const f2 = (v: number) => (Math.abs(v) < 0.005 ? "0.00" : v.toFixed(2));
 
 function disc(ctx: Ctx, x: number, y: number, r: number, color: string) {
   ctx.fillStyle = color;
@@ -16,45 +20,47 @@ function disc(ctx: Ctx, x: number, y: number, r: number, color: string) {
 }
 
 /* ------------------------------------------------------------------ */
-/* 01 · What survives in an RNN's memory, against direct access         */
+/* 05 · What is left of cats in a memo, against reading it directly     */
 /* ------------------------------------------------------------------ */
 
 export function RnnFadeScene() {
-  const [n, setN] = useState(20);
+  const [after, setAfter] = useState(7);
   const [lam, setLam] = useState(0.8);
 
   const ref = useCanvas((ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
     drawGrid(ctx, w, h, 40);
-    const x0 = PAD, x1 = w - PAD, bw = (x1 - x0) / n, rowH = Math.min(120, (h - 190) / 2);
-    const y1 = 56, y2 = y1 + rowH + 56;
+    const n = 3 + after, x0 = PAD, x1 = w - PAD, bw = (x1 - x0) / n, g = Math.max(0, (h - 440) / 3);
+    const y1 = 56, rowH = 88 + g, y2 = y1 + rowH + 58 + g, cellH = 24, yBlank = y2 + cellH + 30 + g;
+    const cx = (i: number) => x0 + (i + 0.5) * bw;
 
-    label(ctx, U.rnn.rnn, x0, y1 - 18, palette.accent, 11);
+    // the memo after the last word: each word's share relative to the word read last
+    label(ctx, U.rnn.memo, x0, 14, palette.accent, 11);
     for (let i = 0; i < n; i++) {
-      const share = Math.pow(lam, n - 1 - i);
+      const share = memoShare(lam, n - 1 - i);
       ctx.fillStyle = palette.track; ctx.fillRect(x0 + i * bw + 1, y1, Math.max(1, bw - 2), rowH);
-      ctx.fillStyle = `rgba(${palette.accentRgb},0.85)`; ctx.fillRect(x0 + i * bw + 1, y1 + rowH * (1 - share), Math.max(1, bw - 2), rowH * share);
+      ctx.fillStyle = i === 2 ? READ : `rgba(${palette.accentRgb},0.75)`;
+      ctx.fillRect(x0 + i * bw + 1, y1 + rowH * (1 - share), Math.max(1, bw - 2), rowH * share);
     }
-    label(ctx, `${U.rnn.word} 1`, x0, y1 + rowH + 12, palette.muted, 10);
-    label(ctx, `${U.rnn.word} ${n}`, x1, y1 + rowH + 12, palette.muted, 10, "right");
+    label(ctx, "cats", Math.max(cx(2), x0 + 16), y1 - 12, READ, 12, "center");
+    label(ctx, U.rnn.sentence, x0, y1 + rowH + 13, palette.muted, 11);
+    label(ctx, `${U.rnn.tail} ${after}${U.rnn.unit}`, x1, y1 + rowH + 13, palette.muted, 11, "right");
 
-    label(ctx, U.rnn.attn, x0, y2 - 18, palette.memory, 11);
+    // the way of 02: the blank reads the position itself, however many words follow
+    label(ctx, U.rnn.direct, x0, y2 - 16, READ, 11);
     for (let i = 0; i < n; i++) {
-      ctx.fillStyle = `rgba(${palette.memoryRgb},0.75)`; ctx.fillRect(x0 + i * bw + 1, y2, Math.max(1, bw - 2), rowH);
+      ctx.fillStyle = i === 2 ? READ : palette.track2; ctx.fillRect(x0 + i * bw + 1, y2, Math.max(1, bw - 2), cellH);
     }
-    // the last word reaches every other word in one hop
-    ctx.save();
-    ctx.strokeStyle = `rgba(${palette.inkRgb},0.25)`; ctx.lineWidth = 1;
-    const lx = x0 + (n - 0.5) * bw;
-    for (let i = 0; i < n - 1; i += Math.max(1, Math.round(n / 12))) {
-      const tx = x0 + (i + 0.5) * bw;
-      ctx.beginPath(); ctx.moveTo(lx, y2 + rowH); ctx.quadraticCurveTo((lx + tx) / 2, y2 + rowH + 26, tx, y2 + rowH); ctx.stroke();
-    }
-    ctx.restore();
+    const stride = Math.max(1, Math.round(n / 12));
+    for (let i = 0; i < n; i += stride) if (i !== 2) line(ctx, w / 2, yBlank, cx(i), y2 + cellH + 2, `rgba(${palette.inkRgb},0.14)`, 1);
+    line(ctx, w / 2, yBlank, cx(2), y2 + cellH + 2, READ, 2.5);
+    rbox(ctx, w / 2 - 58, yBlank, 116, 30, 8, `rgba(${palette.accentRgb},0.1)`, palette.accent, 1.5);
+    label(ctx, U.rnn.blank, w / 2, yBlank + 15, palette.ink, 13, "center");
 
-    const ty = h - 44, first = Math.pow(lam, n - 1);
-    label(ctx, `${U.rnn.first}: RNN ${(first * 100).toFixed(first < 0.1 ? 1 : 0)}%  ·  attention 100%`, x0, ty, palette.ink, 12);
-    label(ctx, `${U.rnn.steps}: RNN ${n}  ·  attention 1`, x0, ty + 22, palette.muted, 12);
+    const ty = h - 58, left = memoShare(lam, after);
+    label(ctx, `${U.rnn.left} ${(left * 100).toFixed(left < 0.1 ? 1 : 0)}%`, x0, ty, palette.ink, 12);
+    label(ctx, `${U.rnn.path}: ${U.rnn.overwrite} ${after}${U.rnn.times} · ${U.rnn.hop}`, x0, ty + 20, palette.ink, 12);
+    label(ctx, `${U.rnn.serial}: ${U.rnn.memoN} ${n}${U.rnn.times} · ${U.rnn.directN}`, x0, ty + 40, palette.muted, 12);
   });
 
   return (
@@ -62,8 +68,8 @@ export function RnnFadeScene() {
       <canvas ref={ref} className="ad-canvas" aria-hidden="true" />
       <div className="ad-controls">
         <label className="ad-ctl">
-          <span>{U.rnn.length} <b>{n}</b></span>
-          <input type="range" min={5} max={50} step={1} value={n} onChange={(e) => setN(Number(e.target.value))} />
+          <span>{U.rnn.after} <b>{after}</b></span>
+          <input type="range" min={0} max={47} step={1} value={after} onChange={(e) => setAfter(Number(e.target.value))} />
         </label>
         <label className="ad-ctl">
           <span>{U.rnn.keep} <b>{lam.toFixed(2)}</b></span>
@@ -75,58 +81,79 @@ export function RnnFadeScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 02 · Token id → row of the embedding table → a direction             */
+/* 06 · Word → number → row of the embedding table → a vector           */
 /* ------------------------------------------------------------------ */
 
-const EMB: [number, number][] = [[0.8, 0.6], [0.9, 0.4], [0.6, 0.8], [-0.7, 0.6], [-0.8, 0.4], [0.2, -0.8], [0.35, -0.7], [-0.2, -0.75]];
+type EmbedMode = "sentence" | "pair";
+const VERB_ID = { love: idOf("love"), chase: idOf("chase") };
+const ID_I = idOf("I"), ID_CATS = idOf("cats"), ID_DOGS = idOf("dogs");
 
 export function EmbedScene() {
-  const [a, setA] = useState(0);
-  const [b, setB] = useState(1);
-  const cos = dot(EMB[a], EMB[b]) / (norm(EMB[a]) * norm(EMB[b]));
+  const [mode, setMode] = useState<EmbedMode>("sentence");
+  const [verb, setVerb] = useState<keyof typeof VERB_ID>("love");
+  const [a, setA] = useState(ID_CATS);
+  const [b, setB] = useState(ID_DOGS);
+  const picked = useMemo(() => (mode === "sentence" ? [ID_I, VERB_ID[verb], ID_CATS] : [a, b]), [mode, verb, a, b]);
 
   const ref = useCanvas((ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
     drawGrid(ctx, w, h, 40);
     const portrait = isPortrait(w, h);
-    const rh = 20, tw = portrait ? Math.min(w - 2 * PAD, 280) : 176;
-    const tx = portrait ? (w - tw) / 2 : PAD, ty = 44;
-    const colA = palette.accent, colB = palette.memory;
+    const colors = mode === "sentence" ? [palette.muted, palette.accent2, READ] : [READ, palette.accent];
+    const colorOf = (id: number) => { const k = picked.lastIndexOf(id); return k < 0 ? null : colors[k]; };
 
-    label(ctx, U.embed.table, tx, ty - 18, palette.muted, 11);
-    EMB.forEach((v, i) => {
-      const y = ty + i * rh, on = i === a || i === b, c = i === a ? colA : i === b ? colB : palette.muted;
-      if (on) { ctx.fillStyle = i === a ? `rgba(${palette.accentRgb},0.12)` : `rgba(${palette.memoryRgb},0.12)`; ctx.fillRect(tx, y, tw, rh - 2); }
-      label(ctx, String(i), tx + 6, y + rh / 2 - 1, c, 11);
-      label(ctx, U.embed.words[i], tx + 28, y + rh / 2 - 1, on ? palette.ink : palette.muted, 12);
+    // the words that go in, each with the number looked up for it
+    label(ctx, mode === "sentence" ? U.embed.lookup : U.embed.compare, PAD, 14, palette.muted, 11);
+    const sy = 30, np = picked.length, sbw = Math.min(100, (w - 2 * PAD - (np - 1) * 10) / np), sx0 = (w - (np * sbw + (np - 1) * 10)) / 2;
+    picked.forEach((id, k) => {
+      const x = sx0 + k * (sbw + 10);
+      rbox(ctx, x, sy, sbw, 30, 8, "#ffffff", colors[k], 2);
+      label(ctx, VOCAB[id], x + sbw / 2, sy + 15, palette.ink, 13, "center");
+      label(ctx, `${U.embed.id} ${id}`, x + sbw / 2, sy + 43, colors[k], 11, "center");
+    });
+
+    const rh = portrait ? 18 : 20, tw = portrait ? Math.min(w - 2 * PAD, 280) : 176;
+    const tx = portrait ? (w - tw) / 2 : PAD, ty = sy + 78;
+    label(ctx, U.embed.table, tx, ty - 12, palette.muted, 11);
+    TABLE.forEach((v, i) => {
+      const y = ty + i * rh, col = colorOf(i);
+      if (col) { ctx.save(); ctx.globalAlpha = 0.14; ctx.fillStyle = col; ctx.fillRect(tx, y, tw, rh - 2); ctx.restore(); frame(ctx, tx, y, tw, rh - 2, col, 1.5); }
+      label(ctx, String(i), tx + 6, y + rh / 2 - 1, col ?? palette.muted, 11);
+      label(ctx, VOCAB[i], tx + 28, y + rh / 2 - 1, col ? palette.ink : palette.muted, 12);
       v.forEach((x, d) => {
         ctx.fillStyle = signed(x, 1); ctx.fillRect(tx + tw - 92 + d * 46, y + 2, 42, rh - 6);
         label(ctx, x.toFixed(2), tx + tw - 71 + d * 46, y + rh / 2 - 1, palette.ink, 10, "center");
       });
     });
 
-    const S = portrait ? Math.min(w - 2 * PAD, h - (ty + 8 * rh + 30) - 46) : Math.min(w - tx - tw - 30 - PAD, h - 96);
-    const mapTop = portrait ? ty + 8 * rh + 30 : Math.max(30, (h - 40 - S) / 2);
+    const mapTop = portrait ? ty + 8 * rh + 26 : ty;
+    const S = portrait ? Math.min(w - 2 * PAD, h - mapTop - 44) : Math.min(w - tx - tw - 30 - PAD, h - ty - 50);
     const mx = portrait ? (w - S) / 2 : tx + tw + 30, cx = mx + S / 2, cy = mapTop + S / 2, sc = S / 2 / 1.2;
     const X = (v: number[]) => cx + v[0] * sc, Y = (v: number[]) => cy - v[1] * sc;
     if (!portrait) label(ctx, U.embed.map, mx, mapTop - 12, palette.muted, 11);
     line(ctx, mx, cy, mx + S, cy, palette.frame, 1); line(ctx, cx, mapTop, cx, mapTop + S, palette.frame, 1);
-    EMB.forEach((v, i) => {
-      if (i === a || i === b) return;
+    TABLE.forEach((v, i) => {
+      if (picked.includes(i)) return;
       disc(ctx, X(v), Y(v), 3.5, palette.dotOff);
-      label(ctx, U.embed.words[i], X(v) + 7, Y(v), palette.muted, 10);
+      label(ctx, VOCAB[i], X(v) + 7, Y(v), palette.muted, 10);
     });
-    for (const [i, c] of [[a, colA], [b, colB]] as [number, string][]) {
-      arrow(ctx, cx, cy, X(EMB[i]), Y(EMB[i]), c, 2.5);
-      label(ctx, U.embed.words[i], X(EMB[i]) + 8, Y(EMB[i]) - 8, c, 12);
+    picked.forEach((id, k) => {
+      arrow(ctx, cx, cy, X(TABLE[id]), Y(TABLE[id]), colors[k], 2.5);
+      label(ctx, VOCAB[id], X(TABLE[id]) + (TABLE[id][0] < 0 ? -8 : 8), Y(TABLE[id]) - 8, colors[k], 12, TABLE[id][0] < 0 ? "right" : "left");
+    });
+
+    if (mode === "sentence") {
+      label(ctx, U.embed.same, w / 2, h - 22, READ, 12, "center");
+    } else {
+      const cs = cosine(TABLE[a], TABLE[b]);
+      label(ctx, `${U.embed.dot} ${f2(dot(TABLE[a], TABLE[b]))}  ·  ${U.embed.cos} ${f2(cs)}`, w / 2, h - 22, cs > 0.7 ? palette.mint : cs > 0 ? palette.ink : palette.anomaly, 13, "center");
     }
-    label(ctx, `${U.embed.cos}: ${cos.toFixed(2)}`, w / 2, h - 22, cos > 0.7 ? palette.mint : cos > 0 ? palette.ink : palette.anomaly, 14, "center");
   });
 
   const picker = (value: number, set: (i: number) => void, name: string) => (
     <div className="ad-ctl ad-seg" role="group" aria-label={name}>
       <span>{name}</span>
-      {U.embed.words.map((wd, i) => <button key={wd} type="button" className={value === i ? "on" : ""} onClick={() => set(i)}>{wd}</button>)}
+      {VOCAB.map((wd, i) => <button key={wd} type="button" className={value === i ? "on" : ""} onClick={() => set(i)}>{wd}</button>)}
     </div>
   );
 
@@ -134,15 +161,30 @@ export function EmbedScene() {
     <div className="ad-scene">
       <canvas ref={ref} className="ad-canvas" aria-hidden="true" />
       <div className="ad-controls">
-        {picker(a, setA, U.embed.a)}
-        {picker(b, setB, U.embed.b)}
+        <div className="ad-ctl ad-seg" role="group" aria-label={U.embed.mode}>
+          <span>{U.embed.mode}</span>
+          <button type="button" className={mode === "sentence" ? "on" : ""} onClick={() => setMode("sentence")}>{U.embed.sentence}</button>
+          <button type="button" className={mode === "pair" ? "on" : ""} onClick={() => setMode("pair")}>{U.embed.pair}</button>
+        </div>
+        {mode === "sentence" ? (
+          <div className="ad-ctl ad-seg" role="group" aria-label={U.embed.verb}>
+            <span>{U.embed.verb}</span>
+            <button type="button" className={verb === "love" ? "on" : ""} onClick={() => setVerb("love")}>love</button>
+            <button type="button" className={verb === "chase" ? "on" : ""} onClick={() => setVerb("chase")}>chase</button>
+          </div>
+        ) : (
+          <>
+            {picker(a, setA, U.embed.a)}
+            {picker(b, setB, U.embed.b)}
+          </>
+        )}
       </div>
     </div>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* 06 · Sinusoidal position vectors and how alike two positions are     */
+/* 10 · Sinusoidal position vectors and how alike two positions are     */
 /* ------------------------------------------------------------------ */
 
 const NPOS = 32, PD = 16;
@@ -162,19 +204,23 @@ export function PositionScene() {
       ctx.fillRect(x0 + q * cw + 0.5, y0 + d * ch + 0.5, cw - 1, ch - 1);
     }
     frame(ctx, x0 + p * cw, y0 - 1, cw, PD * ch + 2, palette.ink, 2);
-    label(ctx, U.posenc.fast, x0 + NPOS * cw, y0 - 18, palette.muted, 10, "right");
-    label(ctx, U.posenc.slow, x0 + NPOS * cw, y0 + PD * ch + 10, palette.muted, 10, "right");
+    label(ctx, U.posenc.fast, x0 + NPOS * cw, y0 - 18, palette.muted, 11, "right");
+    label(ctx, U.posenc.slow, x0 + NPOS * cw, y0 + PD * ch + 11, palette.muted, 11, "right");
 
     // dot product of PE(p) with every PE(q), scaled so identical vectors give 1
-    const by = y0 + PD * ch + 40, bh = Math.min(120, h - by - 50), mid = by + bh * 0.72;
+    const by = y0 + PD * ch + 44, bh = Math.min(120, h - by - 62), mid = by + bh * 0.72;
     label(ctx, U.posenc.sim, x0, by - 12, palette.muted, 11);
     line(ctx, x0, mid, x0 + NPOS * cw, mid, palette.frame, 1);
     for (let q = 0; q < NPOS; q++) {
-      const s = dot(PES[p], PES[q]) / (PD / 2), hh = s * bh * 0.7;
+      const s = posSim(p, q, PD), hh = s * bh * 0.7;
       ctx.fillStyle = q === p ? palette.ink : s >= 0 ? `rgba(${palette.normalRgb},0.8)` : `rgba(${palette.anomalyRgb},0.7)`;
       ctx.fillRect(x0 + q * cw + 1, hh >= 0 ? mid - hh : mid, Math.max(1, cw - 2), Math.abs(hh));
     }
-    label(ctx, `${U.posenc.pos} ${p}`, x0 + (p + 0.5) * cw, mid + bh * 0.28 + 8, palette.ink, 11, "center");
+    const ly = mid + bh * 0.28 + 10;
+    label(ctx, `${U.posenc.pos} ${p}`, x0 + (p + 0.5) * cw, ly, palette.ink, 11, "center");
+    // the same two numbers wherever the chosen position is: the dot product depends on the distance only
+    const s1 = posSim(p, p + 1 < NPOS ? p + 1 : p - 1, PD), s2 = posSim(p, p + 2 < NPOS ? p + 2 : p - 2, PD);
+    label(ctx, `${U.posenc.one} ${s1.toFixed(2)}  ·  ${U.posenc.two} ${s2.toFixed(2)}`, w / 2, ly + 24, READ, 12, "center");
   });
 
   return (
@@ -191,28 +237,28 @@ export function PositionScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 08 · The causal mask                                                 */
+/* 12 · The causal mask on the Korean answer line                       */
 /* ------------------------------------------------------------------ */
 
-const MASK_SCORES = attention(embed(["A", "B", "C", "D", "E"], true), TOY_HEAD).scores;
-
 export function MaskScene() {
-  const [on, setOn] = useState(true);
-  const [row, setRow] = useState<number | null>(null);
-  const weights = useMemo(() => MASK_SCORES.map((s, i) => softmax(s.map((v, j) => (on && j > i ? -Infinity : v)))), [on]);
+  const [on, setOn] = useState(false);
+  const [row, setRow] = useState(1);
+  const weights = useMemo(() => maskedWeights(on), [on]);
 
-  const ref = useCanvas((ctx, w, h, tt) => {
+  const ref = useCanvas((ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
     drawGrid(ctx, w, h, 40);
-    const n = 5, r = row ?? Math.floor(tt / 1.5) % n;
-    const lw = 62, m = Math.min(58, (w - 2 * PAD - lw) / n, (h - 150) / n);
-    const x0 = (w - (lw + n * m)) / 2 + lw, y0 = 64;
+    const n = 4, T = U.mask.tokens, A = U.mask.answers;
+    const lw = 56, rw = 56, m = Math.min(64, (w - 2 * PAD - lw - rw) / n, (h - 170) / n);
+    const x0 = (w - (lw + n * m + rw)) / 2 + lw, y0 = 70 + Math.max(0, (h - 440) / 4);
 
     label(ctx, U.mask.key, x0 + (n * m) / 2, y0 - 44, palette.muted, 11, "center");
-    U.mask.tokens.forEach((t, j) => label(ctx, t, x0 + (j + 0.5) * m, y0 - 16, j <= r || !on ? palette.ink : palette.dotOff, 11, "center"));
-    label(ctx, U.mask.query, x0 - lw, y0 - 16, palette.muted, 11);
+    T.forEach((t, j) => label(ctx, t, x0 + (j + 0.5) * m, y0 - 16, j <= row || !on ? palette.ink : palette.dotOff, 11, "center"));
+    label(ctx, U.mask.query, x0 - 10, y0 - 44, palette.muted, 11, "right");
+    label(ctx, U.mask.must, x0 + n * m + 8, y0 - 44, palette.mint, 11);
     for (let i = 0; i < n; i++) {
-      label(ctx, U.mask.tokens[i], x0 - 10, y0 + (i + 0.5) * m, i === r ? palette.accent : palette.ink, 11, "right");
+      label(ctx, T[i], x0 - 10, y0 + (i + 0.5) * m, i === row ? palette.accent : palette.ink, 11, "right");
+      label(ctx, A[i], x0 + n * m + 8, y0 + (i + 0.5) * m, i === row ? palette.mint : palette.muted, 11);
       for (let j = 0; j < n; j++) {
         const x = x0 + j * m, y = y0 + i * m, wt = weights[i][j];
         if (on && j > i) {
@@ -224,15 +270,19 @@ export function MaskScene() {
           ctx.stroke();
           ctx.restore();
         } else {
-          ctx.fillStyle = `rgba(${palette.accentRgb},${0.08 + 0.9 * wt})`; ctx.fillRect(x + 1, y + 1, m - 2, m - 2);
-          if (m >= 34) label(ctx, wt.toFixed(2), x + m / 2, y + m / 2, wt > 0.55 ? "#ffffff" : palette.ink, 11, "center");
+          ctx.fillStyle = `rgba(${palette.normalRgb},${0.08 + 0.85 * wt})`; ctx.fillRect(x + 1, y + 1, m - 2, m - 2);
+          if (m >= 34) label(ctx, pc(wt), x + m / 2, y + m / 2, wt > 0.5 ? "#ffffff" : palette.ink, 11, "center");
+          // the slot one step to the right holds this row's own answer
+          if (!on && j === i + 1) frame(ctx, x + 2, y + 2, m - 4, m - 4, palette.anomaly, 2);
         }
       }
     }
-    frame(ctx, x0, y0 + r * m, n * m, m, palette.ink, 2);
-    const visible = on ? U.mask.tokens.slice(0, r + 1) : U.mask.tokens;
-    label(ctx, `${U.mask.tokens[r]}: ${U.mask.sees} ${visible.length} / ${n}`, w / 2, y0 + n * m + 26, palette.ink, 12, "center");
-    label(ctx, visible.join("  "), w / 2, y0 + n * m + 48, palette.accent, 12, "center");
+    frame(ctx, x0, y0 + row * m, n * m, m, palette.ink, 2);
+    const visible = on ? T.slice(0, row + 1) : T, by = y0 + n * m + 24;
+    label(ctx, `${T[row]} ${U.mask.sees}`, w / 2, by, palette.muted, 11, "center");
+    label(ctx, visible.join("  "), w / 2, by + 19, palette.ink, 12, "center");
+    if (row < n - 1 && !on) label(ctx, `${U.mask.leak} ${A[row]} ${pc(weights[row][row + 1])}`, w / 2, by + 42, palette.anomaly, 12, "center");
+    else label(ctx, `${U.mask.must} ${A[row]}: ${row < n - 1 ? U.mask.hidden : U.mask.last}`, w / 2, by + 42, palette.mint, 12, "center");
   });
 
   return (
@@ -246,7 +296,7 @@ export function MaskScene() {
         </div>
         <div className="ad-ctl ad-seg" role="group" aria-label={U.mask.row}>
           <span>{U.mask.row}</span>
-          {[0, 1, 2, 3, 4].map((i) => <button key={i} type="button" className={row === i ? "on" : ""} onClick={() => setRow(i)}>{i + 1}</button>)}
+          {U.mask.tokens.map((t, i) => <button key={t} type="button" className={row === i ? "on" : ""} onClick={() => setRow(i)}>{t}</button>)}
         </div>
       </div>
     </div>
@@ -254,15 +304,14 @@ export function MaskScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 09 · Encoder, decoder, and cross-attention across a word-order gap   */
+/* 13 · Encoder, decoder, and cross-attention across a word-order gap   */
 /* ------------------------------------------------------------------ */
 
-const SRC_V: [number, number][] = [[1, 0], [-0.707, -0.707], [0, 1]];      // I, love, cats
-const TGT_Q: [number, number][] = [[1, 0], [0, 1], [-0.707, -0.707]];      // 나는, 고양이를, 사랑한다
-const CROSS = TGT_Q.map((q) => softmax(SRC_V.map((k) => 4 * dot(q, k))));
-const TGT_E: [number, number][] = [[0.4, 0.4], ...TGT_Q];                  // <start>, then the written words
-/** Masked self-attention of the slot being written: only the tokens already on the line can be read. */
-const selfWeights = (s: number) => softmax(TGT_E.slice(0, s).map((e) => 2 * dot(TGT_E[s - 1], e)));
+/** Reading shares over I, love, cats of the slot that holds the query: <start>, 나는, 고양이를.
+ *  The 나는 slot is the blank of 02: 2%, 19%, 79%. */
+const CROSS = [softmax(CROSS_OTHER[0]), fillBlank("cats").weights, softmax(CROSS_OTHER[1])];
+/** Masked self-attention of the same slots: the rows of the 12 figure with the mask on (나는 reads 38%, 62%). */
+const SELF = maskedWeights(true);
 
 export function EncDecScene() {
   const [step, setStep] = useState<number | null>(null);
@@ -285,32 +334,37 @@ export function EncDecScene() {
 
     rbox(ctx, PAD, yt - 20, w - 2 * PAD, bh + 62, 12, `rgba(${palette.accentRgb},0.06)`, `rgba(${palette.accentRgb},0.35)`, 1);
     label(ctx, U.encdec.target, PAD + 12, yt + bh + 28, palette.accent, 11);
-    const shown = [U.encdec.start, ...U.encdec.tgt];
+    // the slot that holds the query is the last one already on the line; the word it puts out goes in the slot to its right
+    const shown = [U.encdec.start, ...U.encdec.tgt], q = s - 1;
     shown.forEach((t, j) => {
-      const visible = j <= s, writing = j === s && s >= 1;
-      rbox(ctx, tx(j) - bw / 2, yt, bw, bh, 8, writing ? `rgba(${palette.accentRgb},0.16)` : "#ffffff", visible ? palette.accent : palette.dotOff, writing ? 3 : 1.5);
+      const visible = j <= s, writing = j === s && s >= 1, owner = j === q;
+      rbox(ctx, tx(j) - bw / 2, yt, bw, bh, 8, writing ? `rgba(${palette.accentRgb},0.16)` : owner ? `rgba(${palette.normalRgb},0.1)` : "#ffffff", owner ? READ : visible ? palette.accent : palette.dotOff, writing || owner ? 3 : 1.5);
       label(ctx, visible ? t : "?", tx(j), yt + bh / 2, visible ? palette.ink : palette.dotOff, 13, "center");
+      if (owner) label(ctx, "Q", tx(j) - bw / 2 + 7, yt + 9, READ, 11);
     });
 
     if (s >= 1 && own) {
-      selfWeights(s).forEach((wt, j) => {
-        ctx.save(); ctx.strokeStyle = `rgba(${palette.accentRgb},${0.25 + 0.75 * wt})`; ctx.lineWidth = 1 + 7 * wt;
-        ctx.beginPath(); ctx.moveTo(tx(s), yt - 2); ctx.quadraticCurveTo((tx(s) + tx(j)) / 2, yt - 54, tx(j), yt - 2); ctx.stroke(); ctx.restore();
-        label(ctx, `${(wt * 100).toFixed(0)}%`, tx(j), yt - 12, palette.accent, 11, "center");
+      SELF[q].slice(0, s).forEach((wt, j) => {
+        ctx.save(); ctx.strokeStyle = `rgba(${palette.normalRgb},${0.25 + 0.75 * wt})`; ctx.lineWidth = 1 + 7 * wt;
+        ctx.beginPath();
+        if (j === q) ctx.arc(tx(j), yt - 15, 12, 0, Math.PI * 2);       // the slot reads itself too
+        else { ctx.moveTo(tx(q), yt - 2); ctx.quadraticCurveTo((tx(q) + tx(j)) / 2, yt - 54, tx(j), yt - 2); }
+        ctx.stroke(); ctx.restore();
+        label(ctx, pc(wt), tx(j), yt + bh + 13, READ, 11, "center");
       });
       label(ctx, U.encdec.masked, w / 2, (yt + ys + bh) / 2 - 18, palette.muted, 11, "center");
     } else if (s >= 1) {
-      const wts = CROSS[s - 1];
-      wts.forEach((wt, i) => {
+      CROSS[q].forEach((wt, i) => {
         if (wt < 0.01) return;
-        line(ctx, tx(s), yt - 2, sx(i), ys + bh + 2, `rgba(${palette.accentRgb},${0.25 + 0.75 * wt})`, 1 + 9 * wt);
-        if (wt > 0.1) label(ctx, `${(wt * 100).toFixed(0)}%`, (tx(s) + sx(i)) / 2 + 12, (yt + ys + bh) / 2, palette.accent, 11);
+        line(ctx, tx(q), yt - 2, sx(i), ys + bh + 2, `rgba(${palette.normalRgb},${0.25 + 0.75 * wt})`, 1 + 9 * wt);
+        label(ctx, pc(wt), sx(i), ys - 12, READ, 13, "center");
       });
     }
     if (s >= 1) {
-      label(ctx, `${U.encdec.writing}: ${U.encdec.tgt[s - 1]}`, w / 2, h - 30, palette.ink, 13, "center");
+      label(ctx, `${U.encdec.owner}: ${shown[q]}`, w / 2, h - 44, READ, 12, "center");
+      label(ctx, `${U.encdec.writing}: ${U.encdec.tgt[q]}`, w / 2, h - 24, palette.ink, 13, "center");
     } else {
-      label(ctx, U.encdec.start, w / 2, h - 30, palette.muted, 13, "center");
+      label(ctx, U.encdec.first, w / 2, h - 30, palette.muted, 12, "center");
     }
   });
 
@@ -334,28 +388,23 @@ export function EncDecScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 10 · Logits → softmax → cross-entropy, and one gradient step         */
+/* 14 · Candidate scores → probabilities → error, and one step of fixing */
 /* ------------------------------------------------------------------ */
 
-const Z0 = [0.2, 1.0, 0.1, 0.4, 0.6, -0.5];
-const ANSWER = 0;
-
 export function OutputScene() {
-  const [state, setState] = useState({ z: Z0, steps: 0 });
-  const p = softmax(state.z), loss = -Math.log(p[ANSWER]);
-  // dL/dz_k = p_k − 1[k = answer]; one step of size 1 down that gradient
-  const train = () => setState((s) => {
-    const q = softmax(s.z);
-    return { z: s.z.map((v, k) => v - (q[k] - (k === ANSWER ? 1 : 0))), steps: s.steps + 1 };
-  });
+  const [state, setState] = useState({ z: OUT_Z0, steps: 0 });
+  const p = softmax(state.z), loss = -Math.log(p[OUT_ANSWER]);
+  const train = () => setState((s) => ({ z: outStep(s.z), steps: s.steps + 1 }));
 
   const ref = useCanvas((ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
     drawGrid(ctx, w, h, 40);
-    const x0 = PAD, nameW = 78, bx = x0 + nameW, bwid = w - PAD - bx - 108, rh = Math.min(40, (h - 170) / 6), y0 = 64;
-    label(ctx, U.output.context, x0, y0 - 30, palette.ink, 13);
+    const x0 = PAD, nameW = 78, bx = x0 + nameW, bwid = w - PAD - bx - 108, rh = Math.min(40, (h - 190) / 6), y0 = 78;
+    label(ctx, U.output.context, x0, 16, palette.ink, 12);
+    label(ctx, U.output.prob, w < 420 ? x0 : bx, y0 - 20, palette.accent, 11);   // on phones the caption starts at the left edge so it clears the right-hand caption
+    label(ctx, U.output.fix, w - PAD, y0 - 20, palette.muted, 11, "right");
     U.output.vocab.forEach((t, k) => {
-      const y = y0 + k * rh, ans = k === ANSWER;
+      const y = y0 + k * rh, ans = k === OUT_ANSWER;
       label(ctx, t, x0, y + rh / 2 - 3, ans ? palette.mint : palette.ink, 12);
       bar(ctx, bx, y + rh / 2 - 10, bwid, 14, p[k], ans ? palette.mint : palette.accent);
       if (ans) frame(ctx, bx - 2, y + rh / 2 - 12, bwid + 4, 18, palette.mint, 1.5);
@@ -364,9 +413,10 @@ export function OutputScene() {
       label(ctx, `${g > 0 ? "−" : "+"}${Math.abs(g).toFixed(2)}`, w - PAD, y + rh / 2 - 3, g > 0 ? palette.anomaly : palette.mint, 11, "right");
     });
     const ty = y0 + 6 * rh + 22;
-    label(ctx, `${U.output.loss}  −ln(${p[ANSWER].toFixed(3)}) = ${loss.toFixed(2)}`, x0, ty, palette.ink, 13);
+    label(ctx, `${U.output.loss}  −ln(${p[OUT_ANSWER].toFixed(3)}) = ${loss.toFixed(2)}`, x0, ty, palette.ink, 13);
     label(ctx, `${U.output.step} ${state.steps}`, w - PAD, ty, palette.muted, 12, "right");
     bar(ctx, x0, ty + 16, w - 2 * PAD, 6, Math.min(1, loss / 2.2), palette.anomaly);
+    label(ctx, U.output.rule, x0, ty + 44, palette.muted, 11);
   });
 
   return (
@@ -374,7 +424,7 @@ export function OutputScene() {
       <canvas ref={ref} className="ad-canvas" aria-hidden="true" />
       <div className="ad-controls">
         <button type="button" className="ad-btn" onClick={train}>{U.output.train}</button>
-        <button type="button" className="ad-btn" onClick={() => setState({ z: Z0, steps: 0 })}>{U.output.reset}</button>
+        <button type="button" className="ad-btn" onClick={() => setState({ z: OUT_Z0, steps: 0 })}>{U.output.reset}</button>
       </div>
     </div>
   );

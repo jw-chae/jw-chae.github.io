@@ -1,6 +1,11 @@
-/** Arithmetic behind the U-Net study scenes. Every picture is computed from these functions. */
+/** Arithmetic behind the U-Net study scenes. Every picture is computed from these functions. No imports, so node can run it. */
 
-import { grid, type Grid } from "./cnn-math";
+export type Grid = { n: number; d: number[] };
+const grid = (n: number, f: (r: number, c: number) => number): Grid => {
+  const d = new Array<number>(n * n);
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) d[r * n + c] = f(r, c);
+  return { n, d };
+};
 
 export const UN = 24;
 
@@ -45,18 +50,22 @@ export function iou(a: Grid, b: Grid): number {
   return uni ? inter / uni : 1;
 }
 
-/** Scene 1: classify every pixel from the mean brightness of the k×k patch around it. */
-export function patchPredict(img: Grid, k: number): Grid {
+/** Mean brightness of the k×k patch centred on (r, c), clipped at the picture's edge. */
+export function patchMean(img: Grid, k: number, r: number, c: number): number {
   const h = (k - 1) / 2, n = img.n;
-  return grid(n, (r, c) => {
-    let s = 0, m = 0;
-    for (let u = -h; u <= h; u++) for (let v = -h; v <= h; v++) {
-      const y = r + u, x = c + v;
-      if (y >= 0 && x >= 0 && y < n && x < n) { s += img.d[y * n + x]; m++; }
-    }
-    return s / m > 0.5 ? 1 : 0;
-  });
+  let s = 0, m = 0;
+  for (let u = -h; u <= h; u++) for (let v = -h; v <= h; v++) {
+    const y = r + u, x = c + v;
+    if (y >= 0 && x >= 0 && y < n && x < n) { s += img.d[y * n + x]; m++; }
+  }
+  return s / m;
 }
+
+/** Scene 1: classify every pixel from the mean brightness of the k×k patch around it. */
+export const patchPredict = (img: Grid, k: number): Grid => grid(img.n, (r, c) => (patchMean(img, k, r, c) > 0.5 ? 1 : 0));
+
+/** The two pixels the patch scene follows: one on the thin arm (cell) and one noise speck (background). */
+export const PATCH_PICKS: { arm: [number, number]; speck: [number, number] } = { arm: [10, 18], speck: [2, 13] };
 
 export function avgPool(g: Grid): Grid {
   const n = g.n / 2;

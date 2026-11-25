@@ -2,12 +2,11 @@
 
 import { useMemo, useRef, useState } from "react";
 import { drawGrid, label, palette, useCanvas } from "@/components/anomaly/lib";
-import type { Grid } from "./cnn-math";
 import { arrow, cellText, cells, frame, gray, line, rbox, type Ctx } from "./kit";
 import { unetCopy } from "./unet-copy";
 import {
-  CELLS_PHOTO, CELLS_TRUTH, PHOTO, SMALL_MAP, STAMP_COPY, STAMP_LEARNED, TRUTH, UN, U_NODES,
-  bilinearUp, downThenUp, iou, makeWarp, patchPredict, skipFusion, threshold, transposedUp, warp,
+  CELLS_PHOTO, CELLS_TRUTH, PATCH_PICKS, PHOTO, SMALL_MAP, STAMP_COPY, STAMP_LEARNED, TRUTH, UN, U_NODES,
+  bilinearUp, downThenUp, iou, makeWarp, patchMean, patchPredict, skipFusion, threshold, transposedUp, warp, type Grid,
 } from "./unet-math";
 
 const U = unetCopy.ui;
@@ -53,9 +52,12 @@ function outline(ctx: Ctx, m: Grid, x: number, y: number, cell: number, color: s
 /* ------------------------------------------------------------------ */
 
 const PATCHES = [1, 3, 5, 7, 9, 11];
+type Pick = keyof typeof PATCH_PICKS;
+const PICKS: Pick[] = ["arm", "speck"];
 
 export function WindowScene() {
   const [ki, setKi] = useState(1);
+  const [pick, setPick] = useState<Pick>("arm");
   const k = PATCHES[ki];
   const calc = useMemo(() => {
     const pred = patchPredict(PHOTO, k);
@@ -64,28 +66,33 @@ export function WindowScene() {
     return { pred, fp, fn, iou: iou(pred, TRUTH) };
   }, [k]);
 
-  const ref = useCanvas((ctx, w, h, tt) => {
+  const ref = useCanvas((ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
     drawGrid(ctx, w, h, 40);
-    const c = Math.min(11, (w - 2 * PAD - 22) / (2 * UN), (h - 130) / UN);
-    const x0 = (w - (2 * UN * c + 22)) / 2, y0 = Math.max(44, (h - UN * c - 90) / 2 + 10), x1 = x0 + UN * c + 22;
-    const pr = Math.round(11.5 + 8.5 * Math.sin(tt * 0.7)), pc = Math.round(11.5 + 9.5 * Math.cos(tt * 0.9));
-    const half = (k - 1) / 2;
+    const c = Math.min(10, (w - 2 * PAD - 22) / (2 * UN), (h - 170) / UN);
+    const x0 = (w - (2 * UN * c + 22)) / 2, y0 = Math.max(44, (h - UN * c - 140) / 2 + 10), x1 = x0 + UN * c + 22;
+    const [pr, pc] = PATCH_PICKS[pick], half = (k - 1) / 2;
 
+    // left: the photo, with the patch that is cut out around the followed pixel
     label(ctx, U.photo, x0 + (UN * c) / 2, y0 - 16, palette.muted, 11, "center");
     drawPhoto(ctx, PHOTO, x0, y0, c);
     const fx = Math.max(0, pc - half), fy = Math.max(0, pr - half), fx2 = Math.min(UN, pc + half + 1), fy2 = Math.min(UN, pr + half + 1);
     frame(ctx, x0 + fx * c, y0 + fy * c, (fx2 - fx) * c, (fy2 - fy) * c, palette.accent, 2.5);
 
+    // right: the answer at every pixel for this patch size
     label(ctx, `${U.pred}  ${k}×${k}`, x1 + (UN * c) / 2, y0 - 16, palette.muted, 11, "center");
     drawMask(ctx, calc.pred, x1, y0, c, MINT_RGB, TRUTH);
-    frame(ctx, x1 + pc * c, y0 + pr * c, c, c, palette.accent, 2);
+    frame(ctx, x1 + pc * c - 1, y0 + pr * c - 1, c + 2, c + 2, palette.accent, 2);
 
+    const mean = patchMean(PHOTO, k, pr, pc), said = mean > 0.5 ? 1 : 0, truth = TRUTH.d[pr * UN + pc], ok = said === truth;
+    const word = (v: number) => (v ? U.window.cell : U.window.bg);
     const ty = y0 + UN * c + 24;
-    label(ctx, `${U.iou} ${calc.iou.toFixed(2)}`, w / 2, ty, palette.ink, 14, "center");
-    label(ctx, `${U.window.fp} ${calc.fp}`, w / 2 - 12, ty + 24, palette.anomaly, 12, "right");
-    label(ctx, `${U.window.fn} ${calc.fn}`, w / 2 + 12, ty + 24, palette.normal, 12);
-    label(ctx, `${U.window.runs}: ${UN} × ${UN} = ${UN * UN}`, w / 2, ty + 46, palette.muted, 11, "center");
+    label(ctx, `${U.window.mean} ${mean.toFixed(2)} → ${word(said)}`, w / 2, ty, palette.accent, 13, "center");
+    label(ctx, `${U.window.answer} ${word(truth)} · ${ok ? U.window.right : U.window.wrong}`, w / 2, ty + 21, ok ? palette.mint : palette.anomaly, 12, "center");
+    label(ctx, `${U.iou} ${calc.iou.toFixed(2)}`, w / 2, ty + 48, palette.ink, 14, "center");
+    label(ctx, `${U.window.fp} ${calc.fp}`, w / 2 - 12, ty + 70, palette.anomaly, 12, "right");
+    label(ctx, `${U.window.fn} ${calc.fn}`, w / 2 + 12, ty + 70, palette.normal, 12);
+    label(ctx, `${U.window.runs}: ${UN} × ${UN} = ${UN * UN}`, w / 2, ty + 91, palette.muted, 11, "center");
   });
 
   return (
@@ -96,6 +103,10 @@ export function WindowScene() {
           <span>{U.window.size} <b>{k}×{k}</b></span>
           <input type="range" min={0} max={PATCHES.length - 1} step={1} value={ki} onChange={(e) => setKi(Number(e.target.value))} />
         </label>
+        <div className="ad-ctl ad-seg" role="group" aria-label={U.window.follow}>
+          <span>{U.window.follow}</span>
+          {PICKS.map((p) => <button key={p} type="button" className={pick === p ? "on" : ""} onClick={() => setPick(p)}>{U.window.picks[p]}</button>)}
+        </div>
       </div>
     </div>
   );

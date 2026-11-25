@@ -1,4 +1,5 @@
-/** Small transformer arithmetic for the study scenes: attention, layer norm, a one-block toy model. */
+/** Small transformer arithmetic for the study scenes (Transformer 05–14, shared helpers for ViT).
+ *  Free of imports so node can run it directly. Every number quoted in the chapter text is computed here. */
 
 export type Vec = number[];
 export type Mat = number[][];
@@ -23,6 +24,8 @@ export const add = (a: Vec, b: Vec): Vec => a.map((v, i) => v + b[i]);
 export const scale = (a: Vec, k: number): Vec => a.map((v) => v * k);
 export const norm = (a: Vec) => Math.sqrt(dot(a, a));
 export const matVec = (m: Mat, v: Vec): Vec => m.map((row) => dot(row, v));
+export const cosine = (a: Vec, b: Vec) => dot(a, b) / (norm(a) * norm(b));
+const mixOf = (w: Vec, vs: Vec[]): Vec => vs[0].map((_, d) => w.reduce((s, wi, i) => s + wi * vs[i][d], 0));
 
 export function softmax(z: Vec): Vec {
   const m = Math.max(...z);
@@ -59,40 +62,70 @@ export function sinusoid(pos: number, d: number): Vec {
   });
 }
 
-/* ---- scene 3: two heads that read different parts of the same embedding ---- */
+/* ---- 05 · what is left of one word in a memo that is overwritten word by word ---- */
 
-export const HEAD_TOKENS: { type: 0 | 1 }[] = [0, 0, 1, 0, 1, 1, 0, 1].map((t) => ({ type: t as 0 | 1 }));
+/** Toy memo: each later word keeps `keep` of what was there. The share is relative to the word read last (= 1). */
+export const memoShare = (keep: number, wordsAfter: number) => Math.pow(keep, wordsAfter);
 
-/** Embedding = [cos, sin of position angle | one-hot type]. Four numbers, two meanings. */
-export function headEmbedding(i: number): Vec {
-  const a = (i / HEAD_TOKENS.length) * Math.PI * 1.5;
-  const ty = HEAD_TOKENS[i].type;
-  return [Math.cos(a), Math.sin(a), ty === 0 ? 1 : 0, ty === 1 ? 1 : 0];
+/* ---- 06 · the embedding table: eight source words, two numbers each, set by hand ---- */
+
+export const VOCAB = ["I", "love", "cats", "apples", "chase", "dogs", "like", "tigers"] as const;
+export type Word = (typeof VOCAB)[number];
+export const TABLE: Vec[] = [[-1, -0.3], [0.2, -0.8], [0.6, 0.7], [-0.7, 0.6], [-0.5, -0.5], [0.9, 0.5], [0.5, -0.6], [0.3, 0.9]];
+export const idOf = (w: Word) => VOCAB.indexOf(w);
+export const rowOf = (w: Word): Vec => TABLE[idOf(w)];
+
+/* ---- 07–09 · one row of tokens reading itself ---- */
+
+/** Hand-set query matrix of the one head drawn in 08 and 09. W_K and W_V are left as the identity. */
+export const W_Q: Mat = [[0, 2], [-2, 0]];
+
+export type RowRead = { x: Vec[]; q: Vec[]; scores: Mat; weights: Mat; read: Vec[]; out: Vec[] };
+/** Self-attention on one row. K and V are the token vectors themselves; Q is the vector itself, or W_Q times it.
+ *  `usePos` adds the two-number sinusoid of each position to the token vector first. */
+export function readRow(words: Word[], useMatrix: boolean, usePos = false): RowRead {
+  const x = words.map((w, i) => (usePos ? add(rowOf(w), sinusoid(i, 2)) : rowOf(w)));
+  const q = x.map((v) => (useMatrix ? matVec(W_Q, v) : v));
+  const scores = q.map((qi) => x.map((k) => dot(qi, k)));
+  const weights = scores.map(softmax);
+  const read = weights.map((w) => mixOf(w, x));
+  return { x, q, scores, weights, read, out: x.map((v, i) => add(v, read[i])) };
 }
 
-const pick = (dims: number[], gain: number): Mat => dims.map((d) => [0, 1, 2, 3].map((j) => (j === d ? gain : 0)));
-const I4: Mat = [0, 1, 2, 3].map((i) => [0, 1, 2, 3].map((j) => (i === j ? 1 : 0)));
-/** Head A reads only the position half, head B only the type half. */
-export const HEAD_A: Head = { WQ: pick([0, 1], 3.2), WK: pick([0, 1], 3.2), WV: I4 };
-export const HEAD_B: Head = { WQ: pick([2, 3], 2.6), WK: pick([2, 3], 2.6), WV: I4 };
+/** Weights and multiplications when a d-number vector is split across `heads` heads. */
+export function headCost(d: number, heads: number) {
+  const dh = d / heads;
+  return { dh, qkv: 3 * heads * dh * d, out: d * d, perPair: heads * dh };
+}
 
-/* ---- scenes 4 and 5: a one-block toy transformer with fixed random weights ---- */
+export const ORDER_A: Word[] = ["dogs", "chase", "cats"];
+export const ORDER_B: Word[] = ["cats", "chase", "dogs"];
+/** The same three words in two orders, read by the head of 08. `delta[w]` = distance between word w's outputs in the two sentences. */
+export function orderPair(usePos: boolean) {
+  const a = readRow(ORDER_A, true, usePos), b = readRow(ORDER_B, true, usePos);
+  const delta = Object.fromEntries(ORDER_A.map((w, i) => {
+    const j = ORDER_B.indexOf(w);
+    return [w, norm(a.out[i].map((v, d) => v - b.out[j][d]))];
+  })) as Record<string, number>;
+  return { a, b, delta };
+}
+
+/* ---- 10 · how alike two position vectors are (1 = identical) ---- */
+
+export const posSim = (p: number, q: number, d = 16) => dot(sinusoid(p, d), sinusoid(q, d)) / (d / 2);
+
+/* ---- 11 · a one-block toy transformer with fixed random weights, traced on "cats" in "I love cats" ---- */
 
 export const D = 8;
 const r0 = seeded(20260917);
-export const TOKEN_EMB: Record<string, Vec> = Object.fromEntries(["A", "B", "C", "D", "E"].map((k) => [k, Array.from({ length: D }, () => randn(r0))]));
+export const BLOCK_WORDS = ["I", "love", "cats"];
+export const TOKEN_EMB: Record<string, Vec> = Object.fromEntries(BLOCK_WORDS.map((k) => [k, Array.from({ length: D }, () => randn(r0))]));
 export const TOY_HEAD: Head = { WQ: randMat(D, D, r0, 0.6), WK: randMat(D, D, r0, 0.6), WV: randMat(D, D, r0, 0.5) };
 export const MLP_W1: Mat = randMat(16, D, r0, 0.5);
 export const MLP_W2: Mat = randMat(D, 16, r0, 0.35);
 
 export function embed(seq: string[], usePos: boolean): Vec[] {
   return seq.map((k, i) => (usePos ? add(TOKEN_EMB[k], sinusoid(i, D)) : TOKEN_EMB[k]));
-}
-
-/** Attention output per token, keyed by token name, so the same token can be compared across orderings. */
-export function attendByName(seq: string[], usePos: boolean): Record<string, Vec> {
-  const { out } = attention(embed(seq, usePos), TOY_HEAD);
-  return Object.fromEntries(seq.map((k, i) => [k, out[i]]));
 }
 
 export type BlockTrace = { x: Vec; n1: Vec; attn: Vec; mid: Vec; n2: Vec; mlp: Vec; out: Vec; weights: Vec };
@@ -108,3 +141,24 @@ export function traceBlock(seq: string[], index: number): BlockTrace {
   const mlp = matVec(MLP_W2, hidden);
   return { x: X[index], n1: N1[index], attn: out[index], mid, n2, mlp, out: add(mid, mlp), weights: weights[index] };
 }
+
+/* ---- 12 · the causal mask on the Korean answer line ---- */
+
+/** Hand-set scores for the four slots of the answer line: <start>, 나는, 고양이를, 사랑한다. Row = the slot that reads. */
+export const MASK_SCORES: Mat = [[1.0, 0.2, 0.5, -0.3], [0.3, 0.8, 1.7, 0.1], [0.0, 1.0, 0.6, 1.5], [-0.2, 0.7, 1.2, 0.5]];
+export const maskedWeights = (on: boolean): Mat => MASK_SCORES.map((s, i) => softmax(s.map((v, j) => (on && j > i ? -Infinity : v))));
+
+/* ---- 13 · cross-attention of the query slots <start> and 고양이를 (the 나는 slot reuses the blank of 02) ---- */
+
+/** Hand-set scores over I, love, cats for the query slots <start> (which puts out 나는) and 고양이를 (which puts out 사랑한다). */
+export const CROSS_OTHER: Mat = [[2.4, 0.4, -0.5], [-0.4, 2.2, 0.6]];
+
+/* ---- 14 · candidate scores, cross-entropy, one step down the gradient ---- */
+
+export const OUT_Z0: Vec = [0.2, 1.0, 0.1, 0.4, 0.6, -0.6];
+export const OUT_ANSWER = 0;
+/** dL/dz_k = p_k − 1[k = answer]; one step of size 1 down that gradient. */
+export const outStep = (z: Vec): Vec => {
+  const p = softmax(z);
+  return z.map((v, k) => v - (p[k] - (k === OUT_ANSWER ? 1 : 0)));
+};

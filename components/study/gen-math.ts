@@ -19,26 +19,31 @@ const gauss = (r: () => number) => Math.sqrt(-2 * Math.log(Math.max(r(), 1e-12))
 
 export const IMG = 64, PS = 4, NP = IMG / PS, PD = PS * PS;
 
-/** A hand-made grayscale scene: sky gradient, a shaded ball, a striped floor, a dark post. Values in 0..1. */
-export const PICTURE: Img = Array.from({ length: IMG }, (_, y) => Array.from({ length: IMG }, (_, x) => {
+/** A hand-made grayscale scene: sky gradient, a shaded ball, a striped floor, a dark post. Values in 0..1. `shift` moves the ball to the right. */
+export const pictureAt = (shift: number): Img => Array.from({ length: IMG }, (_, y) => Array.from({ length: IMG }, (_, x) => {
   let v = 0.78 - 0.3 * (y / IMG);                                          // sky, brighter at the top
   if (y > 44) v = 0.38 + 0.2 * Math.sin((x + (y - 44) * 1.5) * 0.55);      // striped floor
-  const dx = x - 24, dy = y - 27, d = Math.sqrt(dx * dx + dy * dy);
+  const dx = x - 24 - shift, dy = y - 27, d = Math.sqrt(dx * dx + dy * dy);
   if (d < 14) v = 0.95 - 0.5 * Math.min(1, Math.sqrt((dx + 5) ** 2 + (dy + 5) ** 2) / 18);   // ball lit from the upper left
   if (x >= 47 && x < 53 && y >= 12 && y < 46) v = 0.12;                    // post
   return Math.min(1, Math.max(0, v));
 }));
+export const PICTURE: Img = pictureAt(0);
 
-/** The 256 patches as 16-number vectors, in reading order. */
-export const PATCHES: number[][] = (() => {
+/** The patches of a picture as 16-number vectors, in reading order. */
+export function patchesOf(img: Img): number[][] {
   const out: number[][] = [];
   for (let py = 0; py < NP; py++) for (let px = 0; px < NP; px++) {
     const v: number[] = [];
-    for (let j = 0; j < PS; j++) for (let i = 0; i < PS; i++) v.push(PICTURE[py * PS + j][px * PS + i]);
+    for (let j = 0; j < PS; j++) for (let i = 0; i < PS; i++) v.push(img[py * PS + j][px * PS + i]);
     out.push(v);
   }
   return out;
-})();
+}
+export const PATCHES: number[][] = patchesOf(PICTURE);
+
+/** The one patch the chapter follows: row 5, column 11 (counting from 0). Three columns of sky, one column of the dark post. */
+export const TRACK_ROW = 5, TRACK_COL = 11, TRACK = TRACK_ROW * NP + TRACK_COL;
 
 export function fromPatches(ps: number[][]): Img {
   const img: Img = Array.from({ length: IMG }, () => new Array<number>(IMG).fill(0));
@@ -82,32 +87,48 @@ const PCA = (() => {
   return eigSym(C);
 })();
 
-/** Learned compression: keep the k most useful directions of each patch (a linear encoder and decoder fitted to this picture). */
-export function learnedRecon(k: number): Img {
-  return fromPatches(PATCHES.map((p) => {
-    const out = [...PATCH_MEAN];
-    for (let c = 0; c < k; c++) {
-      let code = 0;
-      for (let i = 0; i < PD; i++) code += (p[i] - PATCH_MEAN[i]) * PCA.vec[i][c];
-      for (let i = 0; i < PD; i++) out[i] += code * PCA.vec[i][c];
-    }
-    return out;
-  }));
+/** The average patch of this picture: what the learned decoder starts from. */
+export const MEAN_PATCH = PATCH_MEAN;
+/** The learned directions, most useful first, each as 16 weights. The sign is arbitrary; it is fixed so the weights sum to a positive number. */
+export const DIRS: number[][] = Array.from({ length: PD }, (_, c) => {
+  const d = PCA.vec.map((row) => row[c]);
+  return d.reduce((a, b) => a + b, 0) < 0 ? d.map((v) => -v) : d;
+});
+/** Learned encoder: subtract the average patch, then one weighted sum per kept number. */
+export const encodeLearned = (p: number[], k: number): number[] => DIRS.slice(0, k).map((d) => d.reduce((s, w, i) => s + w * (p[i] - PATCH_MEAN[i]), 0));
+/** Learned decoder: the average patch plus each kept number times its direction. */
+export const decodeLearned = (z: number[]): number[] => PATCH_MEAN.map((m, i) => m + z.reduce((s, c, j) => s + c * DIRS[j][i], 0));
+
+/** The blocks plain shrinking averages over when a patch keeps k numbers: [rows, columns] of one block. k ∈ {1, 2, 4, 8}. */
+export const shrinkBlock = (k: number): [number, number] => (k === 1 ? [4, 4] : k === 2 ? [4, 2] : k === 4 ? [2, 2] : [1, 2]);
+/** Plain encoder: the mean of each block, blocks in reading order. */
+export function encodeShrink(p: number[], k: number): number[] {
+  const [bh, bw] = shrinkBlock(k), out: number[] = [];
+  for (let j0 = 0; j0 < PS; j0 += bh) for (let i0 = 0; i0 < PS; i0 += bw) {
+    let s = 0;
+    for (let j = 0; j < bh; j++) for (let i = 0; i < bw; i++) s += p[(j0 + j) * PS + i0 + i];
+    out.push(s / (bh * bw));
+  }
+  return out;
 }
+/** Plain decoder: every cell of a block gets the block's mean. */
+export function decodeShrink(z: number[]): number[] {
+  const [bh, bw] = shrinkBlock(z.length), out = new Array<number>(PD).fill(0);
+  let n = 0;
+  for (let j0 = 0; j0 < PS; j0 += bh) for (let i0 = 0; i0 < PS; i0 += bw) {
+    for (let j = 0; j < bh; j++) for (let i = 0; i < bw; i++) out[(j0 + j) * PS + i0 + i] = z[n];
+    n++;
+  }
+  return out;
+}
+/** Mean absolute difference per cell between two patches. */
+export const cellError = (a: number[], b: number[]) => a.reduce((s, v, i) => s + Math.abs(v - b[i]), 0) / a.length;
+
+/** Learned compression: keep the k most useful directions of each patch (a linear encoder and decoder fitted to this picture). */
+export const learnedRecon = (k: number): Img => fromPatches(PATCHES.map((p) => decodeLearned(encodeLearned(p, k))));
 
 /** Plain shrinking with the same budget: average over blocks so each patch keeps k numbers. k ∈ {1, 2, 4, 8}. */
-export function shrinkRecon(k: number): Img {
-  const [bh, bw] = k === 1 ? [4, 4] : k === 2 ? [4, 2] : k === 4 ? [2, 2] : [1, 2];
-  return fromPatches(PATCHES.map((p) => {
-    const out = new Array<number>(PD).fill(0);
-    for (let j0 = 0; j0 < PS; j0 += bh) for (let i0 = 0; i0 < PS; i0 += bw) {
-      let s = 0;
-      for (let j = 0; j < bh; j++) for (let i = 0; i < bw; i++) s += p[(j0 + j) * PS + i0 + i];
-      for (let j = 0; j < bh; j++) for (let i = 0; i < bw; i++) out[(j0 + j) * PS + i0 + i] = s / (bh * bw);
-    }
-    return out;
-  }));
-}
+export const shrinkRecon = (k: number): Img => fromPatches(PATCHES.map((p) => decodeShrink(encodeShrink(p, k))));
 
 /* ---- 02 · how many tokens a picture becomes ---- */
 
@@ -140,23 +161,45 @@ export function road(kind: Road, t: number): [number, number] {
   return [Math.sqrt(ab), Math.sqrt(1 - ab)];
 }
 
+/** Walk one particle from the noise point e to data in `steps` equal steps of t. The path has steps+1 points. */
+export function walkFrom(e: P2, kind: Road, steps: number, mix: Mix = BLOBS): P2[] {
+  const b1 = road(kind, 1)[1];
+  let x: P2 = [b1 * e[0], b1 * e[1]];
+  const path: P2[] = [x];
+  for (let i = 0; i < steps; i++) {
+    const [a, b] = road(kind, 1 - i / steps), [an, bn] = road(kind, 1 - (i + 1) / steps);
+    const p = posterior(x, a, b, mix);
+    x = [an * p.x0[0] + bn * p.eps[0], an * p.x0[1] + bn * p.eps[1]];
+    path.push(x);
+  }
+  return path;
+}
 /** Walk n particles from noise to data in `steps` equal steps of t. Each path has steps+1 points. */
 export function walk(kind: Road, steps: number, n: number, seed: number, mix: Mix = BLOBS): P2[][] {
   const r = mulberry(seed);
-  return Array.from({ length: n }, () => {
-    const e: P2 = [gauss(r), gauss(r)];
-    const [a1, b1] = road(kind, 1);
-    let x: P2 = [a1 * 0 + b1 * e[0], a1 * 0 + b1 * e[1]];
-    const path: P2[] = [x];
-    for (let i = 0; i < steps; i++) {
-      const [a, b] = road(kind, 1 - i / steps), [an, bn] = road(kind, 1 - (i + 1) / steps);
-      const p = posterior(x, a, b, mix);
-      x = [an * p.x0[0] + bn * p.eps[0], an * p.x0[1] + bn * p.eps[1]];
-      path.push(x);
-    }
-    return path;
+  return Array.from({ length: n }, () => walkFrom([gauss(r), gauss(r)], kind, steps, mix));
+}
+/** The particle the chapter follows, among those drawn with WALK_SEED: it starts between the right and the top blob. */
+export const WALK_SEED = 7, FOLLOW = 5;
+
+/** At point x and time t on a road: the share of each blob among the training pairs that pass here, and where the exact denoiser aims. */
+export function aimAt(x: P2, kind: Road, t: number, mix: Mix = BLOBS): { w: number[]; aim: P2 } {
+  const [a, b] = road(kind, t), p = posterior(x, a, b, mix);
+  const mx = Math.max(...p.logw), e = p.logw.map((l) => Math.exp(l - mx)), sum = e.reduce((q, r) => q + r, 0);
+  return { w: e.map((v) => v / sum), aim: p.x0 };
+}
+
+export type Pair = { x0: P2; eps: P2; blob: number };
+/** Training pairs for the straight road: a data point and a noise point drawn independently of each other. */
+export function trainPairs(n: number, seed: number, mix: Mix = BLOBS): Pair[] {
+  const r = mulberry(seed);
+  return Array.from({ length: n }, (): Pair => {
+    const blob = Math.min(mix.mu.length - 1, Math.floor(r() * mix.mu.length)), m = mix.mu[blob];
+    return { x0: [m[0] + mix.s * gauss(r), m[1] + mix.s * gauss(r)], eps: [gauss(r), gauss(r)], blob };
   });
 }
+/** Index of the blob centre nearest to x. */
+export const nearestBlob = (x: P2, mix: Mix = BLOBS) => mix.mu.reduce((best, m, k) => (Math.hypot(x[0] - m[0], x[1] - m[1]) < Math.hypot(x[0] - mix.mu[best][0], x[1] - mix.mu[best][1]) ? k : best), 0);
 
 /** Mean distance from each end point to the nearest blob centre. A perfect sampler gives about 1.25·s. */
 export function nearest(ends: P2[], mix: Mix = BLOBS): number {
@@ -168,14 +211,15 @@ export const apart = (a: P2[], b: P2[]) => a.reduce((s, x, i) => s + Math.hypot(
 
 export const WORDS = ["red", "ball", "blue", "box"] as const;
 /** Cross-attention from an object's region to the four prompt tokens. `context` is how much each noun has absorbed its adjective. */
-export function bind(context: number, beta = 3): { w: number[]; red: number }[] {
+export type Bound = { scores: number[]; w: number[]; colour: [number, number][]; mixed: [number, number]; red: number };
+export function bind(context: number, beta = 3): Bound[] {
   const colour: [number, number][] = [[1, 0], [context, 0], [0, 1], [0, context]];      // (red, blue) carried by each token
   const object = [[0, 0], [1, 0], [0, 0], [0, 1]];                                       // (ball, box) named by each token
   return [0, 1].map((obj) => {
     const sc = object.map((o) => beta * o[obj]), mx = Math.max(...sc), e = sc.map((s) => Math.exp(s - mx)), sum = e.reduce((a, b) => a + b, 0);
     const w = e.map((v) => v / sum);
     const red = w.reduce((s, wi, i) => s + wi * colour[i][0], 0), blue = w.reduce((s, wi, i) => s + wi * colour[i][1], 0);
-    return { w, red: red / (red + blue) };
+    return { scores: sc, w, colour, mixed: [red, blue], red: red / (red + blue) };
   });
 }
 
@@ -205,6 +249,10 @@ export function quantize(K: number): Codes {
   return { book, ids, recon, lost: lost(recon) };
 }
 
+/** Distance from one patch to every code, nearest first: [code number, distance]. */
+export const codeDistances = (p: number[], book: number[][]): [number, number][] =>
+  book.map((c, k): [number, number] => [k, Math.sqrt(c.reduce((s, v, i) => s + (v - p[i]) ** 2, 0))]).sort((a, b) => a[1] - b[1]);
+
 /* ---- 06 · how many tokens a video becomes ---- */
 
 export const VIDEO_SIZES = [{ name: "480p", w: 848, h: 480 }, { name: "720p", w: 1280, h: 720 }, { name: "1080p", w: 1920, h: 1080 }];
@@ -215,21 +263,77 @@ export function videoTokens(w: number, h: number, seconds: number, fs = 8, ft = 
   return { frames, numbers: w * h * frames * 3, tokens: gw * gh * gt, grid: [gw, gh, gt] };
 }
 
+/**
+ * Four frames of the small picture with the ball moving one pixel per frame, cut into 4×4×4 space-time patches (64 numbers each).
+ * `apart(k)`: every frame's patch keeps k numbers along directions fitted to single-frame patches, so a space-time patch keeps 4k.
+ * `joint(m)`: the 64 numbers are compressed in one go to m numbers along directions fitted to the space-time patches.
+ * Both return the share of the clip's variation that is lost.
+ */
+export function spaceTimeToy(): { apart: (k: number) => number; joint: (m: number) => number } {
+  const frames = [0, 1, 2, 3].map((f) => patchesOf(pictureAt(f)));
+  const fit = (rows: number[][]) => {
+    const d = rows[0].length, mean = Array.from({ length: d }, (_, i) => rows.reduce((s, p) => s + p[i], 0) / rows.length);
+    const C = Array.from({ length: d }, () => new Array<number>(d).fill(0));
+    for (const p of rows) for (let i = 0; i < d; i++) for (let j = i; j < d; j++) C[i][j] += (p[i] - mean[i]) * (p[j] - mean[j]);
+    for (let i = 0; i < d; i++) for (let j = 0; j < i; j++) C[i][j] = C[j][i];
+    return { mean, vec: eigSym(C).vec };
+  };
+  const residual = (rows: number[][], k: number, model: { mean: number[]; vec: number[][] }) => rows.reduce((tot, p) => {
+    const d = p.length, out = [...model.mean];
+    for (let c = 0; c < k; c++) {
+      let code = 0;
+      for (let i = 0; i < d; i++) code += (p[i] - model.mean[i]) * model.vec[i][c];
+      for (let i = 0; i < d; i++) out[i] += code * model.vec[i][c];
+    }
+    return tot + p.reduce((s, v, i) => s + (v - out[i]) ** 2, 0);
+  }, 0);
+  const single = frames.flat(), cubes = frames[0].map((_, n) => frames.flatMap((fr) => fr[n]));
+  const all = single.flat(), mu = all.reduce((a, b) => a + b, 0) / all.length, total = all.reduce((s, v) => s + (v - mu) ** 2, 0);
+  const one = fit(single), four = fit(cubes);
+  return { apart: (k) => residual(single, k, one) / total, joint: (m) => residual(cubes, m, four) / total };
+}
+
 /* ---- 07 · frames denoised separately, or as one clip ---- */
 
-export type Clip = { pts: P2[]; look: number[]; steady: number };
-/** Each frame's "look" is a point that must sit on one of five blobs, the same one for the whole clip. */
-export function sampleClip(joint: boolean, frames: number, seed: number, steps = 40, mix: Mix = BLOBS): Clip {
+const softmax = (l: number[]) => { const mx = Math.max(...l), e = l.map((v) => Math.exp(v - mx)), sum = e.reduce((p, q) => p + q, 0); return e.map((v) => v / sum); };
+
+/**
+ * One moment of the walk. `own[f]`: frame f's five shares computed from its own point alone.
+ * `pooled`: the five shares after the eight frames' log evidence is added look by look (what a joint model uses for every frame).
+ */
+export type ClipStep = { pts: P2[]; own: number[][]; pooled: number[] };
+/** Each frame's "look" is a point that must sit on one of five blobs, the same one for the whole clip. Returns steps+1 moments. */
+export function clipHistory(joint: boolean, frames: number, seed: number, steps = 40, mix: Mix = BLOBS): ClipStep[] {
   const r = mulberry(seed);
   let xs: P2[] = Array.from({ length: frames }, (): P2 => [gauss(r), gauss(r)]);
-  for (let i = 0; i < steps; i++) {
-    const [a, b] = road("straight", 1 - i / steps), [an, bn] = road("straight", 1 - (i + 1) / steps);
-    // a joint model weighs "which look is this clip?" with the evidence of every frame at once
-    const shared = joint ? xs.map((x) => posterior(x, a, b, mix).logw).reduce((s, l) => s.map((v, k) => v + l[k])) : undefined;
+  const out: ClipStep[] = [];
+  for (let i = 0; i <= steps; i++) {
+    const [a, b] = road("straight", 1 - i / steps);
+    const logs = xs.map((x) => posterior(x, a, b, mix).logw);
+    // a joint model weighs "which look is this clip?" with the evidence of every frame at once: add the logs, then one softmax
+    const sum = logs.reduce((s, l) => s.map((v, k) => v + l[k]));
+    out.push({ pts: xs, own: logs.map(softmax), pooled: softmax(sum) });
+    if (i === steps) break;
+    const [an, bn] = road("straight", 1 - (i + 1) / steps), shared = joint ? sum : undefined;
     xs = xs.map((x) => { const p = posterior(x, a, b, mix, shared); return [an * p.x0[0] + bn * p.eps[0], an * p.x0[1] + bn * p.eps[1]] as P2; });
   }
-  const look = xs.map((x) => { let bi = 0, bd = Infinity; mix.mu.forEach((m, k) => { const d = Math.hypot(x[0] - m[0], x[1] - m[1]); if (d < bd) { bd = d; bi = k; } }); return bi; });
+  return out;
+}
+/** Where a point aims at time t on the straight road when the five blobs are weighed by `w` (its own shares, or the pooled ones). */
+export function aimWith(x: P2, t: number, w: number[], mix: Mix = BLOBS): P2 {
+  const [a, b] = road("straight", t), v = a * a * mix.s * mix.s + b * b, gain = (a * mix.s * mix.s) / v;
+  return mix.mu.reduce<P2>((s, m, k) => [s[0] + w[k] * (m[0] + gain * (x[0] - a * m[0])), s[1] + w[k] * (m[1] + gain * (x[1] - a * m[1]))], [0, 0]);
+}
+/** The look each point is nearest to, and the share of neighbouring frames that agree. */
+export function looksOf(pts: P2[], mix: Mix = BLOBS): { look: number[]; steady: number } {
+  const look = pts.map((x) => nearestBlob(x, mix));
   let same = 0;
-  for (let i = 1; i < frames; i++) if (look[i] === look[i - 1]) same++;
-  return { pts: xs, look, steady: same / (frames - 1) };
+  for (let i = 1; i < pts.length; i++) if (look[i] === look[i - 1]) same++;
+  return { look, steady: same / (pts.length - 1) };
+}
+
+export type Clip = { pts: P2[]; look: number[]; steady: number };
+export function sampleClip(joint: boolean, frames: number, seed: number, steps = 40, mix: Mix = BLOBS): Clip {
+  const h = clipHistory(joint, frames, seed, steps, mix), pts = h[h.length - 1].pts;
+  return { pts, ...looksOf(pts, mix) };
 }

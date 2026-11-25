@@ -4,7 +4,8 @@ import type { ReactNode } from "react";
 import { ChapterPage } from "./chapter-page";
 import { genCopy as t } from "./gen-copy";
 import { genDoubts } from "./gen-doubts";
-import { ClipScene, DitScene, FlowScene, LatentScene, NativeScene, TextScene, VideoScene } from "./gen-scenes";
+import { DitScene, FlowScene, LatentScene, TextScene } from "./gen-scenes";
+import { ClipScene, NativeScene, VideoScene } from "./gen-scenes2";
 
 const scenes: Record<string, () => ReactNode> = {
   latent: () => <LatentScene />,

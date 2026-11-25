@@ -2,15 +2,20 @@
 
 import type { ReactNode } from "react";
 import { ChapterPage } from "./chapter-page";
-import { resnetDoubts } from "./doubts";
 import { resnetCopy as t } from "./resnet50-copy";
+import { resnet50Doubts } from "./resnet50-doubts";
 import { BatchNormScene, BlockOrderScene, BottleneckScene, ConvBasicsScene, OneByOneScene, ShapeFlowScene, SkipScene } from "./resnet50-scenes";
+import { ChainScene, OneLayerScene, TrainScene, TrunkScene } from "./resnet50-walk-scenes";
 
 const scenes: Record<string, () => ReactNode> = {
+  one: () => <OneLayerScene />,
+  chain: () => <ChainScene />,
+  train: () => <TrainScene />,
   basics: () => <ConvBasicsScene />,
   flow: () => <ShapeFlowScene />,
   bottleneck: () => <BottleneckScene />,
   onebyone: () => <OneByOneScene />,
+  trunk: () => <TrunkScene />,
   skip: () => <SkipScene />,
   bn: () => <BatchNormScene />,
   block: () => <BlockOrderScene />,
@@ -25,7 +30,7 @@ export function ResNet50Page() {
       prologue={t.prologue}
       sections={t.sections}
       scenes={scenes}
-      doubts={resnetDoubts}
+      doubts={resnet50Doubts}
       related={t.related}
       heroExtra={(
         <>

@@ -44,17 +44,17 @@ export const chapters: Chapter[] = [
   {
     slug: "cnn", num: "01", era: "1989 · 2012", title: "CNN은 어떻게 이미지를 보는가",
     desc: "컴퓨터에게 사진은 숫자 15만 개일 뿐이다. 고양이가 한 뼘만 옮겨 가도 숫자가 전부 바뀐다. 뇌의 시각 세포에서 실마리를 얻어, 작은 돋보기 하나로 사진 전체를 훑는 구조가 나오기까지.",
-    href: "/study/cnn/", tags: ["convolution", "receptive field", "pooling"], figures: 7,
+    href: "/study/cnn/", tags: ["convolution", "receptive field", "pooling"], figures: 10,
   },
   {
     slug: "resnet50", num: "02", era: "2015", title: "ResNet-50은 어떻게 50층을 쌓았나",
     desc: "깊게 쌓을수록 좋다고 믿었는데, 56층이 20층보다 못했다. \"아무것도 하지 않기\"를 기본값으로 만든 선 하나가 그것을 풀었다. 그 설계도를 처음부터 읽는다.",
-    href: "/study/resnet50/", tags: ["bottleneck", "skip connection", "BatchNorm"], figures: 7,
+    href: "/study/resnet50/", tags: ["bottleneck", "skip connection", "BatchNorm"], figures: 11,
   },
   {
     slug: "unet", num: "03", era: "2015", title: "U-Net은 왜 U자 모양인가",
     desc: "답이 한 단어가 아니라 그림이어야 할 때. 넓게 보면 경계가 뭉개지고 좁게 보면 잡음에 속는다. 줄였다가 키우고, 그 사이에 다리를 놓아 둘 다 얻는다.",
-    href: "/study/unet/", tags: ["segmentation", "encoder-decoder", "skip connection"], figures: 6,
+    href: "/study/unet/", tags: ["segmentation", "encoder-decoder", "skip connection"], figures: 10,
   },
   {
     slug: "transformer", num: "04", era: "2017", title: "Transformer는 어떻게 작동하는가",
@@ -64,12 +64,12 @@ export const chapters: Chapter[] = [
   {
     slug: "vit", num: "05", era: "2020 · 2023", title: "ViT는 사진을 어떻게 읽나",
     desc: "문장을 위해 만든 구조에 사진을 잘라 넣었다. 조각 토큰, 요약 토큰, 평면에서의 자리, 라벨 없이 학습하는 DINO, 그리고 그 토큰으로 결함을 찾는 원리까지.",
-    href: "/study/vit/", tags: ["patch token", "DINOv2", "memory bank"], figures: 8,
+    href: "/study/vit/", tags: ["patch token", "DINOv2", "memory bank"], figures: 9,
   },
   {
     slug: "llm", num: "06", era: "2018 · 2022", title: "LLM은 어떻게 글을 쓰나",
     desc: "다음에 올 토큰의 확률을 맞히는 놀이가 전부다. 토큰을 쪼개는 법, 번역기의 절반만 떼어 낸 구조, 확률에서 고르는 법, 그럴듯한 거짓말이 나오는 이유, 그리고 왜 거대해야 하는지.",
-    href: "/study/llm/", tags: ["next token", "BPE", "sampling"], figures: 6,
+    href: "/study/llm/", tags: ["next token", "BPE", "sampling"], figures: 9,
   },
   {
     slug: "diffusion", num: "07", era: "2015 · 2020", title: "Diffusion 모델은 어떻게 그림을 만드나",
@@ -77,14 +77,14 @@ export const chapters: Chapter[] = [
     href: "/study/diffusion/", tags: ["확률 기초", "DDPM", "guidance"], figures: 7,
   },
   {
-    slug: "generative", num: "08", era: "2021 · 2026", title: "요즘 모델은 어떻게 그런 그림과 영상을 뽑나",
+    slug: "generative", num: "08", era: "2021 · 2026", title: "Latent diffusion에서 Sora까지: 이미지·영상 생성 모델의 구조",
     desc: "2020년의 diffusion에서 나노바나나, GPT Image 2, Sora까지는 부품을 다섯 번쯤 갈아 끼운 거리다. 압축된 공간, Transformer, 직선 길, 글을 읽는 눈, 그리고 LLM이 직접 그리는 것. 영상은 거기에 시간 축을 더한다.",
     href: "/study/generative/", tags: ["latent", "DiT", "video"], figures: 7,
   },
   {
     slug: "lora", num: "09", era: "2021 · 2023", title: "LoRA는 거대 모델을 어떻게 싸게 고쳐 쓰나",
     desc: "모델이 너무 커져서 내 일에 맞게 고쳐 쓸 수가 없게 됐다. 모델은 한 글자도 고치지 않고, 바뀌어야 할 양만 작은 표 두 장으로 적어 덧붙인다. 행렬과 랭크의 기초부터 시작해 합치기와 QLoRA까지.",
-    href: "/study/lora/", tags: ["행렬 기초", "low-rank", "QLoRA"], figures: 8,
+    href: "/study/lora/", tags: ["행렬 기초", "low-rank", "QLoRA"], figures: 11,
   },
   {
     slug: "anomaly", num: "10", era: "지금", title: "Memory-bank anomaly detection",

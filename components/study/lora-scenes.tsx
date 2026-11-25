@@ -5,9 +5,10 @@ import { drawGrid, label, palette, useCanvas } from "@/components/anomaly/lib";
 import { arrow, bar, cells, frame, line, rbox, signed, type Ctx } from "./kit";
 import { loraCopy } from "./lora-copy";
 import {
-  ADAPTERS, BASE_W, BYTES_FP16, LLM7, MODELS, RN, SIZES_B, TABLES, TABLE_SVD, TARGET, TN, adapterParams, bestError, gb, matMul, matVec,
-  mergeCheck, moduleParams, residual, trainLora, trainMemory, truncate, addScaled, type Mat, type ModuleKey,
+  ADAPTERS, BYTES_FP16, LLM7, MODELS, PLANE_B, PLANE_ONE, PLANE_SHAPE, PLANE_TWO, PLANE_W, RN, SIZES_B, TABLES, TABLE_SVD, TARGET, TN, W3, X3,
+  adapterParams, bestError, gb, matMul, matVec, mergeCheck, moduleParams, residual, trainLora, trainMemory, truncate, addScaled, type Mat, type ModuleKey,
 } from "./lora-math";
+import { num, numGrid, vec } from "./lora-walk-scenes";
 
 const U = loraCopy.ui;
 const PAD = 18;
@@ -81,22 +82,20 @@ export function WallScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 02 · A matrix moves points; fine-tuning nudges the matrix            */
+/* 04 · In the plane: a one-row change pushes every input the same way  */
 /* ------------------------------------------------------------------ */
 
-const W2: Mat = [[1.1, 0.35], [-0.25, 0.9]];
-const DW2: Mat = [[0.498, 0.3], [0.332, 0.2]];          // u·vᵀ with u = (0.6, 0.4), v = (0.83, 0.5): pushes along one direction only
-const SHAPE: [number, number][] = [[-1, -1], [1, -1], [1, -0.2], [0, -0.2], [0, 1], [-1, 1]];   // an "L", so orientation is visible
-
-export function MatrixScene() {
-  const [s, setS] = useState(0.6);
+export function DirectionScene() {
+  const [s, setS] = useState(1);
+  const [two, setTwo] = useState(false);
+  const T = U.direction;
 
   const ref = useCanvas((ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
     drawGrid(ctx, w, h, 40);
-    const S = Math.min(w - 2 * PAD, h - 130), cx = w / 2, cy = 16 + S / 2, sc = S / 2 / 2.3;
+    const S = Math.min(w - 2 * PAD, h - 132), cx = w / 2, cy = 14 + S / 2, sc = S / 2 / 2.45;
     const X = (p: number[]) => cx + p[0] * sc, Y = (p: number[]) => cy - p[1] * sc;
-    const Wn = addScaled(W2, DW2, s);
+    const D = (two ? PLANE_TWO : PLANE_ONE).map((row) => row.map((v) => v * s)), Wn = addScaled(PLANE_W, D);
     const poly = (pts: number[][], stroke: string, fill: string | null, lw: number, dash?: number[]) => {
       ctx.save();
       ctx.beginPath();
@@ -107,27 +106,43 @@ export function MatrixScene() {
       ctx.restore();
     };
     line(ctx, cx - S / 2, cy, cx + S / 2, cy, palette.frame, 1); line(ctx, cx, cy - S / 2, cx, cy + S / 2, palette.frame, 1);
-    poly(SHAPE, palette.dotOff, null, 1, [4, 4]);
-    const a = SHAPE.map((p) => matVec(W2, p)), b = SHAPE.map((p) => matVec(Wn, p));
+    // the one direction a one-row change can push along
+    if (!two) line(ctx, X(PLANE_B.map((v) => -2.2 * v)), Y(PLANE_B.map((v) => -2.2 * v)), X(PLANE_B.map((v) => 2.2 * v)), Y(PLANE_B.map((v) => 2.2 * v)), `rgba(${palette.accentRgb},0.45)`, 1, [3, 4]);
+    if (!two) label(ctx, "B", X(PLANE_B.map((v) => 2.2 * v)) + 6, Y(PLANE_B.map((v) => 2.2 * v)) - 4, palette.accent, 12);
+    poly(PLANE_SHAPE, palette.dotOff, null, 1, [4, 4]);
+    const a = PLANE_SHAPE.map((p) => matVec(PLANE_W, p)), b = PLANE_SHAPE.map((p) => matVec(Wn, p));
     poly(a, palette.normal, `rgba(${palette.normalRgb},0.12)`, 2);
-    poly(b, palette.accent, `rgba(${palette.accentRgb},0.14)`, 2.5);
-    a.forEach((p, i) => { if (s > 0.05) line(ctx, X(p), Y(p), X(b[i]), Y(b[i]), `rgba(${palette.accentRgb},0.6)`, 1); });
-    line(ctx, PAD, 22, PAD + 16, 22, palette.normal, 2); label(ctx, U.matrix.before, PAD + 22, 22, palette.normal, 11);
-    line(ctx, PAD, 40, PAD + 16, 40, palette.accent, 2.5); label(ctx, U.matrix.after, PAD + 22, 40, palette.accent, 11);
+    poly(b, palette.ink, `rgba(${palette.inkRgb},0.06)`, 2);
+    // what the change adds for each of the six inputs
+    a.forEach((p, i) => {
+      const len = Math.hypot(X(b[i]) - X(p), Y(b[i]) - Y(p));
+      if (len > 9) arrow(ctx, X(p), Y(p), X(b[i]), Y(b[i]), palette.accent, 2);
+      else if (len > 1) line(ctx, X(p), Y(p), X(b[i]), Y(b[i]), palette.accent, 2);
+      ctx.save(); ctx.fillStyle = palette.normal; ctx.beginPath(); ctx.arc(X(p), Y(p), 3, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    });
+    line(ctx, PAD, 20, PAD + 16, 20, palette.normal, 2); label(ctx, T.before, PAD + 22, 20, palette.normal, 11);
+    line(ctx, PAD, 37, PAD + 16, 37, palette.ink, 2); label(ctx, T.after, PAD + 22, 37, palette.ink, 11);
+    line(ctx, PAD, 54, PAD + 16, 54, palette.accent, 2); label(ctx, T.added, PAD + 22, 54, palette.accent, 11);
 
-    const ty = 16 + S + 26, row = (m: Mat) => `[ ${m[0].map((v) => v.toFixed(2)).join("  ")} ;  ${m[1].map((v) => v.toFixed(2)).join("  ")} ]`;
-    label(ctx, `${U.matrix.w}   ${row(W2)}`, PAD, ty, palette.normal, 12);
-    label(ctx, `${U.matrix.dw}        ${row(DW2.map((r) => r.map((v) => v * s)))}`, PAD, ty + 24, palette.muted, 12);
-    label(ctx, `${U.matrix.sum}    ${row(Wn)}`, PAD, ty + 48, palette.accent, 12);
+    const ty = 14 + S + 24, row = (m: Mat) => `[ ${m[0].map((v) => num(v)).join("  ")} ;  ${m[1].map((v) => num(v)).join("  ")} ]`;
+    label(ctx, s === 0 ? T.zero : two ? T.sayTwo : `${T.sayOne} ${vec(PLANE_B)}`, PAD, ty, palette.accent, 12);
+    label(ctx, `W   ${row(PLANE_W)}`, PAD, ty + 24, palette.normal, 12);
+    label(ctx, `ΔW  ${row(D)}`, PAD, ty + 46, palette.accent, 12);
+    label(ctx, two ? T.rowsTwo : T.rowsOne, PAD, ty + 68, palette.muted, 11);
   });
 
   return (
     <div className="ad-scene">
       <canvas ref={ref} className="ad-canvas" aria-hidden="true" />
       <div className="ad-controls">
+        <div className="ad-ctl ad-seg" role="group" aria-label="ΔW">
+          <span>ΔW</span>
+          <button type="button" className={!two ? "on" : ""} onClick={() => setTwo(false)}>{T.one}</button>
+          <button type="button" className={two ? "on" : ""} onClick={() => setTwo(true)}>{T.two}</button>
+        </div>
         <label className="ad-ctl">
-          <span>{U.matrix.amount} <b>{s.toFixed(1)}</b></span>
-          <input type="range" min={0} max={1.5} step={0.1} value={s} onChange={(e) => setS(Number(e.target.value))} />
+          <span>{T.amount} <b>{s.toFixed(1)}</b></span>
+          <input type="range" min={0} max={1} step={0.1} value={s} onChange={(e) => setS(Number(e.target.value))} />
         </label>
       </div>
     </div>
@@ -135,7 +150,7 @@ export function MatrixScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 03 · Stacking rank-one layers                                        */
+/* 05 · Stacking rank-one layers                                        */
 /* ------------------------------------------------------------------ */
 
 type TableKey = "times" | "pattern" | "noise";
@@ -190,7 +205,7 @@ export function RankScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 04 · The frozen path and the trainable side path                     */
+/* 06 · The frozen path and the trainable side path                     */
 /* ------------------------------------------------------------------ */
 
 const DS = [768, 4096, 12288], RS = [1, 2, 4, 8, 16, 64];
@@ -238,7 +253,6 @@ export function LoraScene() {
     label(ctx, `${U.lora.ratio} ${((train / frozen) * 100).toFixed(2)}%`, w - PAD, by + 44, palette.ink, 12, "right");
     ctx.fillStyle = palette.track; ctx.fillRect(PAD, by + 56, bw, 10);
     ctx.fillStyle = palette.accent; ctx.fillRect(PAD, by + 56, Math.max(2, bw * (train / frozen)), 10);
-    label(ctx, U.lora.zero, PAD, by + 96, palette.muted, 12);
   });
 
   return (
@@ -259,7 +273,7 @@ export function LoraScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 05 · Training a small LoRA: rank sets the floor, α/r sets the pace   */
+/* 08 · Training a small LoRA: rank sets the floor, α/r sets the pace   */
 /* ------------------------------------------------------------------ */
 
 const TR = [1, 2, 4, 8], SCALES = [0.5, 1, 2, 4, 12];
@@ -327,7 +341,7 @@ export function TrainScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 06 · Merging adapters into the base matrix                           */
+/* 09 · Merging the trained side path into the matrix, on the same input */
 /* ------------------------------------------------------------------ */
 
 const DELTAS = ADAPTERS.map((a) => matMul(a.B, a.A));
@@ -336,27 +350,53 @@ export function MergeScene() {
   const [w1, setW1] = useState(1);
   const [w2, setW2] = useState(0);
   const mc = useMemo(() => mergeCheck(w1, w2), [w1, w2]);
+  const T = U.merge;
 
   const ref = useCanvas((ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
     drawGrid(ctx, w, h, 40);
-    const n = BASE_W.length, gap = 22, cell = Math.min(17, (w - 2 * PAD - 3 * gap) / (4 * n)), S = n * cell;
-    const x0 = (w - 4 * S - 3 * gap) / 2, y0 = 60, sc = Math.max(maxAbs(BASE_W), maxAbs(mc.merged));
-    const xs = [0, 1, 2, 3].map((i) => x0 + i * (S + gap));
-    heat(ctx, BASE_W, xs[0], y0, cell, sc, U.merge.base, palette.normal);
-    heat(ctx, DELTAS[0].map((row) => row.map((v) => v * w1)), xs[1], y0, cell, sc, `${w1.toFixed(1)} × ${U.merge.a1}`, palette.accent);
-    heat(ctx, DELTAS[1].map((row) => row.map((v) => v * w2)), xs[2], y0, cell, sc, `${w2.toFixed(1)} × ${U.merge.a2}`, palette.accent2);
-    heat(ctx, mc.merged, xs[3], y0, cell, sc, U.merge.merged, palette.ink);
-    ["+", "+", "="].forEach((s, i) => label(ctx, s, xs[i] + S + gap / 2, y0 + S / 2, palette.muted, 15, "center"));
+    const portrait = isPortrait(w, h), cw = portrait ? 40 : 38, ch = portrait ? 24 : 30, gw = 3 * cw, gh = 3 * ch, gap = 30;
+    const x0 = portrait ? (w - 2 * gw - gap) / 2 : PAD + 12, y0 = 44, y1 = y0 + gh + 36;
+    const tint = (rgb: string) => `rgba(${rgb},0.1)`;
+    numGrid(ctx, W3, x0, y0, cw, ch, { caption: T.base, tone: palette.normal, fill: () => tint(palette.normalRgb) });
+    numGrid(ctx, DELTAS[0].map((row) => row.map((v) => v * w1)), x0 + gw + gap, y0, cw, ch, { caption: `${w1.toFixed(1)} × ${T.a1}`, tone: palette.accent, fill: () => (w1 > 0 ? tint(palette.accentRgb) : null) });
+    numGrid(ctx, DELTAS[1].map((row) => row.map((v) => v * w2)), x0, y1, cw, ch, { caption: `${w2.toFixed(1)} × ${T.a2}`, tone: palette.accent2, fill: () => (w2 > 0 ? "rgba(124,58,237,0.08)" : null) });
+    numGrid(ctx, mc.merged, x0 + gw + gap, y1, cw, ch, { caption: T.merged, tone: palette.ink });
+    label(ctx, "+", x0 + gw + gap / 2, y0 + gh / 2, palette.muted, 16, "center");
+    label(ctx, "+", x0 - 10, y1 + gh / 2, palette.muted, 16, "center");
+    label(ctx, "=", x0 + gw + gap / 2, y1 + gh / 2, palette.muted, 16, "center");
 
-    const ty = y0 + S + 40, fs = w < 420 ? 12 : 13, fmtRow = (v: number[]) => v.map((q) => q.toFixed(2).padStart(6)).join("");
-    label(ctx, `Wx + w₁B₁A₁x + w₂B₂A₂x`, PAD, ty, palette.muted, 12);
-    label(ctx, fmtRow(mc.twoPath), PAD - 6, ty + 24, palette.ink, fs);
-    label(ctx, `W'x`, PAD, ty + 60, palette.muted, 12);
-    label(ctx, fmtRow(mc.onePath), PAD - 6, ty + 84, palette.ink, fs);
-    label(ctx, U.merge.gap, PAD, ty + 124, palette.mint, 11);
-    label(ctx, mc.gap.toFixed(3), PAD, ty + 150, palette.mint, 20);
-    if (w1 === 0 && w2 === 0) label(ctx, U.merge.same, w - PAD, ty + 150, palette.normal, 13, "right");
+    // the same input, computed both ways
+    const rows: [string, number[], string][] = [
+      [T.main, mc.main, palette.normal], [T.side1, mc.sides[0], palette.accent], [T.side2, mc.sides[1], palette.accent2],
+      [T.two, mc.twoPath, palette.ink], [T.one, mc.onePath, palette.ink],
+    ];
+    const same = w1 === 0 && w2 === 0;
+    if (portrait) {
+      const ty = y1 + gh + 34;
+      label(ctx, `${T.input} = ${vec(X3)}`, PAD, ty, palette.ink, 12);
+      rows.forEach(([name, v, tone], i) => {
+        const y = ty + 26 + i * 24 + (i >= 3 ? 8 : 0);
+        label(ctx, name, PAD, y, tone, 12);
+        label(ctx, vec(v), w - PAD, y, tone, 13, "right");
+      });
+      const yg = ty + 26 + 5 * 24 + 30;
+      label(ctx, T.gap, PAD, yg, palette.mint, 12);
+      label(ctx, mc.gap.toFixed(3), w - PAD, yg, palette.mint, 18, "right");
+      if (same) label(ctx, T.same, PAD, yg + 26, palette.normal, 12);
+    } else {
+      const tx = x0 + 2 * gw + gap + 26;
+      label(ctx, `${T.input} = ${vec(X3)}`, tx, 30, palette.ink, 12);
+      rows.forEach(([name, v, tone], i) => {
+        const y = 62 + i * 44 + (i >= 3 ? 10 : 0);
+        label(ctx, name, tx, y, tone, 11);
+        label(ctx, vec(v), tx, y + 18, tone, 13);
+      });
+      const yg = 62 + 5 * 44 + 26;
+      label(ctx, T.gap, tx, yg, palette.mint, 11);
+      label(ctx, mc.gap.toFixed(3), tx, yg + 24, palette.mint, 18);
+      if (same) label(ctx, T.same, PAD + 12, y1 + gh + 30, palette.normal, 12);
+    }
   });
 
   return (
@@ -364,11 +404,11 @@ export function MergeScene() {
       <canvas ref={ref} className="ad-canvas" aria-hidden="true" />
       <div className="ad-controls">
         <label className="ad-ctl">
-          <span>{U.merge.w1} <b>{w1.toFixed(1)}</b></span>
+          <span>{T.w1} <b>{w1.toFixed(1)}</b></span>
           <input type="range" min={0} max={1.5} step={0.1} value={w1} onChange={(e) => setW1(Number(e.target.value))} />
         </label>
         <label className="ad-ctl">
-          <span>{U.merge.w2} <b>{w2.toFixed(1)}</b></span>
+          <span>{T.w2} <b>{w2.toFixed(1)}</b></span>
           <input type="range" min={0} max={1.5} step={0.1} value={w2} onChange={(e) => setW2(Number(e.target.value))} />
         </label>
       </div>
@@ -377,7 +417,7 @@ export function MergeScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 07 · Which matrices get an adapter, and what it costs                */
+/* 10 · Which matrices get an adapter, and what it costs                */
 /* ------------------------------------------------------------------ */
 
 const KEYS: ModuleKey[] = ["q", "k", "v", "o", "mlp"];
@@ -434,7 +474,7 @@ export function WhereScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 08 · Training memory against one GPU                                 */
+/* 11 · Training memory against one GPU                                 */
 /* ------------------------------------------------------------------ */
 
 const MODES: { key: "full" | "lora" | "qlora"; color: string }[] = [

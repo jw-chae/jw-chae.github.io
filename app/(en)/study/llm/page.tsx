@@ -5,7 +5,7 @@ import "../../../study.css";
 
 export const metadata: Metadata = {
   title: "LLM은 어떻게 글을 쓰나",
-  description: "Large language model study notes with interactive figures: next-token prediction, byte-pair encoding, decoder-only training, temperature and top-k sampling, autoregressive generation, and scale.",
+  description: "Large language model study notes with interactive figures: one blank followed from input to probabilities, next-token prediction, byte-pair encoding, shifted-target training, how the scores are learned, temperature and top-k sampling, the generation loop, and scale.",
   alternates: { canonical: "/study/llm/" },
 };
 

@@ -1,4 +1,4 @@
-/** Arithmetic behind the LoRA study scenes: sizes, a small SVD, and a tiny LoRA trained by gradient descent. */
+/** Arithmetic behind the LoRA study scenes: sizes, one 3×3 running example, a small SVD, and small LoRAs trained by gradient descent. */
 
 export type Mat = number[][];
 
@@ -36,7 +36,75 @@ export const BYTES_FP16 = 2;
 export const adapterParams = (m: ModelSize, r: number) => m.layers * 2 * 2 * m.d * r;
 export const gb = (bytes: number) => bytes / 1e9;
 
-/* ---- 03 · singular value decomposition of a small matrix (one-sided Jacobi) ---- */
+/* ---- the running example: one 3×3 matrix and one input, followed through 02, 03, 07 and 09 ---- */
+
+/** The frozen pretrained matrix. Hand-set so every product can be done in the head. */
+export const W3: Mat = [[1, 0, 2], [0, 1, -1], [2, -1, 0]];
+/** The one input the chapter follows, and a second one used only to ask "what if the input changes". */
+export const X3 = [2, 1, 1];
+export const X3_ALT = [1, 1, 2];
+/** The change full fine-tuning arrives at. Hand-set to be exactly "every row is a multiple of one row": row i = TIMES3[i] × ROW3. */
+export const ROW3 = [0.5, -0.5, 1];
+export const TIMES3 = [1, 2, -1];
+export const DW3: Mat = outer(TIMES3, ROW3);
+export const W3_TUNED: Mat = addScaled(W3, DW3);
+
+/** The task data: three inputs with the outputs they should give. The first pair is the one the chapter follows. */
+export const TASK_X3: number[][] = [X3, [0, 1, -1], [1, -1, 0]];
+export const TASK_Y3: number[][] = TASK_X3.map((x) => matVec(W3_TUNED, x));
+
+/** Full fine-tuning by gradient descent on the task data: all nine numbers of W are on the list of things to fix. */
+export function tuneFull(steps = 400, lr = 0.2): Mat {
+  let W = W3.map((row) => [...row]);
+  for (let t = 0; t < steps; t++) {
+    const G = zeros(3, 3);
+    TASK_X3.forEach((x, n) => {
+      const e = matVec(W, x).map((v, i) => v - TASK_Y3[n][i]);
+      e.forEach((ei, i) => x.forEach((xj, j) => { G[i][j] += (ei * xj) / TASK_X3.length; }));
+    });
+    W = addScaled(W, G, -lr);
+  }
+  return W;
+}
+
+/** Where A starts: small values, hand-set here so the figure is the same on every visit. B starts at zero. */
+export const A3_START = [0.4, -0.2, 0.3];
+export type SideSnap = { B: number[]; A: number[]; ax: number; side: number[]; out: number[]; err: number[] };
+
+/** LoRA with r = 1 on the same task data: W3 is never touched, only the three numbers of B and the three of A move. One snapshot per step. */
+export function trainSide(steps = 40, lr = 0.2, start: number[] = A3_START): SideSnap[] {
+  let B = [0, 0, 0], A = [...start];
+  const main = TASK_X3.map((x) => matVec(W3, x));          // the frozen path: computed, never updated
+  const snaps: SideSnap[] = [];
+  for (let t = 0; t <= steps; t++) {
+    const gB = [0, 0, 0], gA = [0, 0, 0];
+    TASK_X3.forEach((x, n) => {
+      const ax = A.reduce((s, v, j) => s + v * x[j], 0);
+      const out = main[n].map((v, i) => v + B[i] * ax), err = out.map((v, i) => v - TASK_Y3[n][i]);
+      if (n === 0) snaps.push({ B: [...B], A: [...A], ax, side: B.map((b) => b * ax), out, err });
+      const be = B.reduce((s, b, i) => s + b * err[i], 0);
+      // L = ½‖h − y*‖²  ⇒  ∂L/∂B = e·(Ax),  ∂L/∂A = (Bᵀe)·xᵀ.  There is no ∂L/∂W: W is not on the list.
+      err.forEach((e, i) => { gB[i] += (e * ax) / TASK_X3.length; });
+      x.forEach((xj, j) => { gA[j] += (be * xj) / TASK_X3.length; });
+    });
+    B = B.map((b, i) => b - lr * gB[i]); A = A.map((a, j) => a - lr * gA[j]);
+  }
+  return snaps;
+}
+
+/* ---- 04 · the same thing in the plane, where it can be drawn ---- */
+
+export const PLANE_W: Mat = [[1.1, 0.35], [-0.25, 0.9]];
+/** A one-row change: B = [1, 0.5] times A = [0.6, 0.3]. Every input is pushed along B. */
+export const PLANE_B = [1, 0.5];
+export const PLANE_A = [0.6, 0.3];
+export const PLANE_ONE: Mat = outer(PLANE_B, PLANE_A);
+/** A change whose second row is not a multiple of the first: different inputs are pushed in different directions. */
+export const PLANE_TWO: Mat = [[0.5, -0.3], [0.2, 0.45]];
+/** Six inputs, joined into an "L" so that orientation is visible. */
+export const PLANE_SHAPE: number[][] = [[-1, -1], [1, -1], [1, -0.2], [0, -0.2], [0, 1], [-1, 1]];
+
+/* ---- 05 · singular value decomposition of a small matrix (one-sided Jacobi) ---- */
 
 export type Svd = { U: Mat; S: number[]; V: Mat };
 
@@ -98,7 +166,7 @@ export function residual(d: Svd, r: number): number {
   return d.S.slice(r).reduce((s, v) => s + v * v, 0) / total;
 }
 
-/* ---- 05 · a tiny LoRA trained by gradient descent ---- */
+/* ---- 08 · a small LoRA trained by gradient descent: rank and scale ---- */
 
 export const TN = 8;
 /** The change full fine-tuning would have made: two strong directions, a weak third, and a faint tail. */
@@ -133,33 +201,35 @@ export function trainLora(r: number, scale: number, steps = 240, lr = 0.06): Run
   return { loss, delta, diverged };
 }
 
-/* ---- 06 · merging and swapping ---- */
+/* ---- 09 · merging and swapping, on the running example ---- */
 
-export const MN = 6;
-export const BASE_W: Mat = (() => { const r = mulberry(61); return Array.from({ length: MN }, () => Array.from({ length: MN }, () => 0.8 * gauss(r))); })();
 export type Adapter = { B: Mat; A: Mat };
-const makeAdapter = (seed: number): Adapter => {
-  const r = mulberry(seed);
-  return { B: Array.from({ length: MN }, () => [0.7 * gauss(r), 0.7 * gauss(r)]), A: Array.from({ length: 2 }, () => Array.from({ length: MN }, () => 0.7 * gauss(r))) };
-};
-export const ADAPTERS: Adapter[] = [makeAdapter(71), makeAdapter(83)];
-export const PROBE_X = [0.9, -0.4, 0.3, 1.1, -0.7, 0.2];
+const col = (v: number[]): Mat => v.map((x) => [x]);
+const LAST3 = (() => { const run = trainSide(); return run[run.length - 1]; })();
+/** Adapter 1 is the B and A that trainSide ends with. Adapter 2 stands for one trained on some other task; its numbers are hand-set. */
+export const ADAPTERS: Adapter[] = [
+  { B: col(LAST3.B), A: [LAST3.A] },
+  { B: col([-1, 0, 1]), A: [[0, 1, 1]] },
+];
 
-/** Output through the two separate paths, and through the single merged matrix. They must agree. */
-export function mergeCheck(w1: number, w2: number): { merged: Mat; twoPath: number[]; onePath: number[]; gap: number } {
-  let merged = BASE_W;
-  let twoPath = matVec(BASE_W, PROBE_X);
+/** Output through the separate paths, and through the single merged matrix. They must agree. */
+export function mergeCheck(w1: number, w2: number, x: number[] = X3): { merged: Mat; main: number[]; sides: number[][]; twoPath: number[]; onePath: number[]; gap: number } {
+  let merged = W3;
+  const main = matVec(W3, x);
+  let twoPath = main;
+  const sides: number[][] = [];
   [w1, w2].forEach((wt, i) => {
     const ad = ADAPTERS[i];
     merged = addScaled(merged, matMul(ad.B, ad.A), wt);
-    const through = matVec(ad.B, matVec(ad.A, PROBE_X));
-    twoPath = twoPath.map((v, k) => v + wt * through[k]);
+    const through = matVec(ad.B, matVec(ad.A, x)).map((v) => v * wt);
+    sides.push(through);
+    twoPath = twoPath.map((v, k) => v + through[k]);
   });
-  const onePath = matVec(merged, PROBE_X);
-  return { merged, twoPath, onePath, gap: Math.sqrt(onePath.reduce((s, v, k) => s + (v - twoPath[k]) ** 2, 0)) };
+  const onePath = matVec(merged, x);
+  return { merged, main, sides, twoPath, onePath, gap: Math.sqrt(onePath.reduce((s, v, k) => s + (v - twoPath[k]) ** 2, 0)) };
 }
 
-/* ---- 07 · where the adapters go: counting on a 7-billion-parameter model ---- */
+/* ---- 10 · where the adapters go: counting on a 7-billion-parameter model ---- */
 
 export const LLM7 = { params: 6.74e9, d: 4096, layers: 32, mlp: 11008 };
 export type ModuleKey = "q" | "k" | "v" | "o" | "mlp";
@@ -170,7 +240,7 @@ export function moduleParams(key: ModuleKey, r: number): number {
   return 2 * d * r;                                      // one d×d attention matrix
 }
 
-/* ---- 08 · memory while training ---- */
+/* ---- 11 · memory while training ---- */
 
 export const SIZES_B = [7, 13, 33, 65];
 export type Mode = "full" | "lora" | "qlora";

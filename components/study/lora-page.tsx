@@ -4,13 +4,17 @@ import type { ReactNode } from "react";
 import { ChapterPage } from "./chapter-page";
 import { loraCopy as t } from "./lora-copy";
 import { loraDoubts } from "./lora-doubts";
-import { LoraScene, MatrixScene, MergeScene, QloraScene, RankScene, TrainScene, WallScene, WhereScene } from "./lora-scenes";
+import { DirectionScene, LoraScene, MergeScene, QloraScene, RankScene, TrainScene, WallScene, WhereScene } from "./lora-scenes";
+import { MatVecScene, SideScene, SimpleScene } from "./lora-walk-scenes";
 
 const scenes: Record<string, () => ReactNode> = {
   wall: () => <WallScene />,
-  matrix: () => <MatrixScene />,
+  matrix: () => <MatVecScene />,
+  simple: () => <SimpleScene />,
+  direction: () => <DirectionScene />,
   rank: () => <RankScene />,
   lora: () => <LoraScene />,
+  learn: () => <SideScene />,
   train: () => <TrainScene />,
   merge: () => <MergeScene />,
   where: () => <WhereScene />,
