@@ -4,14 +4,53 @@ import { useMemo, useRef, useState } from "react";
 import { drawGrid, label, palette, useCanvas } from "@/components/anomaly/lib";
 import { cnnCopy } from "./cnn-copy";
 import {
-  BAR_N, BAR_SHOW, KERNELS, KERNEL_SEEDS, KERNEL_STEPS, POKE_MID, POKE_N, WALK_IMG, WALK_KERNEL, WALK_KERNEL_H, WALK_SPOTS,
-  brighten, conv, oneCell, pokeRun, predictBar, trainKernel, type Grid,
+  CAT_DIM, CAT_IMG, CAT_SPOTS, CAT_SRC_HEAD, KERNELS, KERNEL_SEEDS, KERNEL_STEPS, LEARN_SHOW, REACH_MID, WALK_KERNEL, WALK_KERNEL_H,
+  brighten, catPokeRun, conv, oneCell, predictBar, trainKernel, type Grid,
 } from "./cnn-math";
 import { arrow, cells, frame, gray, rbox, signed, type Ctx } from "./kit";
 
 const U = cnnCopy.ui;
 const PAD = 18;
 const isPortrait = (w: number, h: number) => h > w * 1.15;
+
+/** The owner's cat-head drawing, loaded once on first draw; null until it has arrived. Read only inside draw callbacks. */
+let catHead: HTMLImageElement | null = null;
+function catImage(): HTMLImageElement | null {
+  if (typeof window === "undefined") return null;
+  if (!catHead) {
+    catHead = new window.Image();
+    catHead.src = CAT_SRC_HEAD;
+  }
+  return catHead.complete && catHead.naturalWidth > 0 ? catHead : null;
+}
+
+/** The drawing at (x, y, s), its 9×9 cell lines, and optionally the 3×3 window framed. `dim` shades it like the dimmed picture. */
+function drawCatPhoto(ctx: Ctx, x: number, y: number, s: number, win: [number, number] | null, dim = false) {
+  const img = catImage();
+  if (!img) {
+    ctx.fillStyle = palette.track;
+    ctx.fillRect(x, y, s, s);
+    label(ctx, U.board.loading, x + s / 2, y + s / 2, palette.muted, 11, "center");
+    return;
+  }
+  ctx.drawImage(img, x, y, s, s);
+  if (dim) {
+    ctx.fillStyle = "rgba(0,0,0,0.1)";
+    ctx.fillRect(x, y, s, s);
+  }
+  ctx.save();
+  ctx.strokeStyle = "rgba(255,255,255,0.55)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 1; i < 9; i++) {
+    ctx.moveTo(x + (i * s) / 9, y); ctx.lineTo(x + (i * s) / 9, y + s);
+    ctx.moveTo(x, y + (i * s) / 9); ctx.lineTo(x + s, y + (i * s) / 9);
+  }
+  ctx.stroke();
+  ctx.restore();
+  frame(ctx, x - 0.5, y - 0.5, s + 1, s + 1, palette.frame, 1);
+  if (win) frame(ctx, x + (win[1] * s) / 9, y + (win[0] * s) / 9, s / 3, s / 3, palette.accent, 2.5);
+}
 /** Up to two decimals, trailing zeros dropped, real minus sign. */
 const num = (v: number, d = 2) => {
   const s = v.toFixed(d).replace(/\.?0+$/, "");
@@ -26,18 +65,43 @@ const text = (ctx: Ctx, s: string, x: number, y: number, cell: number, color: st
 /* tables (window × kernel = products) below                            */
 /* ------------------------------------------------------------------ */
 
-type Board = { c: number; x0: number; iy: number; outX: number; outY: number; m: number; bx: number; by: number };
+/** c: cell of the 9×9 picture, (x0, iy) its corner; (tx, ty, ts): the colour drawing; m, (bx, by): the three small tables. */
+type Board = { c: number; x0: number; iy: number; outX: number; outY: number; m: number; bx: number; by: number; tx: number; ty: number; ts: number; portrait: boolean };
+
+const PHOTO_GAP = 30;
 
 function board(w: number, h: number): Board {
-  const c = Math.min(24, (w - 2 * PAD - 36) / 16, (h * 0.5 - 36) / 9);
-  const x0 = (w - (16 * c + 36)) / 2, iy = 34;
+  const portrait = isPortrait(w, h);
+  let c: number, x0: number, iy: number, tx: number, ty: number, ts: number;
+  if (portrait) {
+    // the drawing gets its own row above the picture and the output
+    ts = 84; tx = PAD; ty = 30;
+    c = Math.min(24, (w - 2 * PAD - 36) / 16, (h * 0.5 - 36) / 9);
+    x0 = (w - (16 * c + 36)) / 2; iy = ty + ts + 30;
+  } else {
+    // drawing, 9×9 picture and 7×7 output side by side
+    c = Math.min(24, (w - 2 * PAD - 36 - PHOTO_GAP) / 25, (h * 0.5 - 36) / 9);
+    ts = 9 * c;
+    tx = (w - (25 * c + 36 + PHOTO_GAP)) / 2; ty = 34;
+    x0 = tx + ts + PHOTO_GAP; iy = 34;
+  }
   const m = Math.min(34, (w - 2 * PAD - 48) / 9, (h - (iy + 9 * c) - 96) / 3);
-  const by = iy + 9 * c + 46 + Math.max(0, (h - 440) / 5);
-  return { c, x0, iy, outX: x0 + 9 * c + 36, outY: iy + c, m, bx: (w - (9 * m + 48)) / 2, by };
+  const by = iy + 9 * c + 46 + (portrait ? 0 : Math.max(0, (h - 440) / 5));
+  return { c, x0, iy, outX: x0 + 9 * c + 36, outY: iy + c, m, bx: (w - (9 * m + 48)) / 2, by, tx, ty, ts, portrait };
 }
 
-/** The picture with the window framed, and the arrow towards the output grid. */
-function drawPicture(ctx: Ctx, b: Board, img: Grid, r: number, c: number) {
+/** The colour drawing with the same window, the picture with the window framed, and the arrow towards the output grid. */
+function drawPicture(ctx: Ctx, b: Board, img: Grid, r: number, c: number, dim = false) {
+  drawCatPhoto(ctx, b.tx, b.ty, b.ts, [r, c], dim);
+  if (b.portrait) {
+    const lx = b.tx + b.ts + 14;
+    label(ctx, U.board.photo, lx, b.ty + 14, palette.ink, 12);
+    label(ctx, `${U.board.avg[0]} ${U.board.avg[1]}`, lx, b.ty + 36, palette.muted, 11);
+    arrow(ctx, lx + 4, b.ty + 52, lx + 4, b.iy - 24, palette.muted);
+  } else {
+    label(ctx, U.board.photo, b.tx + b.ts / 2, b.ty - 14, palette.muted, 11, "center");
+    arrow(ctx, b.tx + b.ts + 5, b.iy + 4.5 * b.c, b.x0 - 5, b.iy + 4.5 * b.c, palette.muted);
+  }
   label(ctx, U.board.input, b.x0 + 4.5 * b.c, b.iy - 14, palette.muted, 11, "center");
   cells(ctx, b.x0, b.iy, b.c, 9, 9, (y, x) => gray(img.d[y * 9 + x]));
   frame(ctx, b.x0 + c * b.c, b.iy + r * b.c, 3 * b.c, 3 * b.c, palette.accent, 2.5);
@@ -70,31 +134,31 @@ const place = (r: number, c: number) => `${U.board.out} ${r + 1}${U.board.row} $
 /* 01 · One window, one output cell                                    */
 /* ------------------------------------------------------------------ */
 
-const BRIGHTER = brighten(WALK_IMG, 0.1);
+const DIMMED = brighten(CAT_IMG, CAT_DIM);
 
 export function CellScene() {
   const [step, setStep] = useState(0);
   const [spot, setSpot] = useState(0);
-  const [bright, setBright] = useState(false);
+  const [dimmed, setDimmed] = useState(false);
   const [seen, setSeen] = useState<number[]>([]);
   const reveal = (s: number) => setSeen((v) => (v.includes(s) ? v : [...v, s]));
-  const img = bright ? BRIGHTER : WALK_IMG;
+  const img = dimmed ? DIMMED : CAT_IMG;
 
   const ref = useCanvas((ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
     drawGrid(ctx, w, h, 40);
     const b = board(w, h);
-    const [r, c] = WALK_SPOTS[spot];
+    const [r, c] = CAT_SPOTS[spot];
     const { win, prod, sum } = oneCell(img, WALK_KERNEL, r, c);
-    drawPicture(ctx, b, img, r, c);
+    drawPicture(ctx, b, img, r, c, dimmed);
 
     // the output grid: empty until a window has been summed
     cells(ctx, b.outX, b.outY, b.c, 7, 7, () => palette.track);
     seen.forEach((s) => {
       if (s === spot && step < 2) return;
-      const [sr, sc] = WALK_SPOTS[s];
-      const v = oneCell(WALK_IMG, WALK_KERNEL, sr, sc).sum;
-      ctx.fillStyle = Math.abs(v) < 1e-9 ? "#ffffff" : signed(v, 3.2);
+      const [sr, sc] = CAT_SPOTS[s];
+      const v = oneCell(CAT_IMG, WALK_KERNEL, sr, sc).sum;
+      ctx.fillStyle = Math.abs(v) < 1e-9 ? "#ffffff" : signed(v, 2.4);
       ctx.fillRect(b.outX + sc * b.c + 0.5, b.outY + sr * b.c + 0.5, b.c - 1, b.c - 1);
       frame(ctx, b.outX + sc * b.c + 0.5, b.outY + sr * b.c + 0.5, b.c - 1, b.c - 1, palette.dotOff, 1);
     });
@@ -126,8 +190,8 @@ export function CellScene() {
         </div>
         <div className="ad-ctl ad-seg" role="group" aria-label={U.cell.photo}>
           <span>{U.cell.photo}</span>
-          <button type="button" className={!bright ? "on" : ""} onClick={() => setBright(false)}>{U.cell.plain}</button>
-          <button type="button" className={bright ? "on" : ""} onClick={() => setBright(true)}>{U.cell.brighter}</button>
+          <button type="button" className={!dimmed ? "on" : ""} onClick={() => setDimmed(false)}>{U.cell.plain}</button>
+          <button type="button" className={dimmed ? "on" : ""} onClick={() => setDimmed(true)}>{U.cell.brighter}</button>
         </div>
       </div>
     </div>
@@ -145,7 +209,7 @@ export function KernelScene() {
   const [playing, setPlaying] = useState(true);
   const [manual, setManual] = useState(22);
   const idxRef = useRef(22);
-  const out = useMemo(() => conv(WALK_IMG, KLIST[ki]), [ki]);
+  const out = useMemo(() => conv(CAT_IMG, KLIST[ki]), [ki]);
 
   const ref = useCanvas((ctx, w, h, tt) => {
     ctx.clearRect(0, 0, w, h);
@@ -154,10 +218,10 @@ export function KernelScene() {
     idxRef.current = idx;
     const r = Math.floor(idx / 7), c = idx % 7;
     const b = board(w, h);
-    const { win, prod, sum } = oneCell(WALK_IMG, KLIST[ki], r, c);
+    const { win, prod, sum } = oneCell(CAT_IMG, KLIST[ki], r, c);
     const mAbs = Math.max(...out.d.map(Math.abs), 1e-6) * 1.2;
 
-    drawPicture(ctx, b, WALK_IMG, r, c);
+    drawPicture(ctx, b, CAT_IMG, r, c);
     ctx.fillStyle = palette.dotOff;
     ctx.fillRect(b.outX, b.outY, 7 * b.c, 7 * b.c);
     cells(ctx, b.outX, b.outY, b.c, 7, 7, () => "#ffffff");
@@ -195,40 +259,41 @@ export function KernelLearnScene() {
   const [seed, setSeed] = useState(0);
   const [step, setStep] = useState(0);
   const snap = HIST[seed][step];
-  const ex = BAR_SHOW[pic];
+  const ex = LEARN_SHOW[pic];
   const res = useMemo(() => predictBar(ex.x, snap), [ex, snap]);
 
   const ref = useCanvas((ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
     drawGrid(ctx, w, h, 40);
     const portrait = isPortrait(w, h);
-    const on = BAR_N - 2;
+    const n = ex.x.n, on = n - 2;
     const ar = Math.floor(res.at / on), ac = res.at % on;
     const kAbs = Math.max(...snap.k.map(Math.abs), 0.3) * 1.35, mAbs = Math.max(...res.map.d.map(Math.abs), 1e-6) * 1.2;
 
-    // picture, kernel and map: one row on wide canvases; on phones the kernel drops below
+    // picture, kernel and map: one row on wide canvases; on phones the kernel drops below.
+    // Cell sizes stay the same for the 8×8 bars and the 9×9 cat, so switching pictures only adds a row and a column.
     let p: number, cm: number, km: number, px: number, mx: number, kx: number, y0: number, ky: number, rowBottom: number;
     if (portrait) {
-      p = Math.min(16, (w - 2 * PAD - 40) / 14); cm = (p * 8) / 6.4; km = 34;
+      p = Math.min(16, (w - 2 * PAD - 40) / 15); cm = (p * 8) / 6.4; km = 34;
       px = PAD; y0 = 38; mx = w - PAD - on * cm;
-      ky = y0 + 8 * p + 40; kx = PAD;
+      ky = y0 + 9 * p + 40; kx = PAD;
       rowBottom = ky + 3 * km;
     } else {
-      const unit = Math.min(18, (w - 2 * PAD - 88) / 21);
+      const unit = Math.min(18, (w - 2 * PAD - 88) / 22.5);
       p = unit; km = Math.min(38, unit * 2.1); cm = unit * 1.12;
-      const gap = (w - 2 * PAD - 8 * p - 3 * km - on * cm) / 2;
-      px = PAD; y0 = 40; kx = px + 8 * p + gap; mx = kx + 3 * km + gap;
-      ky = y0 + (8 * p - 3 * km) / 2;
-      rowBottom = y0 + 8 * p;
+      const gap = (w - 2 * PAD - n * p - 3 * km - on * cm) / 2;
+      px = PAD; y0 = 40; kx = px + n * p + gap; mx = kx + 3 * km + gap;
+      ky = y0 + (n * p - 3 * km) / 2;
+      rowBottom = y0 + 9 * p;
     }
-    const my = y0 + (8 * p - on * cm) / 2;
+    const my = y0 + (n * p - on * cm) / 2;
 
-    label(ctx, U.learn.input, px + 4 * p, y0 - 14, palette.muted, 11, "center");
-    cells(ctx, px, y0, p, 8, 8, (r, c) => gray(ex.x.d[r * 8 + c]));
-    frame(ctx, px - 1, y0 - 1, 8 * p + 2, 8 * p + 2, palette.xmark, 1);
+    label(ctx, `${U.learn.input} ${n}×${n}`, px + (n * p) / 2, y0 - 14, palette.muted, 11, "center");
+    cells(ctx, px, y0, p, n, n, (r, c) => gray(ex.x.d[r * n + c]));
+    frame(ctx, px - 1, y0 - 1, n * p + 2, n * p + 2, palette.xmark, 1);
     frame(ctx, px + ac * p, y0 + ar * p, 3 * p, 3 * p, palette.accent, 2.5);
 
-    label(ctx, U.learn.map, mx + (on * cm) / 2, my - 14, palette.muted, 11, "center");
+    label(ctx, `${U.learn.map} ${on}×${on}`, mx + (on * cm) / 2, my - 14, palette.muted, 11, "center");
     ctx.fillStyle = palette.dotOff;
     ctx.fillRect(mx, my, on * cm, on * cm);
     cells(ctx, mx, my, cm, on, on, () => "#ffffff");
@@ -249,10 +314,10 @@ export function KernelLearnScene() {
       label(ctx, U.learn.fixed, tx, ky + 34, palette.anomaly, 11);
       label(ctx, `a = ${fix(snap.a)}`, tx, ky + 62, palette.muted, 11);
       label(ctx, `b = ${fix(snap.b)}`, tx, ky + 80, palette.muted, 11);
-      arrow(ctx, px + 8 * p + 6, y0 + 4 * p, mx - 6, y0 + 4 * p, palette.muted);
+      arrow(ctx, px + n * p + 6, y0 + (n * p) / 2, mx - 6, y0 + (n * p) / 2, palette.muted);
     } else {
-      arrow(ctx, px + 8 * p + 6, y0 + 4 * p, kx - 8, y0 + 4 * p, palette.muted);
-      arrow(ctx, kx + 3 * km + 8, y0 + 4 * p, mx - 6, y0 + 4 * p, palette.muted);
+      arrow(ctx, px + n * p + 6, y0 + (n * p) / 2, kx - 8, y0 + (n * p) / 2, palette.muted);
+      arrow(ctx, kx + 3 * km + 8, y0 + (n * p) / 2, mx - 6, y0 + (n * p) / 2, palette.muted);
     }
 
     // below: the largest response, the probability, the label kept apart, the error
@@ -272,10 +337,17 @@ export function KernelLearnScene() {
     ctx.fillStyle = palette.accent; ctx.fillRect(bx, y - 6, Math.max(2, bw * res.p), 12);
     label(ctx, `${Math.round(res.p * 100)}%`, x1, y, palette.ink, 13, "right");
     y += sp;
-    const ans = `${U.learn.answer}: ${ex.y ? U.learn.vertical : U.learn.horizontal}`;
-    rbox(ctx, PAD, y - 13, 92, 26, 7, "rgba(15,157,106,0.1)", palette.mint, 1.5);
-    label(ctx, ans, PAD + 46, y, palette.ink, 12, "center");
-    label(ctx, pic === 2 ? U.learn.unused : U.learn.used, PAD + 104, y, pic === 2 ? palette.muted : palette.mint, 11);
+    if (ex.y === null) {
+      // the cat: no label, never trained on
+      rbox(ctx, PAD, y - 13, 92, 26, 7, null, palette.dotOff, 1.5);
+      label(ctx, U.learn.noAnswer, PAD + 46, y, palette.muted, 12, "center");
+      label(ctx, U.learn.unlabeled, PAD + 104, y, palette.muted, 11);
+    } else {
+      const ans = `${U.learn.answer}: ${ex.y ? U.learn.vertical : U.learn.horizontal}`;
+      rbox(ctx, PAD, y - 13, 92, 26, 7, "rgba(15,157,106,0.1)", palette.mint, 1.5);
+      label(ctx, ans, PAD + 46, y, palette.ink, 12, "center");
+      label(ctx, pic === 2 ? U.learn.unused : U.learn.used, PAD + 104, y, pic === 2 ? palette.muted : palette.mint, 11);
+    }
     y += sp;
     label(ctx, `${U.learn.loss} ${fix(snap.loss)}`, PAD, y, palette.anomaly, 13);
     label(ctx, U.learn.lossOf, x1, y, palette.muted, 11, "right");
@@ -306,8 +378,9 @@ export function KernelLearnScene() {
 /* 06 · Change one pixel: which cells change after 1, 2, 3 layers?      */
 /* ------------------------------------------------------------------ */
 
-const POKES = [0, 1, 2, 3, 4].map((d) => pokeRun(d));
-const MID = POKE_MID * POKE_N + POKE_MID;
+const POKES = [0, 1, 2, 3, 4].map((d) => catPokeRun(d));
+const RN = CAT_IMG.n;
+const MID = REACH_MID * RN + REACH_MID;
 
 export function ReachScene() {
   const [dist, setDist] = useState(0);
@@ -317,16 +390,16 @@ export function ReachScene() {
     drawGrid(ctx, w, h, 40);
     const portrait = isPortrait(w, h);
     const base = POKES[0].layers, now = POKES[dist].layers;
-    const N = POKE_N;
-    const ci = 12;
+    const N = RN;
+    const ci = 14;
     const ix = PAD, iy = 34;
     const g = Math.max(0, (h - 440) / 4);
 
     // the picture, with the tracked centre and the changed pixel
     label(ctx, U.reach.input, ix + (N * ci) / 2, iy - 14, palette.muted, 11, "center");
     cells(ctx, ix, iy, ci, N, N, (r, c) => gray(now[0].d[r * N + c]));
-    frame(ctx, ix + POKE_MID * ci, iy + POKE_MID * ci, ci, ci, palette.accent, 2.5);
-    if (dist > 0) frame(ctx, ix + (POKE_MID + dist) * ci, iy + POKE_MID * ci, ci, ci, palette.anomaly, 2.5);
+    frame(ctx, ix + REACH_MID * ci, iy + REACH_MID * ci, ci, ci, palette.accent, 2.5);
+    if (dist > 0) frame(ctx, ix + (REACH_MID + dist) * ci, iy + REACH_MID * ci, ci, ci, palette.anomaly, 2.5);
 
     // legend beside the picture
     const lx = ix + N * ci + 18;
@@ -340,7 +413,8 @@ export function ReachScene() {
     if (dist > 0) {
       label(ctx, U.reach.where[0], lx, ly, palette.muted, 11);
       label(ctx, `${dist}${U.reach.where[1]}`, lx, ly + 17, palette.muted, 11);
-      label(ctx, U.reach.value, lx, ly + 38, palette.anomaly, 12);
+      const pi = MID + dist;
+      label(ctx, `${U.reach.value} ${base[0].d[pi].toFixed(2)} → ${now[0].d[pi].toFixed(2)}`, lx, ly + 38, palette.anomaly, 12);
     } else {
       U.reach.nothing.forEach((s, i) => label(ctx, s, lx, ly + i * 17, palette.muted, 11));
     }
@@ -350,7 +424,7 @@ export function ReachScene() {
 
     // three layers: cells whose value differs from the unchanged run are red
     const gap = portrait ? 10 : 16;
-    const cm = Math.min(13, (w - 2 * PAD - 2 * gap) / (3 * N));
+    const cm = Math.min(15, (w - 2 * PAD - 2 * gap) / (3 * N));
     const mw = N * cm, rowW = 3 * mw + 2 * gap, mx0 = (w - rowW) / 2;
     const my = iy + N * ci + 42 + g;
     for (let l = 1; l <= 3; l++) {
@@ -362,7 +436,7 @@ export function ReachScene() {
         ctx.fillStyle = `rgba(${palette.anomalyRgb},0.62)`;
         ctx.fillRect(x + (i % N) * cm + 0.5, my + Math.floor(i / N) * cm + 0.5, cm - 1, cm - 1);
       }
-      frame(ctx, x + POKE_MID * cm, my + POKE_MID * cm, cm, cm, palette.accent, 2.5);
+      frame(ctx, x + REACH_MID * cm, my + REACH_MID * cm, cm, cm, palette.accent, 2.5);
       const before = base[l].d[MID], after = now[l].d[MID], changed = Math.abs(after - before) > 1e-9;
       const ty = my + mw + 16;
       label(ctx, U.reach.mid, x + mw / 2, ty, palette.muted, 11, "center");

@@ -63,7 +63,7 @@ export function NativeScene() {
     const ty = portrait ? h - 44 : y0 + S + 28;
     const tail = q.ids.slice(Math.max(0, n - 7), n).join("  ");
     label(ctx, `${U.native.seq}  ${n > 7 ? "…  " : ""}${tail}`, PAD, ty, palette.ink, 12);
-    label(ctx, `${U.native.lost} ${pct(q.lost)}`, w - PAD, ty + 26, q.lost < 0.06 ? palette.mint : palette.anomaly, 13, "right");
+    label(ctx, `${U.native.lost} ${pct(q.lost)}`, w - PAD, ty + 26, q.lost < 0.1 ? palette.mint : palette.anomaly, 13, "right");
     if (cur >= 0) label(ctx, `${n}${U.native.nth} ${cur}`, PAD, ty + 26, palette.accent, 12);
   });
 

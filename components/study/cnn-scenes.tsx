@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { clamp, drawGrid, label, palette, rng, useCanvas } from "@/components/anomaly/lib";
 import { cnnCopy } from "./cnn-copy";
-import { CORNER_RULES, KERNELS, PLUS, SHAPES, conv, grid, maxOf, pool, receptiveField, runTinyNet, type Grid } from "./cnn-math";
+import { CAT_IMG, CORNER_RULES, KERNELS, PLUS, SHAPES, conv, grid, maxOf, pool, receptiveField, runTinyNet, type Grid } from "./cnn-math";
 import { act, arrow, bar, cellText, cells, frame, gray, line, type Ctx } from "./kit";
 
 const U = cnnCopy.ui;
@@ -117,7 +117,8 @@ export function WhyConvScene() {
 /* 05 · Stride and padding set the output size                         */
 /* ------------------------------------------------------------------ */
 
-const SIMG = grid(7, (r, c) => clamp(0.12 + 0.85 * Math.exp(-((r - 2.6) ** 2 + (c - 3.4) ** 2) / 5), 0, 1));
+const SIMG = CAT_IMG;   // the 9×9 cat of section 01
+const SN = SIMG.n, SM = SN + 2, SO = SN;   // picture side, side with padding, largest output side
 const BLUR = [...KERNELS.blur];
 
 export function StridePadScene() {
@@ -128,15 +129,15 @@ export function StridePadScene() {
   const ref = useCanvas((ctx, w, h, tt) => {
     ctx.clearRect(0, 0, w, h);
     drawGrid(ctx, w, h, 40);
-    const N = 7, M = N + 2 * p, O = out.n;
+    const N = SN, M = N + 2 * p, O = out.n;
     const step = Math.floor(tt * 2.4) % (O * O + 3);
     const idx = Math.min(step, O * O - 1);
     const r0 = Math.floor(idx / O), c0 = idx % O;
-    const c = Math.min(28, (w - 2 * PAD - 40) / 16, (h - 150) / 9);
-    const ax = (w - (16 * c + 40)) / 2, ay = 44;
-    const ix = ax + ((9 - M) / 2) * c, iy = ay + ((9 - M) / 2) * c;
+    const c = Math.min(28, (w - 2 * PAD - 40) / (SM + SO), (h - 150) / SM);
+    const ax = (w - ((SM + SO) * c + 40)) / 2, ay = 44;
+    const ix = ax + ((SM - M) / 2) * c, iy = ay + ((SM - M) / 2) * c;
 
-    label(ctx, `${U.stride.input} ${N}×${N}${p ? "  +  padding 1" : ""}`, ax + 4.5 * c, ay - 16, palette.muted, 11, "center");
+    label(ctx, `${U.stride.input} ${N}×${N}${p ? "  +  padding 1" : ""}`, ax + (SM / 2) * c, ay - 16, palette.muted, 11, "center");
     for (let r = 0; r < M; r++) for (let cc = 0; cc < M; cc++) {
       const y = r - p, x = cc - p;
       const inside = y >= 0 && x >= 0 && y < N && x < N;
@@ -150,13 +151,13 @@ export function StridePadScene() {
     }
     frame(ctx, ix + c0 * s * c, iy + r0 * s * c, 3 * c, 3 * c, palette.accent, 2.5);
 
-    const ox = ax + 9 * c + 40 + ((7 - O) / 2) * c, oy = ay + ((9 - O) / 2) * c;
-    label(ctx, `${U.stride.output} ${O}×${O}`, ax + 9 * c + 40 + 3.5 * c, ay - 16, palette.muted, 11, "center");
+    const ox = ax + SM * c + 40 + ((SO - O) / 2) * c, oy = ay + ((SM - O) / 2) * c;
+    label(ctx, `${U.stride.output} ${O}×${O}`, ax + SM * c + 40 + (SO / 2) * c, ay - 16, palette.muted, 11, "center");
     cells(ctx, ox, oy, c, O, O, (r, cc) => (r * O + cc <= step ? gray(out.d[r * O + cc]) : palette.track));
     frame(ctx, ox + c0 * c, oy + r0 * c, c, c, palette.accent, 2.5);
-    arrow(ctx, ax + 9 * c + 8, ay + 4.5 * c, ax + 9 * c + 32, ay + 4.5 * c, palette.muted);
+    arrow(ctx, ax + SM * c + 8, ay + (SM / 2) * c, ax + SM * c + 32, ay + (SM / 2) * c, palette.muted);
 
-    const ty = ay + 9 * c + 30;
+    const ty = ay + SM * c + 30;
     label(ctx, `O = ⌊(${N} + 2·${p} − 3) / ${s}⌋ + 1 = ${O}`, w / 2, ty, palette.ink, 13, "center");
     label(ctx, `${N}×${N}  →  ${O}×${O}`, w / 2, ty + 24, palette.accent, 13, "center");
   });

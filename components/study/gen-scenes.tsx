@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { drawGrid, label, palette, useCanvas } from "@/components/anomaly/lib";
 import { arrow, cells, frame, line, rbox, signed } from "./kit";
+import { CAT_SRC } from "./cat-grids";
 import { genCopy } from "./gen-copy";
-import { PAD, dot, isPortrait, ko, num, patchGrid, pct, picture, point } from "./gen-draw";
+import { PAD, dot, isPortrait, ko, num, patchGrid, pctFine, picture, point } from "./gen-draw";
 import {
   BLOBS, DIRS, FOLLOW, IMG, NP, PATCHES, PD, PICTURE, PS, TRACK, TRACK_COL, TRACK_ROW, WALK_SEED,
-  aimAt, bind, cellError, decodeLearned, decodeShrink, encodeLearned, encodeShrink, imageTokens, learnedRecon, lost, nearest, shrinkBlock, shrinkRecon, trainPairs, walk,
+  aimAt, bind, cellError, decodeLearned, decodeShrink, encodeLearned, encodeShrink, imageTokens, learnedRecon, lost, nearest, shrinkBlock, shrinkRecon, trackRange, trainPairs, walk,
   type Img, type P2, type Road,
 } from "./gen-math";
 
@@ -20,11 +21,20 @@ const U = genCopy.ui;
 const KEEP = [1, 2, 4, 8];
 const TP = PATCHES[TRACK];
 const err = (v: number) => (v < 0.01 ? v.toFixed(3) : v.toFixed(2));
+/** Value ranges of the followed patch: the paler inner fur, the dark fur, the background. */
+const PART_RANGES = [trackRange([0]), trackRange([1, 2]), trackRange([3])];
 
 export function LatentScene() {
   const [step, setStep] = useState(0);
   const [ki, setKi] = useState(3);
   const k = KEEP[ki];
+  // the colour drawing the gray numbers were read from, shown small in the first step
+  const catRef = useRef<HTMLImageElement | null>(null);
+  useEffect(() => {
+    const img = new window.Image();
+    img.src = CAT_SRC.square;
+    img.onload = () => { catRef.current = img; };
+  }, []);
   const shrunk = useMemo(() => shrinkRecon(k), [k]);
   const learned = useMemo(() => learnedRecon(k), [k]);
   const one = useMemo(() => {
@@ -53,7 +63,7 @@ export function LatentScene() {
         label(ctx, it[1], x + S / 2, y - 12, it[2], 12, "center");
         picture(ctx, it[0], x, y, S);
         frame(ctx, x + (TRACK_COL * S) / NP, y + (TRACK_ROW * S) / NP, S / NP, S / NP, palette.accent, 2);
-        if (it[3] !== null) label(ctx, `${U.latent.lost} ${pct(it[3])}`, x + S / 2, y + S + 16, it[2], 13, "center");
+        if (it[3] !== null) label(ctx, `${U.latent.lost} ${pctFine(it[3])}`, x + S / 2, y + S + 16, it[2], 13, "center");
       };
       let bottom = 0;
       if (portrait) {
@@ -88,11 +98,21 @@ export function LatentScene() {
 
     if (step === 0) {
       label(ctx, U.latent.given, x0, y0, palette.ink, 13);
-      label(ctx, U.latent.sky, x0, y0 + 28, palette.muted, 12);
-      label(ctx, U.latent.post, x0, y0 + 50, palette.muted, 12);
-      label(ctx, `${U.latent.goal[0]} ${k}${U.latent.goal[1]}`, x0, y0 + 90, palette.accent, 12);
-      label(ctx, U.latent.goal[2], x0, y0 + 112, palette.accent, 12);
-      label(ctx, U.latent.whole, x0, y0 + 152, palette.muted, 11);
+      U.latent.parts.forEach((name, i) => label(ctx, `${name} ${num(PART_RANGES[i][0])} ~ ${num(PART_RANGES[i][1])}`, x0, y0 + 28 + i * 22, palette.muted, 12));
+      label(ctx, `${U.latent.goal[0]} ${k}${U.latent.goal[1]}`, x0, y0 + 112, palette.accent, 12);
+      label(ctx, U.latent.goal[2], x0, y0 + 134, palette.accent, 12);
+      label(ctx, U.latent.whole, x0, y0 + 174, palette.muted, 11);
+      // the colour drawing, with the followed patch boxed at the same grid position
+      const T = portrait ? 96 : Math.min(120, h - y0 - 238), tx = x0, ty = y0 + 198, img = catRef.current;
+      if (img) {
+        ctx.drawImage(img, tx, ty, T, T);
+        frame(ctx, tx, ty, T, T, palette.frame, 1);
+        frame(ctx, tx + (TRACK_COL * T) / NP, ty + (TRACK_ROW * T) / NP, T / NP, T / NP, palette.accent, 2);
+      } else {
+        ctx.fillStyle = palette.track; ctx.fillRect(tx, ty, T, T);
+        label(ctx, U.latent.loading, tx + T / 2, ty + T / 2, palette.muted, 11, "center");
+      }
+      U.latent.src.forEach((text, i) => label(ctx, text, tx, ty + T + 16 + i * 18, palette.muted, 11));
     } else if (step === 1) {
       // each kept number is a weighted sum of the 16 cells: the small tile is its 16 weights
       const ts = Math.min(34, Math.floor((cw - (k - 1) * 6) / k)), pitch = ts + 6;

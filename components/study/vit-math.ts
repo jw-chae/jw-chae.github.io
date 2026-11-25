@@ -1,4 +1,7 @@
-/** Small hand-set models behind the ViT chapter. Every number quoted in the prose is computed here. No imports, so node can run it directly. */
+/**
+ * Small models behind the ViT chapter. Every number quoted in the prose is computed here. No imports, so node can run it directly.
+ * Pixel brightness comes from the owner's cat drawing (measured); every weight (E, W_K, [CLS], output layer, positions) is hand-set.
+ */
 
 export const dot = (a: number[], b: number[]) => a.reduce((s, v, i) => s + v * b[i], 0);
 export function softmax(z: number[]): number[] {
@@ -44,24 +47,48 @@ export const COUNTS = {
   weights: 768 * 588,                   // 451,584 numbers in the patch-embedding matrix
 };
 
-/** A 2 × 2 grey patch written row by row: bright on the left, dark on the right. Hand-set. */
-export const TINY_PATCH = [0.9, 0.1, 0.8, 0.2];
-/** The same patch with one pixel changed (top right 0.1 → 0.9). */
-export const TINY_PATCH_B = [0.9, 0.9, 0.8, 0.2];
-/** A 2 × 4 embedding matrix: each row holds one weight per pixel. Hand-set. */
+/* ---- the owner's Siamese cat: brightness measured from the drawing ---- */
+
+/**
+ * Copied from CAT_HEAD_GRAY_4 in cat-grids.ts: /study/cat-head.png (512 × 512, head only) cut into 4 × 4 blocks of 128 px,
+ * mean luminance of each block, 0 dark to 1 bright. Measured, not hand-set.
+ */
+export const HEAD_GRAY_4 = [[0.83, 0.95, 0.81, 0.69], [0.56, 0.58, 0.57, 0.65], [0.76, 0.51, 0.21, 0.58], [0.95, 0.73, 0.41, 0.8]];
+/** Luminance of the plain background colour (253, 236, 226) of the drawing. */
+export const BG_GRAY = 0.94;
+/** Background colour of the drawing, for a cell painted plain. */
+export const BG_RGB = "rgb(253,236,226)";
+
+/** What a cell of the 2 × 2 cut holds: one quarter of the head, or plain background. */
+export type Part = "ear" | "ear2" | "eye" | "nose" | "bg";
+/** The quarter of the head each part is (row, column): left ear, right ear and forehead, left eye and cheek, nose with the right eye. */
+export const PART_CELL: Record<Exclude<Part, "bg">, [number, number]> = { ear: [0, 0], ear2: [0, 1], eye: [1, 0], nose: [1, 1] };
+/** The cell shrunk to 2 × 2 pixels (one per 128 px block), written row by row: top left, top right, bottom left, bottom right. */
+export function pixels(part: Part): number[] {
+  if (part === "bg") return [BG_GRAY, BG_GRAY, BG_GRAY, BG_GRAY];
+  const [r, c] = PART_CELL[part], G = HEAD_GRAY_4;
+  return [G[2 * r][2 * c], G[2 * r][2 * c + 1], G[2 * r + 1][2 * c], G[2 * r + 1][2 * c + 1]];
+}
+/** A 2 × 4 embedding matrix: each row holds one weight per pixel. Hand-set. Both rows sum to 0, so a plain cell gives [0, 0]. */
 export const TINY_E = [[1, -1, 1, -1], [1, 1, -1, -1]];
-export const tinyEmbed = (pixels: number[]) => apply(TINY_E, pixels);
+const r2 = (v: number) => Math.round(v * 100) / 100;
+export const tinyEmbed = (px: number[]) => apply(TINY_E, px).map(r2);
+/** Section 01's worked example: the left-ear cell ①. */
+export const TINY_PATCH = pixels("ear");
+/** The same cell with one pixel changed: top right (background, 0.95) darkened to the ear's 0.56. */
+export const TINY_PATCH_B = [TINY_PATCH[0], TINY_PATCH[2], TINY_PATCH[2], TINY_PATCH[3]];
+/** A cell's vector: its 2 × 2 measured brightness times the hand-set E. */
+export const partVec = (part: Part) => tinyEmbed(pixels(part));
 
-/* ---- the 2 × 2 cat photo: same vectors and the same W_K as walk-math.ts (ViT 02–03) ---- */
+/* ---- ViT 02–05 · the head cut 2 × 2 ---- */
 
-export type Kind = "ear" | "eye" | "wall";
-export const KIND_VEC: Record<Kind, number[]> = { ear: [1, 2], eye: [2, 1], wall: [0, -1] };
-export const STANDARD: Kind[] = ["ear", "eye", "wall", "wall"];
-/** ② turned into bare wall (the experiment of section 03). */
-export const NO_EYE: Kind[] = ["ear", "wall", "wall", "wall"];
-/** ① and ③ exchanged: the ear now sits below the wall. */
-export const SWAPPED: Kind[] = ["wall", "eye", "ear", "wall"];
-const WK = [[0, 0.5], [0.5, 0]];
+export const STANDARD: Part[] = ["ear", "ear2", "eye", "nose"];
+/** ③ painted plain background (the experiment of section 03). */
+export const NO_EYE: Part[] = ["ear", "ear2", "bg", "nose"];
+/** ① and ③ exchanged: the ear now sits below the eye. */
+export const SWAPPED: Part[] = ["eye", "ear2", "ear", "nose"];
+/** W_K: swaps the two numbers and multiplies by 4. Hand-set. W_Q and W_V are the identity. */
+const WK = [[0, 4], [4, 0]];
 
 export type Read = { q: number[]; keys: number[][]; vals: number[][]; scores: number[]; weights: number[]; parts: number[][]; read: number[]; out: number[] };
 /** Token `owner` reads every token in `xs` once: Q and V are the token vectors themselves, K = W_K x. */
@@ -72,16 +99,24 @@ export function readBy(owner: number, xs: number[][]): Read {
   return { q, keys, vals, scores, weights, parts, read, out: plus(q, read) };
 }
 
+export type Third = "eye" | "bg";
+export type Look = Read & { x: number[][] };
+/** Sections 02–03: cell `owner` (0-based) reads the four cells; `third` is what cell ③ holds. */
+export function look(owner: number, third: Third = "eye"): Look {
+  const x = (third === "eye" ? STANDARD : NO_EYE).map(partVec);
+  return { x, ...readBy(owner, x) };
+}
+
 /* ---- 04 · an extra token with no pixels reads the four patches ---- */
 
 /** Starting vector of [CLS]: the same for every photo. Hand-set here, learned in a real model. */
-export const CLS0 = [0.9, 0.9];
-export const CLASSES = ["고양이", "개", "빈 벽"];
+export const CLS0 = [0, 0.5];
+export const CLASSES = ["고양이", "개", "빈 배경"];
 /** Output layer: one row per class. Hand-set. */
-export const W_OUT = [[1.2, 0.7], [0.2, 1.0], [-1.0, 0.2]];
+export const W_OUT = [[5, 3], [1, 2], [-3, -1]];
 
 /** Position vectors, one per slot of the 2 × 2 grid. Hand-set. */
-export const POS = [[0.5, 0], [0, 0.5], [-0.5, 0], [0, -0.5]];
+export const POS = [[0, 0.2], [0.2, 0], [0, -0.2], [-0.2, 0]];
 
 export type Pass = { x: number[][]; ear: number; eye: number; earRead: Read; cls: Read; logits: number[]; probs: number[]; mean: number[] };
 /**
@@ -89,8 +124,8 @@ export type Pass = { x: number[][]; ear: number; eye: number; earRead: Read; cls
  * The ear patch reads the four patches (as in sections 02–03); [CLS] reads the four patches and itself.
  * `pos` adds the slot's position vector to each patch vector before the layer.
  */
-export function pass(layout: Kind[], pos = false): Pass {
-  const x = layout.map((k, i) => (pos ? plus(KIND_VEC[k], POS[i]) : KIND_VEC[k]));
+export function pass(layout: Part[], pos = false): Pass {
+  const x = layout.map((k, i) => (pos ? plus(partVec(k), POS[i]) : partVec(k)));
   const ear = layout.indexOf("ear"), eye = layout.indexOf("eye");
   const earRead = readBy(ear, x), cls = readBy(4, [...x, CLS0]);
   const logits = W_OUT.map((row) => dot(row, cls.out)), probs = softmax(logits);

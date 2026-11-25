@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { clamp, drawGrid, label, palette, useCanvas } from "@/components/anomaly/lib";
-import { arrow, line, rbox, type Ctx } from "./kit";
+import { arrow, line, rbox } from "./kit";
 import { cmpCopy } from "./cmp-copy";
-import { CLASS_RGB, PAD, classColor, fix, isPortrait, num, pct, sgn, tint, valueGrid, vec } from "./cmp-kit";
+import { CLASS_RGB, PAD, classColor, drawCropMap, drawPhoto, fix, isPortrait, num, pct, sgn, tint, valueGrid, vec } from "./cmp-kit";
 import { FEAT_P, FEAT_S, FEAT_T, HARD, LOGIT_STEPS, P_A, T_MAX, Z_A, Z_B, featCheck, ratioAt, softmax, trainLogits } from "./cmp-math";
 
 const U = cmpCopy.ui;
@@ -13,25 +13,8 @@ const GREEN = palette.mint, AMBER = palette.accent, BLUE = palette.normal;
 
 const SUP: Record<string, string> = { "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹", "-": "⁻" };
 const sup = (n: number) => String(n).split("").map((ch) => SUP[ch] ?? ch).join("");
-
-/** A cat face in a few strokes. Droopy ears for photo A (a little dog-like), pointed ears for photo B. */
-function drawCat(ctx: Ctx, x: number, y: number, s: number, droopy: boolean) {
-  const cx = x + s / 2, cy = y + s * 0.56, r = s * 0.3;
-  ctx.save();
-  ctx.fillStyle = "#f4efe6"; ctx.strokeStyle = palette.ink; ctx.lineWidth = 1.6;
-  for (const side of [-1, 1]) {
-    ctx.beginPath();
-    if (droopy) ctx.ellipse(cx + side * r * 0.92, cy + r * 0.12, r * 0.26, r * 0.66, -side * 0.18, 0, Math.PI * 2);
-    else { ctx.moveTo(cx + side * r * 0.2, cy - r * 0.9); ctx.lineTo(cx + side * r * 0.85, cy - r * 1.5); ctx.lineTo(cx + side * r * 0.95, cy - r * 0.4); ctx.closePath(); }
-    ctx.fill(); ctx.stroke();
-  }
-  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = palette.ink;
-  for (const side of [-1, 1]) { ctx.beginPath(); ctx.arc(cx + side * r * 0.38, cy - r * 0.12, r * 0.09, 0, Math.PI * 2); ctx.fill(); }
-  ctx.beginPath(); ctx.moveTo(cx - r * 0.12, cy + r * 0.16); ctx.lineTo(cx + r * 0.12, cy + r * 0.16); ctx.lineTo(cx, cy + r * 0.3); ctx.closePath(); ctx.fill();
-  ctx.restore();
-  for (const side of [-1, 1]) for (const dy of [0.22, 0.38]) line(ctx, cx + side * r * 0.25, cy + r * dy, cx + side * r * 0.95, cy + r * (dy + 0.06 * side * side), palette.muted, 1);
-}
+/** e to a logit: superscript for whole numbers, "e^2.5" otherwise (the monospace font has no superscript point). */
+const expOf = (v: number) => (Number.isInteger(v) ? `e${sup(v)}` : `e^${num(v, 1)}`);
 
 /* ------------------------------------------------------------------ */
 /* 01 · The hard label and the teacher's three probabilities            */
@@ -47,10 +30,16 @@ export function LabelScene() {
     drawGrid(ctx, w, h, 40);
     const g = Math.max(0, (h - 440) / 4), small = w < 420;
     const z = photo === 0 ? Z_A : Z_B, p = softmax(z);
-    const ps = small ? 84 : 96, px = PAD, py = 14;
-    rbox(ctx, px, py, ps, ps, 10, "#ffffff", palette.frame, 1.2);
-    drawCat(ctx, px, py + 4, ps, photo === 0);
-    label(ctx, photo === 0 ? T.photoA : T.photoB, px + ps / 2, py + ps + 13, palette.muted, 11, "center");
+    // the picture the teacher receives: the whole cat (A) or the lower middle quarter of it (B)
+    const ps = small ? 112 : 148, px = PAD, py = 12;
+    drawPhoto(ctx, photo === 0 ? 0 : 1, px, py, ps);
+    label(ctx, photo === 0 ? T.photoA : T.photoB, px + ps / 2, py + ps + 12, palette.muted, 11, "center");
+    if (photo === 1) {
+      // where B was cut from, small and to the side: the teacher never sees this
+      const ms = small ? 44 : 56;
+      drawCropMap(ctx, w - PAD - ms, py, ms);
+      if (!small) label(ctx, T.from, w - PAD, py + ms + 11, palette.muted, 11, "right");
+    }
 
     const tx = px + ps + 18;
     label(ctx, `${T.labelCol} = [1, 0, 0]`, tx, py + 18, GREEN, 13);
@@ -61,7 +50,7 @@ export function LabelScene() {
     if (view === 2) label(ctx, T.hand, tx, py + 82, palette.muted, 11);
 
     // three rows: name, label cell, logit, probability bar
-    const y0 = py + ps + 52 + g, rh = 44 + g / 2;
+    const y0 = py + ps + 50 + g, rh = 44 + g / 2;
     const cLab = PAD + 62, cLog = cLab + 54, bx = cLog + 46, bw = Math.max(60, w - PAD - 58 - bx);
     label(ctx, T.labelCol, cLab + 17, y0 - 16, GREEN, 11, "center");
     if (view >= 1) label(ctx, T.logitCol, cLog + 12, y0 - 16, AMBER, 11, "center");
@@ -81,7 +70,7 @@ export function LabelScene() {
 
     const yb = y0 + 3 * rh + 8 + g / 2;
     if (view >= 2) {
-      const terms = z.map((v) => `e${sup(v)} = ${fix(Math.exp(v), 2)}`), sum = z.reduce((s, v) => s + Math.exp(v), 0);
+      const terms = z.map((v) => `${expOf(v)} = ${fix(Math.exp(v), 2)}`), sum = z.reduce((s, v) => s + Math.exp(v), 0);
       if (small) {
         label(ctx, terms.join("  "), PAD, yb, palette.muted, 11);
         label(ctx, `${T.sumWord} ${fix(sum, 2)}`, PAD, yb + 18, palette.muted, 11);
@@ -121,9 +110,12 @@ export function TempScene() {
     drawGrid(ctx, w, h, 40);
     const small = w < 420, portrait = isPortrait(w, h), colors = classColor();
     const p = softmax(Z_A, T);
-    label(ctx, `${S.probs} (T = ${num(T, 1)})`, PAD, 18, palette.ink, 12);
+    // the same photo A and the same three logits at every temperature
+    drawPhoto(ctx, 0, PAD, 8, 46);
+    label(ctx, `${S.photo} ${vec(Z_A)}`, PAD + 58, 21, palette.muted, 11);
+    label(ctx, `${S.probs} (T = ${num(T, 1)})`, PAD + 58, 42, palette.ink, 12);
 
-    const y0 = 44, rh = 28, cDiv = PAD + 54, bx = PAD + (small ? 160 : 176), bw = Math.max(60, w - PAD - 52 - bx);
+    const y0 = 76, rh = 28, cDiv = PAD + 54, bx = PAD + (small ? 160 : 176), bw = Math.max(60, w - PAD - 52 - bx);
     label(ctx, S.divided, cDiv, y0 - 12, palette.muted, 11);
     NAMES.forEach((name, i) => {
       const y = y0 + i * rh;
@@ -191,10 +183,12 @@ export function LossScene() {
     ctx.clearRect(0, 0, w, h);
     drawGrid(ctx, w, h, 40);
     const g = Math.max(0, (h - 440) / 4), small = w < 420;
-    label(ctx, `${S.step} ${step}`, PAD, 18, palette.ink, 12);
+    drawPhoto(ctx, 0, PAD, 6, 40);
+    label(ctx, `${S.step} ${step}`, PAD + 50, 18, palette.ink, 12);
+    label(ctx, S.photo, PAD + 50, 36, palette.muted, 11);
     label(ctx, `${S.loss} = ${fix(snap.loss, 3)}`, w - PAD, 18, palette.anomaly, 12, "right");
 
-    const y0 = 50, rh = 46 + g / 2, tx = PAD + 56, pushW = small ? 70 : 86, tw = w - PAD - pushW - tx - 58;
+    const y0 = 66, rh = 46 + g / 2, tx = PAD + 56, pushW = small ? 70 : 86, tw = w - PAD - pushW - tx - 58;
     label(ctx, S.push, w - PAD, y0 - 14, palette.muted, 11, "right");
     NAMES.forEach((name, i) => {
       const y = y0 + i * rh, q = snap.q[i];
@@ -273,8 +267,11 @@ export function FeatureScene() {
     const cw = small ? 36 : 46, ch = small ? 30 : 34, gap = small ? 13 : 22, near = small ? 7 : 12;
     const total = 2 * cw + gap + cw + gap + cw + near + cw + near + cw;
     const x0 = (w - total) / 2, xP = x0, xS = xP + 2 * cw + gap, xPs = xS + cw + gap, xT = xPs + cw + near, xD = xT + cw + near;
-    const y0 = 58 + g / 2, ys = y0 + ch;
+    const y0 = (small ? 58 : 66) + g / 2, ys = y0 + ch;
     const BLUE_T = tint(palette.normalRgb, 0.1), AMB_T = tint(palette.accentRgb, 0.16);
+    // both vectors come from the same photo A, put through the teacher and through the student
+    drawPhoto(ctx, 0, PAD, 6, 38);
+    label(ctx, S.photo, PAD + 48, 25, palette.muted, 11);
 
     const col = (v: number[]) => v.map((x) => [x]);
     label(ctx, "s", xS + cw / 2, ys - 14, AMBER, 12, "center");

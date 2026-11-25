@@ -1,8 +1,10 @@
-/** Drawing helpers for the token-reduction scenes: the desk picture, number formats, hatching and group tints. */
+/** Drawing helpers for the token-reduction scenes: the cat crop, number formats, hatching and group tints. */
 
+import { useEffect, useRef } from "react";
 import { label, palette } from "@/components/anomaly/lib";
+import { CAT_SRC } from "./cat-grids";
 import type { Ctx } from "./kit";
-import type { Kind } from "./tok-math";
+import { CROP, EYE_SHAPE, type Kind } from "./tok-math";
 
 export const PAD = 18;
 export const isPortrait = (w: number, h: number) => h > w * 1.15;
@@ -18,50 +20,42 @@ export function big(v: number): string {
   return Math.round(v).toLocaleString("en-US");
 }
 
-/** Colours of the things in the picture. Drawn, not photographed. */
-export const INK = { wall: "#e9e5db", table: "#bf9566", tableDark: "#9c7448", mug: "#c0623e", mugDark: "#9a4a2c", key: "#c9a227", keyDark: "#8a6d10", hand: "#e2b597", handDark: "#c48f70" };
-export const KIND_DOT: Record<Kind, string> = { wall: "#9aa0a8", table: INK.tableDark, mug: INK.mug, key: INK.keyDark, hand: INK.handDark };
+/** Dot colours for the kinds of patch in the vector planes, taken from the cat's own colours (darkened where needed to show on white). */
+export const KIND_DOT: Record<Kind, string> = { bg: "#c4ab9b", brown: "#6e4632", cream: "#d29a62", eye: "#3b8bd0", closed: "#3a2419" };
 
 /** Tints for tokens that stand for two or more patches. Deliberately not green or red, which mean "same" and "differs". */
 export const TINTS = ["194,115,0", "124,58,237", "14,127,199", "120,130,40", "190,60,160", "90,100,120", "160,90,40", "40,140,150"];
 export const tint = (i: number, a = 0.32) => `rgba(${TINTS[i % TINTS.length]},${a})`;
 
-/** The desk picture: wall above, table below, a mug in the middle 2 × 2 cells, a key in the lower right cell; `hand` covers cells 11, 14, 15. */
-export function desk(ctx: Ctx, x: number, y: number, S: number, kinds: Kind[], shift = 0) {
-  const c = S / 4;
+/** Loads cat-square.png once per scene. The ref stays null until the image has arrived; the canvases repaint every frame, so it then appears. */
+export function useCatImage() {
+  const ref = useRef<HTMLImageElement | null>(null);
+  useEffect(() => {
+    const img = new window.Image();
+    img.onload = () => { ref.current = img; };
+    img.src = CAT_SRC.square;
+  }, []);
+  return ref;
+}
+
+/** The 4 × 4 crop of the cat drawn into an S × S box, or only patch `cell` of it enlarged to S. With `closed`, the eye is painted over
+ *  exactly where the measurement painted it: an ellipse in the fur colour and a lid line. */
+export function catCrop(ctx: Ctx, img: HTMLImageElement | null, x: number, y: number, S: number, closed = false, cell?: number) {
+  const c = CROP.size / 4;
+  const sx = cell === undefined ? CROP.x : CROP.x + (cell % 4) * c, sy = cell === undefined ? CROP.y : CROP.y + Math.floor(cell / 4) * c;
+  const sw = cell === undefined ? CROP.size : c, k = S / sw;
   ctx.save();
   ctx.beginPath(); ctx.rect(x, y, S, S); ctx.clip();
-  ctx.fillStyle = INK.wall; ctx.fillRect(x, y, S, S);
-  // table top: the back edge runs along the middle of the picture
-  ctx.fillStyle = INK.table; ctx.fillRect(x, y + 2 * c, S, 2 * c);
-  ctx.strokeStyle = INK.tableDark; ctx.lineWidth = Math.max(1, c * 0.04);
-  for (let k = 0; k < 5; k++) { ctx.beginPath(); ctx.moveTo(x, y + 2.3 * c + k * 0.38 * c); ctx.bezierCurveTo(x + S * 0.3, y + 2.2 * c + k * 0.38 * c, x + S * 0.6, y + 2.45 * c + k * 0.38 * c, x + S, y + 2.32 * c + k * 0.38 * c); ctx.stroke(); }
-  ctx.fillStyle = INK.tableDark; ctx.fillRect(x, y + 2 * c - c * 0.03, S, c * 0.06);
-  // mug: body, rim, handle
-  ctx.fillStyle = INK.mug;
-  ctx.beginPath(); ctx.moveTo(x + 1.15 * c, y + 1.25 * c); ctx.lineTo(x + 2.65 * c, y + 1.25 * c); ctx.lineTo(x + 2.6 * c, y + 2.7 * c);
-  ctx.quadraticCurveTo(x + 1.9 * c, y + 2.95 * c, x + 1.2 * c, y + 2.7 * c); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = INK.mugDark; ctx.beginPath(); ctx.ellipse(x + 1.9 * c, y + 1.25 * c, 0.75 * c, 0.16 * c, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = INK.mug; ctx.lineWidth = Math.max(2, c * 0.13);
-  ctx.beginPath(); ctx.ellipse(x + 2.68 * c, y + 1.95 * c, 0.24 * c, 0.36 * c, 0, -Math.PI / 2, Math.PI / 2); ctx.stroke();
-  // key: ring and blade with two teeth
-  if (kinds[15] === "key") {
-    ctx.strokeStyle = INK.key; ctx.lineWidth = Math.max(2, c * 0.08);
-    ctx.beginPath(); ctx.arc(x + 3.32 * c, y + 3.42 * c, 0.17 * c, 0, Math.PI * 2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x + 3.49 * c, y + 3.47 * c); ctx.lineTo(x + 3.86 * c, y + 3.62 * c); ctx.stroke();
-    ctx.lineWidth = Math.max(1.5, c * 0.06);
-    ctx.beginPath(); ctx.moveTo(x + 3.72 * c, y + 3.57 * c); ctx.lineTo(x + 3.69 * c, y + 3.7 * c); ctx.moveTo(x + 3.82 * c, y + 3.61 * c); ctx.lineTo(x + 3.79 * c, y + 3.74 * c); ctx.stroke();
-  }
-  // hand: an arm from the lower right edge, palm over the right cell of row 3, fingers up
-  if (kinds[11] === "hand") {
-    const dx = -shift * c, dy = -shift * 0.5 * c;
-    ctx.fillStyle = INK.hand;
-    ctx.beginPath(); ctx.moveTo(x + 2.2 * c + dx, y + 4.1 * c); ctx.lineTo(x + 3.0 * c + dx, y + 3.15 * c + dy); ctx.lineTo(x + 4.1 * c, y + 3.0 * c + dy); ctx.lineTo(x + 4.1 * c, y + 4.1 * c); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(x + 3.45 * c + dx, y + 2.9 * c + dy, 0.5 * c, 0.42 * c, -0.3, 0, Math.PI * 2); ctx.fill();
-    ctx.lineCap = "round"; ctx.strokeStyle = INK.hand; ctx.lineWidth = Math.max(2, c * 0.15);
-    [[3.1, 2.25], [3.35, 2.12], [3.6, 2.12], [3.85, 2.3]].forEach(([fx, fy]) => { ctx.beginPath(); ctx.moveTo(x + fx * c + dx, y + 2.75 * c + dy); ctx.lineTo(x + fx * c + dx, y + fy * c + dy); ctx.stroke(); });
-    ctx.strokeStyle = INK.handDark; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.ellipse(x + 3.45 * c + dx, y + 2.9 * c + dy, 0.5 * c, 0.42 * c, -0.3, 0.3, 1.6); ctx.stroke();
+  ctx.fillStyle = "#fdece2"; ctx.fillRect(x, y, S, S);
+  if (img) {
+    ctx.drawImage(img, sx, sy, sw, sw, x, y, S, S);
+    if (closed) {
+      const ex = x + (EYE_SHAPE.cx - sx) * k, ey = y + (EYE_SHAPE.cy - sy) * k;
+      ctx.fillStyle = EYE_SHAPE.fill;
+      ctx.beginPath(); ctx.ellipse(ex, ey, EYE_SHAPE.rx * k, EYE_SHAPE.ry * k, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = EYE_SHAPE.line; ctx.lineWidth = Math.max(1, 2 * k); ctx.lineCap = "round";
+      ctx.beginPath(); ctx.ellipse(ex, ey - 1.5 * k, (EYE_SHAPE.rx - 3) * k, 5.5 * k, 0, (15 * Math.PI) / 180, (165 * Math.PI) / 180); ctx.stroke();
+    }
   }
   ctx.restore();
 }
@@ -95,9 +89,10 @@ export function tag(ctx: Ctx, text: string, cx: number, cy: number, color: strin
   label(ctx, text, cx, cy + 0.5, color, size, "center");
 }
 
-/** A picture cell that belongs to a merged token: a light tint and an inner border in the token's colour. */
+/** A picture cell that belongs to a merged token: a faint tint (light enough to keep the cat's colours readable) and an inner border
+ *  in the token's colour. */
 export function tintCell(ctx: Ctx, x: number, y: number, c: number, idx: number) {
-  ctx.fillStyle = tint(idx, 0.26); ctx.fillRect(x, y, c, c);
+  ctx.fillStyle = tint(idx, 0.12); ctx.fillRect(x, y, c, c);
   ctx.save(); ctx.strokeStyle = tint(idx, 0.95); ctx.lineWidth = 2; ctx.strokeRect(x + 2.5, y + 2.5, c - 5, c - 5); ctx.restore();
 }
 
@@ -110,10 +105,23 @@ export function tokenDot(ctx: Ctx, x: number, y: number, s: number, fill: string
   return r;
 }
 
+/** The vector plane's range: brightness across, blueness up, wide enough for every patch and token of the cat crop. */
+export const PLANE_X: [number, number] = [-3.2, 1.5];
+export const PLANE_Y: [number, number] = [-2.2, 1.7];
+
 /** Names of the four kinds of patch, placed beside their clusters but clear of where merged tokens land. */
 export function kindNames(ctx: Ctx, at: (v: number[]) => readonly [number, number], names: Record<string, string>) {
-  const spots: [string, number[], CanvasTextAlign][] = [[names.wall, [0.42, -1.05], "left"], [names.table, [-1.0, -0.42], "center"], [names.mug, [2.05, 0.45], "center"], [names.key, [0.12, 1.6], "right"]];
+  const spots: [string, number[], CanvasTextAlign][] = [
+    [names.bg, [1.0, 1.3], "center"], [names.brown, [-1.55, -1.65], "center"], [names.cream, [0.55, -1.95], "center"], [names.eye, [-2.51, 1.45], "center"],
+  ];
   spots.forEach(([n, v, al]) => { const [x, y] = at(v); label(ctx, n, x, y, palette.muted, 11, al); });
+}
+
+/** Axis names on the two zero lines: brightness at the right end of the horizontal one, blueness at the top of the vertical one. */
+export function axisNames(ctx: Ctx, at: (v: number[]) => readonly [number, number], ax: string, ay: string) {
+  const [x1, y1] = at([PLANE_X[1], 0]), [x2, y2] = at([0, PLANE_Y[1]]);
+  label(ctx, ax, x1 - 5, y1 + 10, palette.muted, 11, "right");
+  label(ctx, ay, x2 - 5, y2 + 10, palette.muted, 11, "right");
 }
 
 /** A 2-D vector plane: returns a mapping from vector to canvas point for the box (x, y, w, h). */

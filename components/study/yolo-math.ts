@@ -1,6 +1,8 @@
-/** Arithmetic behind the YOLO study scenes: one 160 × 160 picture with a cat and a cup, a 4 × 4 grid of cells,
- *  IoU and NMS by hand, the two label assignments, YOLOv10's reported numbers, and YOLOE's name vectors and fold.
- *  Every toy value here is hand-set for the explanation; every published value carries its table in a comment. */
+/** Arithmetic behind the YOLO study scenes: one 160 × 160 picture with the Siamese cat (public/study/cat-pixel.webp)
+ *  and a drawn cup, a 4 × 4 grid of cells, IoU and NMS by hand, the two label assignments, YOLOv10's reported numbers,
+ *  and YOLOE's name vectors and fold. The answer boxes and the cat's share of each cell are measured from the cat
+ *  image's alpha channel at its placement; every model output (cell boxes, scores, features) is hand-set for the
+ *  explanation; every published value carries its table in a comment. */
 
 export type Box = [number, number, number, number];   // x1, y1, x2, y2 in picture pixels
 export type Mat = number[][];
@@ -17,12 +19,37 @@ export const inside = (p: [number, number], b: Box) => p[0] > b[0] && p[0] < b[2
 export const boxCenter = (b: Box): [number, number] => [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2];
 export const cellOf = (p: [number, number]): [number, number] => [Math.floor(p[1] / CELL), Math.floor(p[0] / CELL)];
 
-/* ---- the picture: what the answer sheet says is there ---- */
+/* ---- the picture: where the cat is drawn, and what the answer sheet says is there ---- */
 
-export const GT_CAT: Box = [10, 36, 98, 136];
-export const GT_CUP: Box = [112, 92, 148, 138];
-/** Only for the "two cats" picture of 02: a second cat sitting right behind the first. */
-export const GT_CAT2: Box = [28, 46, 116, 138];
+/** Size of public/study/cat-pixel.webp in its own pixels (transparent background). */
+export const CAT_SRC = { w: 658, h: 720, url: "/study/cat-pixel.webp" };
+/** The cat's extent inside that image, in its pixels (left, top, right, bottom edges): columns and rows holding at
+ *  least 20 opaque pixels (alpha > 0.5). Measured once from the alpha channel with Python and PIL.
+ *  The thin whiskers reach x = 538 but never cover half a picture pixel at this scale, so the answer box leaves them out. */
+export const CAT_EXTENT = [98, 8, 503, 718];
+/** Where the image is drawn in the picture: its top-left corner and picture pixels per image pixel.
+ *  Cat 2 (only in the "two cats" picture of 02) sits right behind cat 1, 0.92 times as large. */
+export const CAT_AT = { x: 0.3, y: 30.8, k: 0.15 };
+export const CAT2_AT = { x: 14.3, y: 29.8, k: 0.138 };
+/** The answer box: the extent mapped into the picture, each edge rounded to the nearest picture pixel
+ *  (a picture pixel counts as cat when the cat covers at least half of it). */
+const placeBox = (at: { x: number; y: number; k: number }): Box =>
+  CAT_EXTENT.map((v, i) => Math.round((i % 2 === 0 ? at.x : at.y) + v * at.k + 1e-9)) as Box;
+export const GT_CAT: Box = placeBox(CAT_AT);            // [15, 32, 76, 139]
+export const GT_CAT2: Box = placeBox(CAT2_AT);          // [28, 31, 84, 129]
+/** The cup is drawn by hand inside this box: rim ellipse on top (y 94 to 100), body down to y 138, handle out to x 148. */
+export const GT_CUP: Box = [114, 94, 148, 138];
+/** Share of each grid cell covered by cat 1 (row by row), measured from the alpha channel at CAT_AT
+ *  (area average at 10× supersampling, Python and PIL). Row 1: left ear edge, face. Row 2: haunch, chest
+ *  and front legs. Row 3: tail, paws. */
+export const CAT_COVER: number[][] = [
+  [0.0031, 0.0448, 0, 0],
+  [0.0632, 0.7548, 0.0005, 0],
+  [0.405, 0.7102, 0, 0],
+  [0.2497, 0.3061, 0, 0],
+];
+/** Share of the answer box GT_CAT covered by the cat (same measurement). */
+export const CAT_BOX_SHARE = 0.621;
 
 /* ---- 01 · what one cell writes out (YOLOv1 style: box, objectness, class probabilities given an object) ---- */
 
@@ -34,14 +61,16 @@ export type CellId = "A" | "B" | "C" | "D" | "E";
 export const RC: Record<CellId, [number, number]> = { A: [2, 1], B: [1, 1], C: [2, 0], D: [1, 0], E: [2, 3] };
 export const idOf = (r: number, c: number): CellId | "" => (Object.keys(RC) as CellId[]).find((k) => RC[k][0] === r && RC[k][1] === c) ?? "";
 
-const BOX_A: Box = [10, 40, 100, 140];
-const BOX_B: Box = [20, 30, 100, 120];
-const BOX_C: Box = [0, 50, 90, 140];
-const BOX_D: Box = [10, 20, 90, 110];
+/** Hand-set boxes the cells write, placed around the measured cat: A (chest and front legs) close to the answer,
+ *  B (face) pulled up, C (haunch) pulled left and down, D (mostly wall, edge of the left ear) pulled up. */
+const BOX_A: Box = [12, 30, 78, 140];
+const BOX_B: Box = [20, 20, 70, 130];
+const BOX_C: Box = [4, 40, 80, 150];
+const BOX_D: Box = [10, 20, 70, 110];
 const BOX_E: Box = [110, 90, 150, 140];
 export const BOXES = { A: BOX_A, B: BOX_B, C: BOX_C, D: BOX_D, E: BOX_E };
-/** The second cat's box, predicted by cell B's neighbour in the two-cat picture. */
-export const BOX_F: Box = [26, 44, 116, 140];
+/** The box written for the second cat in the two-cat picture (hand-set, close to GT_CAT2). */
+export const BOX_F: Box = [28, 30, 80, 130];
 
 /** Hand-set outputs of all sixteen cells after training. Background cells still write a box; it is small and nobody reads it. */
 export const CELLS: CellOut[] = (() => {
@@ -221,13 +250,16 @@ export const DS_EX = { H: 80, W: 80, C: 64 };
 
 /* ---- 06 · names as vectors (YOLOE text-prompt path). D′ = 4, D = 3, all hand-set ---- */
 
-/** The feature each cell hands to the last 1×1 convolution of the head (D′ = 4 numbers). */
+/** The feature each cell hands to the last 1×1 convolution of the head (D′ = 4 numbers). Hand-set, loosely following
+ *  the picture: A (chest), B (face), C (haunch) lean the "cat" way, D (mostly wall) less so, E the "cup" way; the
+ *  bottom-row cells with the tail and paws get a weaker cat-like feature, the cup's bottom cell a weak cup-like one. */
 export const FEAT: number[][] = (() => {
   const f: number[][] = [];
+  const parts: Record<string, number[]> = { "3,0": [0.8, 0, 0.3, 0], "3,1": [1, 0, 0.4, 0.2], "0,1": [0.3, 0, 0.1, 0.1], "3,3": [0.1, 0.8, 0, 0.4] };
   for (let r = 0; r < GRID; r++) for (let c = 0; c < GRID; c++) {
     const key = idOf(r, c);
     const v: Record<string, number[]> = { A: [2, 0, 1, 0], B: [1.5, 0, 1, 0.5], C: [1.5, 0.5, 0.5, 0], D: [1, 0, 0.5, 0.5], E: [0, 2, 0, 1] };
-    f.push(v[key] ?? [0.2, 0.1, 0, ((r + c) % 3) * 0.1]);
+    f.push(v[key] ?? parts[`${r},${c}`] ?? [0.2, 0.1, 0, ((r + c) % 3) * 0.1]);
   }
   return f;
 })();
@@ -241,13 +273,16 @@ export const dot = (a: number[], b: number[]) => a.reduce((s, v, i) => s + v * b
 export const matMul = (A: Mat, B: Mat): Mat => A.map((row) => B[0].map((_, j) => row.reduce((s, v, k) => s + v * B[k][j], 0)));
 const unit = (v: number[]) => { const n = Math.sqrt(dot(v, v)); return v.map((x) => x / n); };
 
-export type NameKey = "cat" | "cup" | "dog" | "hat";
-export const NAME_KEYS: NameKey[] = ["cat", "cup", "dog", "hat"];
-/** Stand-ins for what a text encoder returns for each name, length 1. Real ones have hundreds of numbers. */
+/** Names the YOLOE sections use: the two closed-set names, then "Siamese cat" (the breed of the cat in the picture,
+ *  added after training) and "hat" (nothing like it in the picture). */
+export type NameKey = "cat" | "cup" | "siam" | "hat";
+export const NAME_KEYS: NameKey[] = ["cat", "cup", "siam", "hat"];
+/** Stand-ins for what a text encoder returns for each name, length 1. Real ones have hundreds of numbers.
+ *  "Siamese cat" is set close to "cat", as a real text encoder tends to place names of similar meaning. */
 export const TEXT: Record<NameKey, number[]> = {
   cat: unit([0.8, 0, 0.6]),
   cup: unit([0, 1, 0]),
-  dog: unit([0.6, 0, 0.8]),
+  siam: unit([0.6, 0, 0.8]),
   hat: unit([-0.6, 0, -0.8]),
 };
 export const EMB = FEAT.map((x) => matVec(K_EMB, x));             // O: one D = 3 vector per cell
@@ -260,7 +295,7 @@ export const IDX = { A: RC.A[0] * GRID + RC.A[1], B: RC.B[0] * GRID + RC.B[1], C
 export const TEXT_REFINED: Record<NameKey, number[]> = {
   cat: [0.9, -0.1, 0.4],
   cup: [0.05, 0.95, -0.1],
-  dog: [0.3, 0, 0.9],
+  siam: [0.3, 0, 0.9],
   hat: [-0.5, 0.1, -0.8],
 };
 /** K′ = f_θ(P) · K: C rows of D′ numbers, the kernel of a plain C-class 1×1 convolution. */
@@ -278,24 +313,32 @@ export const macsFolded = (C: number) => C * K_EMB[0].length;
 
 /* ---- 08 · visual prompt (SAVPE, toy with one group) and prompt-free retrieval (LRPC) ---- */
 
-/** A box drawn around the cat covers the four cat cells. Toy: semantic features = the cells' embeddings, one weight group. */
+/** The box a user draws around the cat (hand-set, a little looser than the answer box on the left, top and right).
+ *  The cells whose centres fall inside it are A, B, C, D. Toy: semantic features = the cells' embeddings, one weight group. */
+export const PROMPT_BOX: Box = [13, 30, 78, 139];
 export const PROMPT_CELLS = [IDX.A, IDX.B, IDX.C, IDX.D];
-export const ACT_LOGITS = [1.2, 0.6, 0.2, -0.4];                 // hand-set activation-branch outputs in the four cells
+/** Share of the prompt box covered by the cat (same alpha measurement as CAT_COVER). */
+export const PROMPT_BOX_SHARE = 0.573;
+export const ACT_LOGITS = [1.2, 0.6, 0.2, -0.4];                 // hand-set activation-branch outputs in A, B, C, D (D is mostly wall)
 export const softmax = (z: number[]) => { const m = Math.max(...z), e = z.map((v) => Math.exp(v - m)), s = e.reduce((a, b) => a + b, 0); return e.map((v) => v / s); };
 export const ACT_W = softmax(ACT_LOGITS);
 export const POOL_W = PROMPT_CELLS.map(() => 1 / PROMPT_CELLS.length);
 /** Weighted sum of the semantic features inside the box, scaled to length 1 like the text prompts. */
 export const visualPrompt = (w: number[]) => unit([0, 1, 2].map((d) => PROMPT_CELLS.reduce((s, cell, i) => s + w[i] * EMB[cell][d], 0)));
 
-/** LRPC: a "something is here" score per cell (hand-set), then only cells above δ are compared with the built-in vocabulary. */
+/** LRPC: a "something is here" score per cell (hand-set), then only cells above δ are compared with the built-in vocabulary.
+ *  Set to follow the picture: highest in the cells holding the cat's and the cup's centres, between 0.001 and 0.01 in the
+ *  bottom cells with the tail, the paws and the cup's bottom, below 0.001 on the wall (the ear tips in row 0 included). */
 export const VOCAB = 4585;                                     // YOLOE: tag list with 4585 category names
 export const ANCHORS_REAL = 8400;                              // YOLOE appendix B: total anchor points in the baseline
 export const OBJ_ANY: number[] = [
-  0.0003, 0.0002, 0.0004, 0.0001,
-  0.31, 0.62, 0.0006, 0.0002,
-  0.55, 0.93, 0.0021, 0.86,
-  0.0008, 0.0035, 0.0004, 0.0012,
+  0.0002, 0.0006, 0.0002, 0.0001,
+  0.31, 0.62, 0.0004, 0.0002,
+  0.55, 0.93, 0.0009, 0.86,
+  0.0035, 0.0042, 0.0006, 0.0012,
 ];
+/** Cells (row-major) holding parts of the cat or the cup whose centres are elsewhere: tail, paws and tail, cup's bottom. */
+export const PART_CELLS = { tail: 12, paws: 13, cupBottom: 15 };
 export const DELTAS = [0.0001, 0.001, 0.01];
 export const kept = (delta: number) => OBJ_ANY.map((v, i) => (v > delta ? i : -1)).filter((i) => i >= 0);
 /** YOLOE Table 7 (LVIS minival, prompt-free, T4): FPS and AP without LRPC and with each δ. */

@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import { drawGrid, label, palette, useCanvas } from "@/components/anomaly/lib";
 import { line, rbox } from "./kit";
 import { vitWalkUi as U } from "./vit-walk-copy";
-import { CLASSES, CLS0, NO_EYE, POS, STANDARD, SWAPPED, pass, type Pass } from "./vit-math";
-import { MARK, isPortrait, num, pc, photo, vec } from "./vit-walk-scenes";
+import { CLASSES, CLS0, NO_EYE, POS, STANDARD, SWAPPED, pass, type Pass, type Third } from "./vit-math";
+import { MARK, isPortrait, num, pc, photo, useHead, vec } from "./vit-walk-scenes";
 
 const PAD = 18;
 const pcs = (v: number) => (v < 0.01 && v > 0 ? `${(v * 100).toFixed(1)}%` : pc(v));
@@ -18,9 +18,10 @@ const NAMES = [...MARK, U.cls.self];
 
 export function ClsReadScene() {
   const [step, setStep] = useState(0);
-  const [second, setSecond] = useState<"eye" | "wall">("eye");
-  const cells = second === "eye" ? STANDARD : NO_EYE;
-  const P = useMemo(() => pass(second === "eye" ? STANDARD : NO_EYE), [second]);
+  const [third, setThird] = useState<Third>("eye");
+  const cells = third === "eye" ? STANDARD : NO_EYE;
+  const P = useMemo(() => pass(third === "eye" ? STANDARD : NO_EYE), [third]);
+  const head = useHead();
 
   const ref = useCanvas((ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
@@ -34,18 +35,18 @@ export function ClsReadScene() {
     label(ctx, U.cls.token, px + 31, ty + 13.5, "#ffffff", 12, "center");
     if (step === 0) label(ctx, U.cls.outside, px + 70, ty + 13, palette.muted, 11);
     else label(ctx, `${U.cls.selfShare} ${pc(R.weights[4])}`, px + 70, ty + 13, palette.normal, 12);
-    photo(ctx, px, py, S, cells, -1);
+    photo(ctx, head.current, px, py, S, cells, -1);
     if (step >= 1) {
       for (let i = 0; i < 4; i++) {
-        // top right in the eye cell, bottom right elsewhere: clear of the ear tip and of the eye
-        const cx = px + (i % 2) * c + c - 4, cy = py + Math.floor(i / 2) * c + (cells[i] === "eye" ? 13 : c - 13);
+        // bottom right of each cell, clear of the cell number
+        const cx = px + (i % 2) * c + c - 4, cy = py + Math.floor(i / 2) * c + c - 13;
         rbox(ctx, cx - 38, cy - 9, 38, 18, 5, "rgba(255,255,255,0.92)", null);
         label(ctx, pc(R.weights[i]), cx - 5, cy + 0.5, palette.normal, 12, "right");
       }
     }
 
     const x0 = portrait ? PAD : px + S + 22, x1 = w - PAD, y0 = portrait ? py + S + 30 : ty + 6;
-    const small = x1 - x0 < 270 ? 11 : 12;
+    const wide = x1 - x0 >= 300, small = wide ? 12 : 11;
 
     if (step === 0) {
       label(ctx, U.cls.row, x0, y0, palette.muted, 12);
@@ -53,41 +54,41 @@ export function ClsReadScene() {
       label(ctx, vec(CLS0), x0 + 60, y0 + 32, palette.ink, 15);
       label(ctx, U.cls.fixed, x0 + 60, y0 + 52, palette.muted, 11);
       P.x.forEach((v, i) => {
-        const y = y0 + 88 + i * (portrait ? 30 : 38), hot = i === 1 && second === "wall";
+        const y = y0 + 88 + i * (portrait ? 30 : 38), hot = i === 2 && third === "bg";
         label(ctx, MARK[i], x0, y, hot ? palette.anomaly : palette.ink, 13);
         label(ctx, vec(v), x0 + 60, y, hot ? palette.anomaly : palette.ink, 15);
         if (hot) label(ctx, U.cls.changed, x1, y, palette.anomaly, 11, "right");
       });
     } else if (step === 1) {
-      const sp = portrait ? 40 : 46;
+      const sp = portrait ? 40 : 46, bw = x1 - x0 - 46;
       label(ctx, `${U.cls.q} ${vec(R.q)}`, x0, y0, palette.accent, 13);
       label(ctx, U.cls.sum, x0, y0 + 20, palette.normal, 11);
       R.keys.forEach((k, j) => {
-        const y = y0 + 56 + j * sp, bx = x0 + 132, bw = Math.max(30, x1 - bx - 44);
-        label(ctx, `${NAMES[j]} ${U.cls.k} ${vec(k)}`, x0, y - 7, palette.ink, 12);
-        label(ctx, `${U.cls.score} ${num(R.scores[j])}`, x0, y + 10, palette.muted, 11);
-        ctx.fillStyle = palette.track; ctx.fillRect(bx, y - 6, bw, 12);
-        ctx.fillStyle = palette.normal; ctx.fillRect(bx, y - 6, Math.max(2, bw * R.weights[j]), 12);
-        if (j < 4) line(ctx, bx + bw * 0.25, y - 11, bx + bw * 0.25, y + 11, palette.ink, 1.5);
-        label(ctx, pc(R.weights[j]), x1, y, palette.normal, 13, "right");
+        const y = y0 + 50 + j * sp;
+        label(ctx, `${NAMES[j]} ${U.cls.k} ${vec(k)}`, x0, y, palette.ink, 12);
+        label(ctx, `${U.cls.score} ${num(R.scores[j])}`, x1, y, palette.muted, 11, "right");
+        ctx.fillStyle = palette.track; ctx.fillRect(x0, y + 12, bw, 10);
+        ctx.fillStyle = palette.normal; ctx.fillRect(x0, y + 12, Math.max(2, bw * R.weights[j]), 10);
+        if (j < 4) line(ctx, x0 + bw * 0.25, y + 8, x0 + bw * 0.25, y + 26, palette.ink, 1.5);
+        label(ctx, pc(R.weights[j]), x1, y + 17, palette.normal, 13, "right");
       });
-      label(ctx, U.cls.mean, x0, y0 + 56 + 5 * sp - 10, palette.muted, 11);
+      label(ctx, U.cls.mean, x0, y0 + 50 + 5 * sp - 4, palette.muted, 11);
     } else if (step === 2) {
-      const rh = portrait ? 26 : 32;
+      const rh = wide ? (portrait ? 26 : 30) : 36;
       label(ctx, U.cls.mixing, x0, y0, palette.muted, 12);
       R.vals.forEach((v, j) => {
-        const y = y0 + 30 + j * rh;
+        const y = y0 + 28 + j * rh;
         label(ctx, `${NAMES[j]}  ${num(R.weights[j])} × ${vec(v)}`, x0, y, palette.ink, small);
-        label(ctx, `= ${vec(R.parts[j])}`, x1, y, palette.ink, small, "right");
+        label(ctx, `= ${vec(R.parts[j])}`, x1, wide ? y : y + 15, palette.ink, small, "right");
       });
-      const ys = y0 + 30 + 5 * rh + 2;
+      const ys = y0 + 28 + 5 * rh + (wide ? 4 : 10);
       ctx.fillStyle = palette.frame; ctx.fillRect(x0, ys - 16, x1 - x0, 1);
       label(ctx, U.cls.read, x0, ys + 4, palette.muted, 12);
       label(ctx, vec(R.read), x1, ys + 4, palette.normal, 15, "right");
-      label(ctx, `+ ${U.cls.before}`, x0, ys + 36, palette.muted, 12);
-      label(ctx, vec(CLS0), x1, ys + 36, palette.ink, 14, "right");
-      label(ctx, `= ${U.cls.after}`, x0, ys + 66, palette.muted, 12);
-      label(ctx, vec(R.out), x1, ys + 66, palette.accent, 16, "right");
+      label(ctx, `+ ${U.cls.before}`, x0, ys + 34, palette.muted, 12);
+      label(ctx, vec(CLS0), x1, ys + 34, palette.ink, 14, "right");
+      label(ctx, `= ${U.cls.after}`, x0, ys + 62, palette.muted, 12);
+      label(ctx, vec(R.out), x1, ys + 62, palette.accent, 16, "right");
     } else {
       label(ctx, U.cls.after, x0, y0, palette.muted, 12);
       label(ctx, vec(R.out), x0, y0 + 24, palette.accent, 17);
@@ -112,10 +113,10 @@ export function ClsReadScene() {
           <span>{U.cls.step}</span>
           {U.cls.steps.map((name, i) => <button key={name} type="button" className={step === i ? "on" : ""} onClick={() => setStep(i)}>{i + 1}. {name}</button>)}
         </div>
-        <div className="ad-ctl ad-seg" role="group" aria-label={U.swap.second}>
-          <span>{U.swap.second}</span>
-          <button type="button" className={second === "eye" ? "on" : ""} onClick={() => setSecond("eye")}>{U.swap.eye}</button>
-          <button type="button" className={second === "wall" ? "on" : ""} onClick={() => setSecond("wall")}>{U.swap.wall}</button>
+        <div className="ad-ctl ad-seg" role="group" aria-label={U.swap.third}>
+          <span>{U.swap.third}</span>
+          <button type="button" className={third === "eye" ? "on" : ""} onClick={() => setThird("eye")}>{U.swap.eye}</button>
+          <button type="button" className={third === "bg" ? "on" : ""} onClick={() => setThird("bg")}>{U.swap.bg}</button>
         </div>
       </div>
     </div>
@@ -123,7 +124,7 @@ export function ClsReadScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 05 · Exchange the ear and a wall patch: nothing changes until places are written into the input */
+/* 05 · Exchange the ear and the eye patch: nothing changes until places are written into the input */
 /* ------------------------------------------------------------------ */
 
 const ROWS: ((p: Pass) => string)[] = [
@@ -138,6 +139,7 @@ const tight = (a: number[]) => `[${a.map(num).join(",")}]`;
 export function PlaceScene() {
   const [swapped, setSwapped] = useState(false);
   const [pos, setPos] = useState(false);
+  const head = useHead();
   const table = useMemo(() => {
     const A = pass(STANDARD, pos), B = pass(SWAPPED, pos);
     return ROWS.map((f) => [f(A), f(B)]);
@@ -148,7 +150,7 @@ export function PlaceScene() {
     drawGrid(ctx, w, h, 40);
     const portrait = isPortrait(w, h), S = portrait ? 140 : Math.min(170, w * 0.32), c = S / 2;
     const px = portrait ? (w - S) / 2 : PAD, py = 26, cells = swapped ? SWAPPED : STANDARD;
-    photo(ctx, px, py, S, cells, cells.indexOf("ear"));
+    photo(ctx, head.current, px, py, S, cells, cells.indexOf("ear"));
     if (pos) {
       // the position vector belongs to the slot, not to what is drawn in it
       POS.forEach((v, i) => {

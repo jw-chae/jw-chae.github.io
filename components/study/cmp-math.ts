@@ -26,11 +26,17 @@ export const matVec = (A: Mat, x: number[]) => A.map((row) => dot(row, x));
 /* 01 · one photo, a hard label, and the teacher's three probabilities  */
 /* ------------------------------------------------------------------ */
 
-/** Classes in order: cat, dog, car. The label of both photos is "cat". */
+/** Classes in order: cat, dog, car. The label of both photos is "cat".
+ *  Photo A is the owner's whole Siamese cat drawing (public/study/cat-square.png, 512 x 512).
+ *  Photo B is the lower middle quarter of the same drawing (CROP_B): cream haunch, dark legs, paws and tail; ears, eyes and face are cut away. */
 export const HARD = [1, 0, 0];
-/** Teacher scores (logits) for the two photos. Hand-set: A is a cat that looks a little like a dog, B a cat that looks like nothing else. */
+/** Where photo B is cut from the 512 x 512 square: x 128..384, y 256..512, a quarter of the area.
+ *  On the 16 x 16 grids of cat-grids.ts (32 px cells) that is rows 8..15, columns 4..11. */
+export const CROP_B = { x: 128, y: 256, size: 256 };
+/** Teacher scores (logits) for the two photos. Hand-set, not measured: A gets some dog share, and B, where the head is cut away and only
+ *  the dark legs and tail remain, gets more. The car score is the same in both; nothing in either picture looks like a car. */
 export const Z_A = [3, 2, -1];
-export const Z_B = [4, 1, 0];
+export const Z_B = [3, 2.5, -1];
 export const P_A = softmax(Z_A);
 export const P_B = softmax(Z_B);
 
@@ -260,6 +266,12 @@ export function promptStyle(w: number[], bits: number) {
   const deq = assign.map((j) => sd * centers[j] + mu);
   return { mu, sd, centers, assign, deq, err: deq.map((v, i) => v - w[i]) };
 }
+
+/** The picture itself is stored as integers. Copied from cat-grids.ts (CAT_GRAY_16, row 14, columns 4..9): block-mean brightness
+ *  (luminance 0..1) of six 32 px cells along the tail and paws, the second row from the bottom of the 512 x 512 square.
+ *  Brightness is never negative, so the zero-point scheme over the fixed range 0..1 fits: S = 1 / (2^b − 1), Z = 0. */
+export const PAWS_ROW = [0.2, 0.21, 0.22, 0.22, 0.22, 0.2];
+export const pixelQuant = (v: number[], bits: number) => quantize(v, bits, "zp", { lo: 0, hi: 1 });
 
 /** Storage, in bytes, of n weights at a given bit width, plus the scales kept beside them (32-bit floats). */
 export const storeBytes = (n: number, bits: number, scales = 0) => (n * bits) / 8 + scales * 4;

@@ -5,12 +5,15 @@ import { drawGrid, label, palette, useCanvas } from "@/components/anomaly/lib";
 import { arrow, cellText, cells, frame, gray, line, rbox, type Ctx } from "./kit";
 import { unetCopy } from "./unet-copy";
 import {
-  CELLS_PHOTO, CELLS_TRUTH, PATCH_PICKS, PHOTO, SMALL_MAP, STAMP_COPY, STAMP_LEARNED, TRUTH, UN, U_NODES,
+  CAT_MASK, CAT_N, CELLS_PHOTO, CELLS_TRUTH, PATCH_PICKS, PHOTO, STAMP_COPY, STAMP_LEARNED, TRUTH, UN, U_NODES,
   bilinearUp, downThenUp, iou, makeWarp, patchMean, patchPredict, skipFusion, threshold, transposedUp, warp, type Grid,
 } from "./unet-math";
+import { round, trace } from "./unet-walk-math";
 
 const U = unetCopy.ui;
 const PAD = 18;
+/** Shown rounded half up, the way the text quotes it. */
+const f2 = (v: number) => round(v, 2).toFixed(2);
 const isPortrait = (w: number, h: number) => h > w * 1.15;
 const MINT_RGB = "15,157,106";
 
@@ -119,8 +122,8 @@ export function WindowScene() {
 export function DownUpScene() {
   const [d, setD] = useState(2);
   const calc = useMemo(() => {
-    const r = downThenUp(TRUTH, d);
-    return { ...r, iou: iou(r.back, TRUTH) };
+    const r = downThenUp(CAT_MASK, d);
+    return { ...r, iou: iou(r.back, CAT_MASK) };
   }, [d]);
 
   const ref = useCanvas((ctx, w, h) => {
@@ -128,14 +131,14 @@ export function DownUpScene() {
     drawGrid(ctx, w, h, 40);
     const portrait = isPortrait(w, h);
     const gap = 18;
-    const c = portrait ? Math.min(9, (w - 2 * PAD - gap) / (2 * UN), (h - 160) / (2 * UN)) : Math.min(9, (w - 2 * PAD - 2 * gap) / (3 * UN), (h - 130) / UN);
-    const S = UN * c;
+    const c = portrait ? Math.min(9, (w - 2 * PAD - gap) / (2 * CAT_N), (h - 160) / (2 * CAT_N)) : Math.min(9, (w - 2 * PAD - 2 * gap) / (3 * CAT_N), (h - 130) / CAT_N);
+    const S = CAT_N * c;
     const pos: [number, number][] = portrait
       ? [[(w - 2 * S - gap) / 2, 40], [(w - 2 * S - gap) / 2 + S + gap, 40], [(w - 2 * S - gap) / 2, 40 + S + 44]]
       : [0, 1, 2].map((i) => [(w - 3 * S - 2 * gap) / 2 + i * (S + gap), Math.max(44, (h - S - 70) / 2)] as [number, number]);
 
     label(ctx, U.down.original, pos[0][0] + S / 2, pos[0][1] - 16, palette.muted, 11, "center");
-    drawMask(ctx, TRUTH, pos[0][0], pos[0][1], c, MINT_RGB);
+    drawMask(ctx, CAT_MASK, pos[0][0], pos[0][1], c, MINT_RGB);
 
     const n = calc.small.n, big = S / n;
     label(ctx, `${U.down.small}  ${n}×${n}`, pos[1][0] + S / 2, pos[1][1] - 16, palette.muted, 11, "center");
@@ -145,7 +148,7 @@ export function DownUpScene() {
     });
 
     label(ctx, U.down.back, pos[2][0] + S / 2, pos[2][1] - 16, palette.muted, 11, "center");
-    drawMask(ctx, calc.back, pos[2][0], pos[2][1], c, MINT_RGB, TRUTH);
+    drawMask(ctx, calc.back, pos[2][0], pos[2][1], c, MINT_RGB, CAT_MASK);
 
     if (portrait) {
       const tx = pos[1][0] + S / 2, ty = pos[2][1] + S / 2;
@@ -176,6 +179,9 @@ export function DownUpScene() {
 /* ------------------------------------------------------------------ */
 
 type UpMethod = "copy" | "smooth" | "stamp";
+/** The cat crop of U-Net 02 pooled once: a 4×4 brightness map. */
+const SMALL_MAP = trace().d1;
+const ink = (v: number) => (v < 0.6 ? "#ffffff" : palette.ink);
 
 export function UpsampleScene() {
   const [method, setMethod] = useState<UpMethod>("stamp");
@@ -189,22 +195,22 @@ export function UpsampleScene() {
     const stepping = method !== "smooth";
     const idx = stepping ? Math.min(15, Math.floor(tt / 0.7) % 19) : 15;
     const ir = Math.floor(idx / 4), ic = idx % 4;
-    const amber = (v: number) => (v < 0.02 ? palette.track : `rgba(${palette.accentRgb},${0.12 + 0.88 * Math.min(1, v)})`);
 
     label(ctx, U.up.small, x0 + 2 * cs, y0 - 16, palette.muted, 11, "center");
-    cells(ctx, x0, y0, cs, 4, 4, (r, c) => amber(SMALL_MAP.d[r * 4 + c]), 2);
-    for (let i = 0; i < 16; i++) cellText(ctx, SMALL_MAP.d[i].toFixed(1), x0 + (i % 4) * cs, y0 + Math.floor(i / 4) * cs, cs, palette.ink);
+    cells(ctx, x0, y0, cs, 4, 4, (r, c) => gray(SMALL_MAP.d[r * 4 + c]), 2);
+    for (let i = 0; i < 16; i++) cellText(ctx, f2(SMALL_MAP.d[i]), x0 + (i % 4) * cs, y0 + Math.floor(i / 4) * cs, cs, ink(SMALL_MAP.d[i]));
     arrow(ctx, x0 + 4 * cs + 8, y0 + 2 * cs, x1 - 8, y0 + 2 * cs, palette.muted);
 
     label(ctx, U.up.big, x1 + 2 * cs, y0 - 16, palette.muted, 11, "center");
     cells(ctx, x1, y0, cb, 8, 8, (r, c) => {
       const done = !stepping || Math.floor(r / 2) * 4 + Math.floor(c / 2) <= idx;
-      return done ? amber(big.d[r * 8 + c]) : palette.track;
+      return done ? gray(big.d[r * 8 + c]) : palette.track;
     }, 1.5);
-    if (cb >= 17) {
-      for (let i = 0; i < 64; i++) {
-        const r = Math.floor(i / 8), c = i % 8;
-        if (!stepping || Math.floor(r / 2) * 4 + Math.floor(c / 2) <= idx) cellText(ctx, big.d[i].toFixed(1), x1 + c * cb, y0 + r * cb, cb * 1.25, palette.ink);
+    // two-decimal numbers only fit a few cells: write them on the block being stamped right now (the line below lists the same four)
+    if (stepping && cb >= 20) {
+      for (let i = 0; i < 4; i++) {
+        const r = 2 * ir + Math.floor(i / 2), c = 2 * ic + (i % 2), v = big.d[r * 8 + c];
+        label(ctx, f2(v), x1 + (c + 0.5) * cb, y0 + (r + 0.5) * cb, ink(v), Math.min(10, Math.floor(cb * 0.4)), "center");
       }
     }
     if (stepping) {
@@ -221,8 +227,8 @@ export function UpsampleScene() {
       cells(ctx, kx, ky, kc, 2, 2, (r, c) => `rgba(${palette.normalRgb},${0.15 + 0.6 * kern[r * 2 + c]})`, 2);
       kern.forEach((v, i) => cellText(ctx, v.toFixed(1), kx + (i % 2) * kc, ky + Math.floor(i / 2) * kc, kc, palette.ink));
       const v = SMALL_MAP.d[idx];
-      label(ctx, `${v.toFixed(1)} × ${U.up.kernel}`, kx + 2 * kc + 22, ky + kc * 0.6, palette.ink, 12);
-      label(ctx, `→ ${kern.map((kv) => (v * kv).toFixed(2)).join("  ")}`, kx + 2 * kc + 22, ky + kc * 1.4, palette.accent, 12);
+      label(ctx, `${f2(v)} × ${U.up.kernel}`, kx + 2 * kc + 22, ky + kc * 0.6, palette.ink, 12);
+      label(ctx, `→ ${kern.map((kv) => f2(v * kv)).join("  ")}`, kx + 2 * kc + 22, ky + kc * 1.4, palette.accent, 12);
     } else {
       label(ctx, "y = (1−a)(1−b)·x₀₀ + a(1−b)·x₀₁ + (1−a)b·x₁₀ + ab·x₁₁", w / 2, ky + 16, palette.muted, 11, "center");
     }

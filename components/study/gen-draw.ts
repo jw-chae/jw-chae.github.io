@@ -8,6 +8,8 @@ import type { Img } from "./gen-math";
 export const PAD = 18;
 export const isPortrait = (w: number, h: number) => h > w * 1.15;
 export const pct = (v: number) => `${(v * 100).toFixed(v > 0 && v < 0.01 ? 1 : 0)}%`;
+/** A share with one decimal below 10%, so small losses such as 1.3% and 4.6% stay apart. */
+export const pctFine = (v: number) => `${(v * 100).toFixed(v < 0.1 ? 1 : 0)}%`;
 /** A fixed number of decimals with a real minus sign; a rounded zero never keeps its sign. */
 export const num = (v: number, d = 2) => { const s = v.toFixed(d); return (Number(s) === 0 ? s.replace("-", "") : s).replace("-", "−"); };
 export const point = (p: [number, number]) => `[${num(p[0])}, ${num(p[1])}]`;

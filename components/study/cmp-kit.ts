@@ -2,9 +2,43 @@
 
 import { label, palette } from "@/components/anomaly/lib";
 import { frame, rbox, type Ctx } from "./kit";
+import { CAT_SRC } from "./cat-grids";
+import { CROP_B } from "./cmp-math";
 
 export const PAD = 18;
 export const isPortrait = (w: number, h: number) => h > w * 1.15;
+
+/* ---- the owner's Siamese cat: photo A is the whole 512 x 512 square, photo B its lower middle quarter ---- */
+
+let catImg: HTMLImageElement | null = null;
+/** The cat square, loaded once and shared by every scene of the chapter. Null until it has loaded; scenes redraw every frame. */
+export function catImage(): HTMLImageElement | null {
+  if (typeof window === "undefined") return null;
+  if (!catImg) {
+    catImg = new window.Image();
+    catImg.src = CAT_SRC.square;
+  }
+  return catImg.complete && catImg.naturalWidth > 0 ? catImg : null;
+}
+
+/** Draw photo A (0) or photo B (1) into an s × s box with a thin frame; a grey box while the image is still loading. */
+export function drawPhoto(ctx: Ctx, which: 0 | 1, x: number, y: number, s: number, stroke = palette.frame) {
+  const img = catImage();
+  if (!img) rbox(ctx, x, y, s, s, 6, palette.track, null);
+  else {
+    const k = img.naturalWidth / 512;
+    const [sx, sy, ss] = which === 0 ? [0, 0, 512] : [CROP_B.x, CROP_B.y, CROP_B.size];
+    ctx.drawImage(img, sx * k, sy * k, ss * k, ss * k, x, y, s, s);
+  }
+  frame(ctx, x + 0.5, y + 0.5, s - 1, s - 1, stroke, 1.2);
+}
+
+/** Photo A small, with the part that photo B keeps outlined by a dashed box. */
+export function drawCropMap(ctx: Ctx, x: number, y: number, s: number) {
+  drawPhoto(ctx, 0, x, y, s);
+  const k = s / 512;
+  frame(ctx, x + CROP_B.x * k, y + CROP_B.y * k, CROP_B.size * k - 1, CROP_B.size * k - 1, palette.accent, 1.5, [3, 2]);
+}
 
 /** Up to d decimals, trailing zeros dropped, real minus sign. */
 export const num = (v: number, d = 2) => {

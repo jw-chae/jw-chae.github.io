@@ -8,7 +8,7 @@ import {
   ALPHA, BETA, BOXES, CANDS_ONE, CANDS_TWO, GRID, GT_CAT, GT_CUP, O2M_SCORE, O2O_CHOICES, O2O_SCORE, RC, SCORE_MIN, THRESHOLDS, TRAIN_IDS, TRAIN_P, U_STAR,
   area, assignO2M, assignO2O, cellAt, gap, inter, interBox, metric, nms, rankBy, trainIou, union, type Box, type Cand, type CellId,
 } from "./yolo-math";
-import { BAD, GT, OUT, PAD, READ, TINT, cellTag, drawBox, drawGridOver, drawPicture, fillCell, fitLabel, fix, layout, mapOf, num, outlineCell, table, tw } from "./yolo-draw";
+import { BAD, GT, OUT, PAD, READ, TINT, cellTag, drawBox, drawBoxes, drawGridOver, drawPicture, fillCell, fitLabel, fix, layout, mapOf, num, outlineCell, table, tw } from "./yolo-draw";
 
 const U = yoloCopy.ui;
 
@@ -29,7 +29,7 @@ export function CellScene() {
     drawGrid(ctx, w, h, 40);
     const L = layout(w, h);
     label(ctx, U.pic.size, L.px, L.py - 13, palette.muted, 11);
-    drawPicture(ctx, L);
+    drawPicture(ctx, L, { loading: U.pic.loading });
     drawBox(ctx, L, GT_CAT, GT, { lw: 1.5, dash: [5, 4] });
     drawBox(ctx, L, GT_CUP, GT, { lw: 1.5, dash: [5, 4] });
     drawGridOver(ctx, L, { letters: false });
@@ -66,7 +66,7 @@ export function CellScene() {
       (["A", "B", "C", "D"] as CellId[]).forEach((k) => fillCell(ctx, L, RC[k][0], RC[k][1], TINT));
       (["A", "B", "C", "D", "E"] as CellId[]).forEach((k) => cellTag(ctx, L, k));
       const four: CellId[] = ["A", "B", "C", "D"];
-      four.forEach((k, i) => drawBox(ctx, L, BOXES[k], OUT, { lw: k === "A" ? 2.5 : 1.6, tag: k, tagAt: (["tr", "tl", "bl", "tl"] as const)[i] }));
+      drawBoxes(ctx, L, four.map((k) => ({ box: BOXES[k], color: OUT, lw: k === "A" ? 2.5 : 1.6, tag: k, tagAt: tagAt(k) })));
       line(T.four, OUT, 13, 28);
       line(T.catScore, palette.muted, 11, 22);
       four.forEach((k) => {
@@ -104,6 +104,7 @@ export function CellScene() {
 /* 02 · IoU and NMS                                                     */
 /* ------------------------------------------------------------------ */
 
+/** Preferred tag corner per box; drawBoxes moves a tag to another corner when it would cover one already placed. */
 const tagAt = (id: string) => (({ A: "br", B: "tr", C: "bl", D: "tl", E: "tl", F: "tr" }) as const)[id as "A"] ?? "tl";
 
 export function NmsScene() {
@@ -118,7 +119,7 @@ export function NmsScene() {
     drawGrid(ctx, w, h, 40);
     const L = layout(w, h);
     label(ctx, U.pic.size, L.px, L.py - 13, palette.muted, 11);
-    drawPicture(ctx, L, { two });
+    drawPicture(ctx, L, { two, loading: U.pic.loading });
     drawGridOver(ctx, L, { letters: false, alpha: 0.14 });
     const cands: Cand[] = two ? CANDS_TWO : CANDS_ONE;
     const run = nms(cands, thr);
@@ -129,10 +130,10 @@ export function NmsScene() {
     const line = (s: string, color: string = palette.ink, size = fs, dy = 21) => { fitLabel(ctx, s, L.x, y, L.pw, color, size); y += dy; };
 
     if (step === 0) {
-      sorted.forEach((c) => {
+      drawBoxes(ctx, L, sorted.map((c) => {
         const low = c.score <= SCORE_MIN;
-        drawBox(ctx, L, c.box, low ? palette.excluded : c.cls === "cup" ? READ : OUT, { lw: 1.6, dash: low ? [4, 4] : undefined, tag: `${c.id} ${num(c.score, 3)}`, tagAt: tagAt(c.id) });
-      });
+        return { box: c.box, color: low ? palette.excluded : c.cls === "cup" ? READ : OUT, lw: 1.6, dash: low ? [4, 4] : undefined, tag: `${c.id} ${num(c.score, 3)}`, tagAt: tagAt(c.id) };
+      }));
       line(T.order, palette.muted, 11, 24);
       sorted.forEach((c) => {
         const low = c.score <= SCORE_MIN;
@@ -145,8 +146,10 @@ export function NmsScene() {
       const m = mapOf(L);
       ctx.fillStyle = `rgba(${palette.normalRgb},0.22)`;
       ctx.fillRect(m.X(ib[0]), m.Y(ib[1]), m.X(ib[2]) - m.X(ib[0]), m.Y(ib[3]) - m.Y(ib[1]));
-      others.forEach((c) => drawBox(ctx, L, c.box, READ, { lw: 1.4, tag: `${c.id} ${fix(iouA(c.box), 3)}`, tagAt: tagAt(c.id) }));
-      drawBox(ctx, L, A.box, OUT, { lw: 3, tag: "A", tagAt: "br" });
+      drawBoxes(ctx, L, [
+        ...others.map((c) => ({ box: c.box, color: READ, lw: 1.4, tag: `${c.id} ${fix(iouA(c.box), 3)}`, tagAt: tagAt(c.id) })),
+        { box: A.box, color: OUT, lw: 3, tag: "A", tagAt: "br" as const },
+      ]);
       line(`A: ${T.top} · ${U.pic.cat} ${num(A.score, 3)}`, OUT, fs, 24);
       line(`A  ${num(BOXES.A[2] - BOXES.A[0], 0)} × ${num(BOXES.A[3] - BOXES.A[1], 0)} = ${area(BOXES.A)}`, palette.ink, fs);
       line(`B  ${num(B[2] - B[0], 0)} × ${num(B[3] - B[1], 0)} = ${area(B)}`, palette.ink, fs);
@@ -157,10 +160,12 @@ export function NmsScene() {
       line(`IoU(A, E) = 0   ${T.sameCls}`, palette.muted, 11, 20);
     } else {
       const keptSet = new Set(run.kept);
-      sorted.filter((c) => c.score > SCORE_MIN).forEach((c) => {
+      // removed boxes first so the kept ones are drawn on top
+      const shown = sorted.filter((c) => c.score > SCORE_MIN).sort((a, b) => Number(keptSet.has(a.id)) - Number(keptSet.has(b.id)));
+      drawBoxes(ctx, L, shown.map((c) => {
         const k = keptSet.has(c.id);
-        drawBox(ctx, L, c.box, k ? (c.cls === "cup" ? READ : OUT) : BAD, { lw: k ? 2.6 : 1.4, dash: k ? undefined : [5, 4], tag: `${c.id} ${k ? T.kept : T.removed}`, tagAt: tagAt(c.id) });
-      });
+        return { box: c.box, color: k ? (c.cls === "cup" ? READ : OUT) : BAD, lw: k ? 2.6 : 1.4, dash: k ? undefined : [5, 4], tag: `${c.id} ${k ? T.kept : T.removed}`, tagAt: tagAt(c.id) };
+      }));
       line(`${T.thr} ${num(thr, 1)}`, palette.muted, 11, 24);
       run.steps.forEach((s, i) => {
         line(`${i + 1}. ${s.keep} ${T.kept}`, palette.ink, fs, 19);
@@ -214,7 +219,7 @@ export function AssignScene() {
     drawGrid(ctx, w, h, 40);
     const L = layout(w, h);
     label(ctx, view === 0 ? T.moment : T.views[1], L.px, L.py - 13, palette.muted, 11);
-    drawPicture(ctx, L);
+    drawPicture(ctx, L, { loading: U.pic.loading });
     drawGridOver(ctx, L, { letters: false, alpha: 0.18 });
     const fs = L.pw < 260 ? 11.5 : 12;
     let y = L.y + 6;
@@ -245,10 +250,7 @@ export function AssignScene() {
     } else {
       const sc = rule === 0 ? O2M_SCORE : O2O_SCORE;
       const ids: CellId[] = ["A", "B", "C", "D", "E"];
-      ids.forEach((k) => {
-        const on = sc[k] > SCORE_MIN;
-        if (on) drawBox(ctx, L, BOXES[k], k === "E" ? READ : OUT, { lw: 2, tag: `${k} ${num(sc[k], 3)}`, tagAt: tagAt(k) });
-      });
+      drawBoxes(ctx, L, ids.filter((k) => sc[k] > SCORE_MIN).map((k) => ({ box: BOXES[k], color: k === "E" ? READ : OUT, lw: 2, tag: `${k} ${num(sc[k], 3)}`, tagAt: tagAt(k) })));
       line(T.fire, palette.muted, 11, 24);
       ids.forEach((k) => {
         const on = sc[k] > SCORE_MIN;
@@ -351,11 +353,11 @@ export function DualScene() {
     } else {
       const L = layout(w, h - top + 40, 0.47, top);
       const Lp = port ? { ...L, py: top, y: top + L.s + 22 } : L;
-      drawPicture(ctx, Lp);
+      drawPicture(ctx, Lp, { loading: U.pic.loading });
       drawGridOver(ctx, Lp, { letters: false, alpha: 0.16 });
       const sc = head === 0 ? O2O_SCORE : O2M_SCORE;
       const ids: CellId[] = ["A", "B", "C", "D", "E"];
-      ids.forEach((k) => { if (sc[k] > SCORE_MIN) drawBox(ctx, Lp, BOXES[k], k === "E" ? READ : OUT, { lw: 2, tag: `${k} ${num(sc[k], 3)}`, tagAt: tagAt(k) }); });
+      drawBoxes(ctx, Lp, ids.filter((k) => sc[k] > SCORE_MIN).map((k) => ({ box: BOXES[k], color: k === "E" ? READ : OUT, lw: 2, tag: `${k} ${num(sc[k], 3)}`, tagAt: tagAt(k) })));
       let y = Lp.y + 4;
       label(ctx, `${T.heads[head]} · ${T.out}`, Lp.x, y, palette.muted, 11); y += 24;
       ids.forEach((k) => {

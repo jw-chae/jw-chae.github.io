@@ -4,9 +4,12 @@ import { useMemo, useState } from "react";
 import { drawGrid, label, palette, useCanvas } from "@/components/anomaly/lib";
 import { arrow, line, rbox } from "./kit";
 import { tokCopy } from "./tok-copy";
-import { KIND_DOT, PAD, big, desk, gridLines, hatch, isPortrait, kindNames, pc, plane, tag, tint, tintCell, tokenDot, vec } from "./tok-draw";
 import {
-  FULL, KEY, KIND, ORDER, PRESETS, PUBLISHED, VISUAL, TEXT, X, clsRead, dist, keptN, linearPart, mergeTo, prefill, presetCost, prune,
+  KIND_DOT, PAD, PLANE_X, PLANE_Y, axisNames, big, catCrop, gridLines, hatch, isPortrait, kindNames, pc, plane, tag, tint, tintCell, tokenDot,
+  useCatImage, vec,
+} from "./tok-draw";
+import {
+  EYE, FAR, FULL, KIND, ORDER, PRESETS, PUBLISHED, VISUAL, TEXT, X, clsRead, dist, keptN, linearPart, mergeTo, prefill, presetCost, prune,
   quadPart, representation, totalCost, type CutMode, type Token,
 } from "./tok-math";
 
@@ -107,6 +110,7 @@ export function PruneScene() {
   const [k, setK] = useState(16);
   const T = U.prune;
   const P = useMemo(() => prune(k), [k]);
+  const img = useCatImage();
 
   const ref = useCanvas((ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
@@ -115,7 +119,8 @@ export function PruneScene() {
     const S = portrait ? 150 : Math.min(196, w * 0.36);
     const px = portrait ? (w - S) / 2 : PAD, py = 30;
     const c = S / 4;
-    desk(ctx, px, py, S, KIND);
+    catCrop(ctx, img.current, px, py, S);
+    if (!img.current) label(ctx, T.loading, px + S / 2, py + S / 2, palette.muted, 11, "center");
     gridLines(ctx, px, py, S);
     for (let i = 0; i < 16; i++) {
       const x = px + (i % 4) * c, y = py + Math.floor(i / 4) * c;
@@ -142,7 +147,7 @@ export function PruneScene() {
     // what [CLS] reads with everything, and with what is left
     const yT = h - textH + 6;
     line(ctx, PAD, yT - 14, w - PAD, yT - 14, palette.frame, 1);
-    const keyKept = P.kept.includes(KEY);
+    const keyKept = P.kept.includes(EYE);
     label(ctx, `${T.dropped} ${pc(P.droppedShare)}`, PAD, yT, palette.ink, 12);
     label(ctx, `${T.key}: ${keyKept ? T.kept : T.gone}`, w - PAD, yT, keyKept ? palette.mint : palette.anomaly, 12, "right");
     label(ctx, `${T.full} ${vec(FULL.read)}`, PAD, yT + 22, palette.muted, 12);
@@ -174,6 +179,7 @@ export function MergeScene() {
   const T = U.merge;
   const tokens: Token[] = useMemo(() => (method === "prune" ? prune(k).tokens : mergeTo(k)), [method, k]);
   const read = useMemo(() => clsRead(tokens).read, [tokens]);
+  const img = useCatImage();
 
   const ref = useCanvas((ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
@@ -184,7 +190,7 @@ export function MergeScene() {
     // groups of two or more patches get a tint; the same tint marks their circle in the plane
     const groups = tokens.filter((t) => t.s > 1);
     const tintOf = (t: Token) => groups.indexOf(t);
-    desk(ctx, px, py, S, KIND);
+    catCrop(ctx, img.current, px, py, S);
     for (let i = 0; i < 16; i++) {
       const x = px + (i % 4) * c, y = py + Math.floor(i / 4) * c, rep = representation(tokens, i);
       if (!rep.token) { hatch(ctx, x, y, c, c); continue; }
@@ -193,7 +199,7 @@ export function MergeScene() {
     gridLines(ctx, px, py, S);
     for (let i = 0; i < 16; i++) {
       const rep = representation(tokens, i);
-      if (rep.err !== null && rep.err > 0.5) {
+      if (rep.err !== null && rep.err > FAR) {
         ctx.save(); ctx.strokeStyle = palette.anomaly; ctx.lineWidth = 3; ctx.strokeRect(px + (i % 4) * c + 2, py + Math.floor(i / 4) * c + 2, c - 4, c - 4); ctx.restore();
       }
     }
@@ -202,8 +208,9 @@ export function MergeScene() {
     // the plane: faint dots are the 16 patches, circles are the tokens left
     const qx = portrait ? PAD : px + S + 20, qy = portrait ? py + S + 26 : py, qw = w - PAD - qx, qh = portrait ? Math.min(190, h - (py + S + 26) - 130) : h - py - 100;
     label(ctx, T.plane, qx, qy - 13, palette.muted, 11);
-    const at = plane(ctx, qx, qy, qw, qh, [-1.6, 2.7], [-1.5, 2.0]);
-    X.forEach((v, i) => { const [x, y] = at(v); ctx.fillStyle = KIND_DOT[KIND[i]]; ctx.globalAlpha = 0.45; ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; });
+    const at = plane(ctx, qx, qy, qw, qh, PLANE_X, PLANE_Y);
+    axisNames(ctx, at, T.axisX, T.axisY);
+    X.forEach((v, i) => { const [x, y] = at(v); ctx.fillStyle = KIND_DOT[KIND[i]]; ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; });
     tokens.forEach((t) => {
       const [x, y] = at(t.v);
       if (t.s > 1) t.members.forEach((m) => { const [mx, my] = at(X[m]); line(ctx, mx, my, x, y, `rgba(${palette.inkRgb},0.18)`, 1); });
@@ -212,7 +219,7 @@ export function MergeScene() {
     const pts = tokens.map((t) => { const [x, y] = at(t.v); return { x, y, r: 6 + 2 * Math.sqrt(t.s) }; });
     tokens.forEach((t, i) => {
       const clear = pts.every((q, j) => j === i || Math.hypot(q.x - pts[i].x, q.y - pts[i].y) > q.r + pts[i].r);
-      tokenDot(ctx, pts[i].x, pts[i].y, t.s, t.s > 1 ? tint(tintOf(t), 0.5) : "#ffffff", t.members.some((m) => dist(t.v, X[m]) > 0.5), clear);
+      tokenDot(ctx, pts[i].x, pts[i].y, t.s, t.s > 1 ? tint(tintOf(t), 0.5) : "#ffffff", t.members.some((m) => dist(t.v, X[m]) > FAR), clear);
     });
     kindNames(ctx, at, U.prune.names);
 
@@ -227,9 +234,9 @@ export function MergeScene() {
       label(ctx, `${T.read}: ${T.orig} ${vec(FULL.read)}`, PAD, yT, palette.normal, 11);
       label(ctx, `${T.now} ${vec(read)}`, w - PAD, yT + 20, palette.normal, 11, "right");
     } else label(ctx, `${T.read}: ${T.orig} ${vec(FULL.read)} · ${T.now} ${vec(read)}`, PAD, yT, palette.normal, 12);
-    const rep = representation(tokens, KEY);
-    const keyText = !rep.token ? T.gone : rep.err !== null && rep.err > 0.5 ? `${T.buried} · ${rep.err.toFixed(2)}` : T.same;
-    const keyColor = !rep.token || (rep.err ?? 0) > 0.5 ? palette.anomaly : palette.mint;
+    const rep = representation(tokens, EYE);
+    const keyText = !rep.token ? T.gone : rep.err !== null && rep.err > FAR ? `${T.buried} · ${rep.err.toFixed(2)}` : T.same;
+    const keyColor = !rep.token || (rep.err ?? 0) > FAR ? palette.anomaly : palette.mint;
     label(ctx, `${T.gap} ${dist(read, FULL.read).toFixed(2)}`, PAD, narrow ? yT + 20 : yT + 22, palette.muted, 12);
     label(ctx, `${T.key}: ${keyText}`, w - PAD, narrow ? yT + 42 : yT + 22, keyColor, 12, "right");
   });

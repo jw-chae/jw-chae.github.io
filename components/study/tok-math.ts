@@ -1,5 +1,6 @@
-/** Arithmetic behind the token-reduction study scenes: one 4×4 picture with a [CLS] token, pruning and merging on it, the cost of a layer,
- *  a toy video, a KV cache and a per-layer cache budget. Every number the chapter quotes is computed here. Import-free so node can run it. */
+/** Arithmetic behind the token-reduction study scenes: a 4×4 crop of the owner's Siamese cat with a [CLS] token, pruning and merging on it,
+ *  the cost of a layer, a toy video of the same cat closing its eye, a KV cache and a per-layer cache budget. Every number the chapter quotes
+ *  is computed here. Import-free so node can run it. */
 
 export const dot = (a: number[], b: number[]) => a.reduce((s, v, i) => s + v * b[i], 0);
 export const norm = (a: number[]) => Math.sqrt(dot(a, a));
@@ -14,29 +15,45 @@ const mean = (vs: number[][], w?: number[]) => {
   return vs[0].map((_, d) => vs.reduce((s, v, i) => s + ws[i] * v[d], 0) / tot);
 };
 
-/* ---- the running example: a mug and a small key on a desk, cut into 4 × 4 patches ---- */
+/* ---- the running example: the owner's Siamese cat, a 4 × 4 crop with one blue eye in it ---- */
 
 export const GRID = 4;
-export type Kind = "wall" | "table" | "mug" | "key" | "hand";
-/** What each patch shows, in reading order (row by row from the top left). */
+/** Where the 16 patches come from: public/study/cat-square.png (512 × 512), the square x 158..318, y 79..239, cut into 40 px cells.
+ *  The crop runs from the left ear down to the chest; the eye on the viewer's left sits whole in cell 7. */
+export const CROP = { x: 158, y: 79, size: 160 };
+export type Kind = "bg" | "brown" | "cream" | "eye" | "closed";
+/** What each patch mostly shows, read off the picture in reading order. Used for names and colours only, never in a calculation
+ *  (except to pick the background patches in identicalCheck). */
 export const KIND: Kind[] = [
-  "wall", "wall", "wall", "wall",
-  "wall", "mug", "mug", "wall",
-  "table", "mug", "mug", "table",
-  "table", "table", "table", "key",
+  "bg", "bg", "brown", "brown",
+  "bg", "bg", "brown", "eye",
+  "bg", "bg", "bg", "cream",
+  "bg", "cream", "cream", "cream",
 ];
-/** Patch vectors after the patch embedding, two numbers each so they can be read. Hand-set: the six wall patches and the five table patches
- *  are nearly the same, the four mug patches are close to each other, and the key points somewhere else. */
-export const X: number[][] = [
-  [0.1, -1], [0, -1], [-0.1, -1], [0, -1.1],
-  [0.1, -0.9], [2, 1.2], [2.2, 1], [-0.1, -1],
-  [-1, 0.1], [1.8, 0.8], [2, 1], [-1.1, 0],
-  [-0.9, 0], [-1, -0.1], [-1, 0], [0.4, 1.6],
-];
-export const KEY = 15;
-/** The [CLS] vector entering the layer (the same for every picture) and the query it reads with. K and V are the token vectors themselves. */
-export const CLS = [0.5, 0.5];
-export const Q_CLS = [1, 1];
+/** Measured from the crop, two decimals: each cell's mean brightness 0.299 R + 0.587 G + 0.114 B and its blueness B − R (channels 0..1,
+ *  block means over the 40 × 40 pixels). Measured with a Python script; the same block means cat-grids.ts uses. */
+export const LUM = [0.94, 0.85, 0.48, 0.51, 0.95, 0.95, 0.67, 0.31, 0.95, 0.95, 0.9, 0.74, 0.94, 0.89, 0.85, 0.88];
+export const BLUE = [-0.1, -0.13, -0.27, -0.27, -0.1, -0.1, -0.21, -0.09, -0.1, -0.1, -0.14, -0.31, -0.11, -0.2, -0.29, -0.26];
+/** The closed eye: the eye (an ellipse in cat-square.png) painted over in the mean colour of the fur ring just outside it
+ *  (1.15 < ((x − cx)/rx)² + ((y − cy)/ry)² < 1.8), with a 2 px lid line along the lower arc of the box cx ± (rx − 3), cy − 7 .. cy + 4 from 15° to 165°, then cell 7
+ *  measured the same way. The scenes draw the same ellipse and arc. */
+export const EYE_SHAPE = { cx: 296.5, cy: 131.5, rx: 17.5, ry: 11.5, fill: "rgb(99,61,43)", line: "rgb(38,22,18)" };
+export const CLOSED_CELL = { lum: 0.26, blue: -0.21 };
+
+const avg = (a: number[]) => a.reduce((s, v) => s + v, 0) / a.length;
+const sd = (a: number[]) => { const m = avg(a); return Math.sqrt(avg(a.map((v) => (v - m) ** 2))); };
+/** The two numbers are put on one scale: subtract the mean of the 16 cells and divide by their standard deviation (computed once on
+ *  the open-eye crop and reused for every frame). */
+export const NORM = { lum: [avg(LUM), sd(LUM)], blue: [avg(BLUE), sd(BLUE)] };
+export const embed = (lum: number, blue: number) => [(lum - NORM.lum[0]) / NORM.lum[1], (blue - NORM.blue[0]) / NORM.blue[1]];
+/** Patch vectors: [brightness, blueness] after that scaling. Derived from the measured cells, not hand-set. */
+export const X: number[][] = LUM.map((l, i) => embed(l, BLUE[i]));
+export const CLOSED = embed(CLOSED_CELL.lum, CLOSED_CELL.blue);
+export const EYE = 7;
+/** The [CLS] vector entering the layer and the query it reads with: hand-set. [CLS] starts at the mean of the cells, [0, 0], and its query
+ *  points to "darker and less blue", which in this crop is the brown and cream fur. K and V are the token vectors themselves. */
+export const CLS = [0, 0];
+export const Q_CLS = [-0.5, -1];
 
 /** A token in the row: its vector, how many patches it stands for, and which ones. */
 export type Token = { v: number[]; s: number; members: number[] };
@@ -115,6 +132,10 @@ export function mergeTo(k: number, start: Token[] = patches()): Token[] {
   return ts;
 }
 
+/** A patch counts as "lost in an average" when its token sits farther than this from its own vector: one standard deviation of the
+ *  scaled numbers. A display threshold, hand-set. */
+export const FAR = 1;
+
 /** Which token now stands for patch p, and how far its vector is from the patch's own. */
 export function representation(tokens: Token[], p: number, xs: number[][] = X): { token: Token | null; err: number | null } {
   const t = tokens.find((u) => u.members.includes(p)) ?? null;
@@ -142,12 +163,14 @@ export function bipartite(r: number, start: Token[] = patches()): { edges: Edge[
   return { edges, out };
 }
 
-/** If the merged patches were exactly alike, proportional attention would give [CLS] exactly the same read. Six copies of one wall vector: */
-export function identicalCheck(): { separate: number[]; merged: number[] } {
-  const wall = [0, -1];
-  const six = Array.from({ length: 6 }, (_, i) => ({ v: wall, s: 1, members: [i] }));
-  const rest = X.slice(6).map((v, i) => ({ v, s: 1, members: [6 + i] }));
-  return { separate: clsRead([...six, ...rest]).read, merged: clsRead([{ v: wall, s: 6, members: [0, 1, 2, 3, 4, 5] }, ...rest]).read };
+/** If the merged patches were exactly alike, proportional attention would give [CLS] exactly the same read. The patches of one kind
+ *  (the three brown ones by default) replaced by copies of their mean, read separately and as one token of size n: */
+export function identicalCheck(kind: Kind = "brown"): { separate: number[]; merged: number[]; one: number[]; n: number } {
+  const ids = KIND.map((k, i) => (k === kind ? i : -1)).filter((i) => i >= 0);
+  const one = mean(ids.map((i) => X[i]));
+  const copies = ids.map((i) => ({ v: one, s: 1, members: [i] }));
+  const rest = patches().filter((t) => KIND[t.members[0]] !== kind);
+  return { separate: clsRead([...copies, ...rest]).read, merged: clsRead([{ v: one, s: ids.length, members: ids }, ...rest]).read, one, n: ids.length };
 }
 
 /* ---- 04 · where an MLLM cuts: LLaVA-1.5-7B sizes ---- */
@@ -169,18 +192,20 @@ export function prefill(mode: CutMode, keep: number): Prefill {
   return { enc, early, late, total: enc + early + late };
 }
 
-/* ---- 05 · a toy video for FastVID: the same desk for six frames, a hand comes in at frame 4 ---- */
+/* ---- 05 · a toy video for FastVID: the same crop for six frames, the cat closes its eye from frame 4 ---- */
 
-export const HAND = [-0.8, -1.6];
-export const HAND_AT = [11, 14, 15];
-/** Six frames of 16 patch vectors. Frames 1–3 are the picture; from frame 4 the hand covers three patches at the lower right and moves a little. */
+/** Frame index (0-based) from which the eye is closed. */
+export const CLOSE_AT = 3;
+/** Six frames of 16 patch vectors. Frames 1–3 are the crop; from frame 4 cell 7 is the closed eye. A hand-set drift of 0.01 per frame
+ *  in the first number stands in for sensor noise, so neighbouring frames are never exactly equal. */
 export const FRAMES: number[][][] = Array.from({ length: 6 }, (_, f) => X.map((v, i) => {
-  if (f >= 3 && HAND_AT.includes(i)) return [HAND[0] + 0.05 * (f - 3), HAND[1] + 0.05 * (f - 3)];
-  return [v[0] + 0.01 * f * ((i % 3) - 1), v[1]];
+  const u = f >= CLOSE_AT && i === EYE ? CLOSED : v;
+  return [u[0] + 0.01 * f * ((i % 3) - 1), u[1]];
 }));
-export const frameKinds = (f: number): Kind[] => KIND.map((k, i) => (f >= 3 && HAND_AT.includes(i) ? "hand" : k));
-/** One summary vector per frame: here the average of its 16 patch vectors. */
-export const FEAT = FRAMES.map((fr) => mean(fr));
+export const frameKinds = (f: number): Kind[] => KIND.map((k, i) => (f >= CLOSE_AT && i === EYE ? "closed" : k));
+/** One summary vector per frame: its 16 patch vectors laid end to end, 32 numbers. (The average would be [0, 0] for the open-eye crop,
+ *  since the patch vectors were centred on it, and a cosine needs a direction.) */
+export const FEAT = FRAMES.map((fr) => fr.flat());
 /** Similarity of each frame with the next one (5 transitions for 6 frames). */
 export const TRANS = FEAT.slice(0, -1).map((f, i) => cosine(f, FEAT[i + 1]));
 
@@ -212,15 +237,15 @@ export function dtm(seg: number[], beta = 0.6): Anchor[] {
   }));
   return anchors.map((a) => (a.from.length === 0 ? a : { ...a, v: a.v.map((x, d) => beta * x + (1 - beta) * mean(a.from.map((q) => FRAMES[q.frame][q.patch]))[d]) }));
 }
-/** How close the kept tokens come to the hand at frame 4: the smallest distance from any kept vector to the hand vector. */
-export function handGap(segs: number[][]): number {
-  const kept = segs.flatMap((s) => dtm(s).map((a) => a.v));
-  return Math.min(...HAND_AT.map((p) => Math.min(...kept.map((v) => dist(v, FRAMES[3][p])))));
+/** Where the closed eye of frame 4 went under the given segments: its anchor (its own, if frame 4 starts a segment). */
+export function closedAnchor(segs: number[][]): { anchor: Anchor; own: boolean } {
+  const seg = segs.find((s) => s.includes(CLOSE_AT))!, an = dtm(seg), own = seg[0] === CLOSE_AT;
+  return { anchor: own ? an[EYE] : an.find((q) => q.from.some((r) => r.frame === CLOSE_AT && r.patch === EYE))!, own };
 }
 
 /* ---- 06 · a toy video for TempMe: four still frames, merged inside each frame or also across frames ---- */
 
-/** Four frames of the still desk; tiny differences between frames stand in for sensor noise. */
+/** Four frames of the still crop; tiny hand-set differences between frames stand in for sensor noise. */
 export const STILL: number[][][] = Array.from({ length: 4 }, (_, f) => X.map((v, i) => [v[0] + 0.02 * ((f + i) % 3 - 1), v[1] + 0.02 * ((f * 2 + i) % 3 - 1)]));
 /** Tokens of frame f carry members f·16 + p. */
 export const stillTokens = (f: number): Token[] => STILL[f].map((v, p) => ({ v, s: 1, members: [f * 16 + p] }));

@@ -5,10 +5,10 @@ import { drawGrid, label, palette, useCanvas } from "@/components/anomaly/lib";
 import { arrow, bar, frame, type Ctx } from "./kit";
 import { yoloCopy } from "./yolo-copy";
 import {
-  ACT_W, ANCHORS_REAL, DELTAS, EMB, FEAT, GRID, IDX, K_CLS, K_EMB, NAME_KEYS, OBJ_ANY, PROMPT_CELLS, RC, TEXT, TEXT_REFINED, V10_ROAD_M, V10_ROAD_S, VOCAB,
+  ACT_W, ANCHORS_REAL, DELTAS, EMB, FEAT, GRID, IDX, K_CLS, K_EMB, NAME_KEYS, OBJ_ANY, PROMPT_BOX, PROMPT_CELLS, RC, TEXT, TEXT_REFINED, V10_ROAD_M, V10_ROAD_S, VOCAB,
   dot, fold, kept, macsFolded, macsTwoStep, matVec, scoreName, twoWays, visualPrompt, type Mat, type NameKey,
 } from "./yolo-math";
-import { BAD, GT, OUT, PAD, READ, TINT, cellTag, drawBox, drawGridOver, drawPicture, fillCell, fitLabel, fix, layout, num, outlineCell, vec } from "./yolo-draw";
+import { BAD, GT, OUT, PAD, READ, TINT, cellNum, cellTag, drawBox, drawGridOver, drawPicture, fillCell, fitLabel, fix, layout, num, outlineCell, vec } from "./yolo-draw";
 
 const U = yoloCopy.ui;
 const par = (v: number) => (v < 0 ? `(${num(v)})` : num(v));
@@ -116,16 +116,15 @@ export function VocabScene() {
     drawGrid(ctx, w, h, 40);
     const L = layout(w, h);
     label(ctx, `${T.name}: ${T.names[name]}`, L.px, L.py - 13, palette.muted, 11);
-    drawPicture(ctx, L, { fade: 0.75 });
+    drawPicture(ctx, L, { fade: 0.75, loading: U.pic.loading });
     const closedRow = name === "cat" ? 0 : name === "cup" ? 1 : -1;
     const has = head === 1 || closedRow >= 0;
-    const cs = L.s / GRID;
     const score = (i: number) => (head === 0 ? matVec(K_CLS, FEAT[i])[closedRow] : scoreName(i, name));
     if (has) {
       for (let i = 0; i < GRID * GRID; i++) {
         const r = Math.floor(i / GRID), c = i % GRID, v = score(i);
         fillCell(ctx, L, r, c, heat(v, 3.2));
-        label(ctx, fix(v, 1), L.px + c * cs + cs / 2, L.py + r * cs + cs / 2 + 7, v > 1.6 ? palette.ink : palette.muted, 11.5, "center");
+        cellNum(ctx, L, r, c, fix(v, 1), v > 1.6 ? palette.ink : palette.muted);
       }
     }
     drawGridOver(ctx, L, { letters: false, alpha: 0.2 });
@@ -162,8 +161,8 @@ export function VocabScene() {
       shown.forEach((n) => {
         const v = scoreName(IDX.A, n);
         label(ctx, T.names[n], L.x, y, n === name ? OUT : palette.ink, fs);
-        bar(ctx, L.x + 56, y - 5, L.pw * 0.45, 10, v / 3.2, n === name ? OUT : `rgba(${palette.normalRgb},0.55)`);
-        label(ctx, fix(v, 2), L.x + 64 + L.pw * 0.45, y, palette.ink, fs);
+        bar(ctx, L.x + 66, y - 5, L.pw * 0.45, 10, v / 3.2, n === name ? OUT : `rgba(${palette.normalRgb},0.55)`);
+        label(ctx, fix(v, 2), L.x + 74 + L.pw * 0.45, y, palette.ink, fs);
         y += 22;
       });
       if (ni >= 2) { y += 4; line(T.same, GT, 11, 18); }
@@ -195,7 +194,7 @@ export function FoldScene() {
   const [step, setStep] = useState(0);
   const [li, setLi] = useState(0);
   const T = U.fold;
-  const names: NameKey[] = li === 0 ? ["cat", "cup"] : ["cat", "cup", "dog", "hat"];
+  const names: NameKey[] = li === 0 ? ["cat", "cup"] : ["cat", "cup", "siam", "hat"];
 
   const ref = useCanvas((ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
@@ -217,7 +216,7 @@ export function FoldScene() {
       label(ctx, `K · I`, kx + kw + 28, ky + 1.5 * ch - 12, palette.muted, 11, "center");
       let yy = ky + 3 * ch + 36;
       label(ctx, T.pt, PAD, yy - 14, OUT, 11);
-      const px = PAD + 56;
+      const px = PAD + 62;
       mgrid(ctx, Pt, px, yy, cw, ch, OUT);
       names.forEach((n, r) => {
         label(ctx, nm[n], PAD, yy + r * ch + ch / 2, palette.ink, fs);
@@ -299,8 +298,8 @@ export function PromptScene() {
     drawGrid(ctx, w, h, 40);
     const L = layout(w, h);
     label(ctx, T.modes[mode], L.px, L.py - 13, palette.muted, 11);
-    drawPicture(ctx, L, { fade: 0.75 });
-    const cs = L.s / GRID, fs = L.pw < 260 ? 11.5 : 12;
+    drawPicture(ctx, L, { fade: 0.75, loading: U.pic.loading });
+    const fs = L.pw < 260 ? 11.5 : 12;
     let y = L.y + 6;
     const line = (s: string, color: string = palette.ink, size = fs, dy = 21) => { fitLabel(ctx, s, L.x, y, L.pw, color, size); y += dy; };
 
@@ -309,10 +308,10 @@ export function PromptScene() {
       for (let i = 0; i < GRID * GRID; i++) {
         const r = Math.floor(i / GRID), c = i % GRID, v = dot(EMB[i], P);
         fillCell(ctx, L, r, c, heat(v, 3.2));
-        label(ctx, fix(v, 1), L.px + c * cs + cs / 2, L.py + r * cs + cs / 2 + 7, v > 1.6 ? palette.ink : palette.muted, 11.5, "center");
+        cellNum(ctx, L, r, c, fix(v, 1), v > 1.6 ? palette.ink : palette.muted);
       }
       drawGridOver(ctx, L, { letters: false, alpha: 0.2 });
-      drawBox(ctx, L, [2, 42, 78, 118], OUT, { lw: 2.2, dash: [6, 4] });
+      drawBox(ctx, L, PROMPT_BOX, OUT, { lw: 2.2, dash: [6, 4] });
       (["A", "B", "C", "D"] as const).forEach((k) => cellTag(ctx, L, k, OUT));
       line(T.weights, palette.muted, 11, 24);
       PROMPT_CELLS.forEach((_, i) => {
@@ -332,7 +331,7 @@ export function PromptScene() {
         const r = Math.floor(i / GRID), c = i % GRID, on = keep.has(i);
         fillCell(ctx, L, r, c, on ? TINT : "rgba(255,255,255,0.55)");
         if (on) outlineCell(ctx, L, r, c, OUT, 2);
-        label(ctx, fmtSmall(OBJ_ANY[i]), L.px + c * cs + cs / 2, L.py + r * cs + cs / 2 + 7, on ? palette.ink : palette.muted, 11, "center");
+        cellNum(ctx, L, r, c, fmtSmall(OBJ_ANY[i]), on ? palette.ink : palette.muted);
       }
       drawGridOver(ctx, L, { letters: false, alpha: 0.2 });
       line(`${T.any} · δ = ${delta}`, palette.muted, 11, 26);

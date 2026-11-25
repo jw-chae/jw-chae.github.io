@@ -2,26 +2,19 @@
 
 import { useMemo, useState } from "react";
 import { drawGrid, label, palette, useCanvas } from "@/components/anomaly/lib";
-import { frame, line, rbox, type Ctx } from "./kit";
+import { frame, line, rbox } from "./kit";
 import { tokCopy } from "./tok-copy";
-import { KIND_DOT, PAD, desk, isPortrait, kindNames, num, pc, plane, tint, tintCell, tokenDot, vec } from "./tok-draw";
 import {
-  ANSWER, FRAMES, HAND_AT, IMPORTANCE, KIND, KV_BYTES_PER_TOKEN, PROMPT, STILL, TOY_LAYERS, TRANS, acrossFrames, dist, dtm, dyseg, fixedSeg,
-  frameKinds, keptImportance, passes, perFrame, prefixKV, sameRatio, stillVec, worstErr, type Kind, type Token,
+  KIND_DOT, PAD, PLANE_X, PLANE_Y, axisNames, catCrop, isPortrait, kindNames, num, pc, plane, tint, tintCell, tokenDot, useCatImage, vec,
+} from "./tok-draw";
+import {
+  ANSWER, CLOSE_AT, EYE, FAR, FRAMES, IMPORTANCE, KIND, KV_BYTES_PER_TOKEN, PROMPT, STILL, TOY_LAYERS, TRANS, acrossFrames, closedAnchor, dist,
+  dyseg, fixedSeg, frameKinds, keptImportance, passes, perFrame, prefixKV, sameRatio, stillVec, worstErr, type Token,
 } from "./tok-math";
 
 const U = tokCopy.ui;
 const NAMES = U.prune.names;
-
-/** One cell of a desk picture, enlarged into a box: frame `kinds`, cell `p`. */
-function crop(ctx: Ctx, kinds: Kind[], p: number, x: number, y: number, Z: number, shift = 0) {
-  ctx.save();
-  ctx.beginPath(); ctx.rect(x, y, Z, Z); ctx.clip();
-  desk(ctx, x - (p % 4) * Z, y - Math.floor(p / 4) * Z, 4 * Z, kinds, shift);
-  ctx.restore();
-  frame(ctx, x, y, Z, Z, palette.frame, 1);
-}
-const handShift = (f: number) => (f >= 3 ? (f - 3) * 0.12 : 0);
+const closedAt = (f: number) => f >= CLOSE_AT;
 
 /* ------------------------------------------------------------------ */
 /* 05 · FastVID: cut where neighbouring frames stop looking alike      */
@@ -34,6 +27,7 @@ export function FastVidScene() {
   const [mode, setMode] = useState<SegMode>("dyseg");
   const T = U.fastvid;
   const segs = SEGS[mode];
+  const img = useCatImage();
 
   const ref = useCanvas((ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
@@ -43,14 +37,15 @@ export function FastVidScene() {
     const fx = (f: number) => x0 + f * (fw + gap);
     const anchors = segs.map((s) => s[0]);
     FRAMES.forEach((_, f) => {
-      desk(ctx, fx(f), yF, fw, frameKinds(f), handShift(f));
+      catCrop(ctx, img.current, fx(f), yF, fw, closedAt(f));
       frame(ctx, fx(f), yF, fw, fw, anchors.includes(f) ? palette.accent : palette.frame, anchors.includes(f) ? 3 : 1);
       label(ctx, `${f + 1}${U.tempme.frame}`, fx(f) + fw / 2, yF - 12, anchors.includes(f) ? palette.accent : palette.muted, 11, "center");
     });
-    // similarity of each frame with the next
-    const yS = yF + fw + 16;
-    TRANS.forEach((t, i) => label(ctx, t.toFixed(3), fx(i + 1) - gap / 2, yS, t < 0.9 ? palette.anomaly : palette.muted, 11, "center"));
+    // similarity of each frame with the next; the lowest one is red
+    const yS = yF + fw + 16, low = Math.min(...TRANS);
+    TRANS.forEach((t, i) => label(ctx, t.toFixed(3), fx(i + 1) - gap / 2, yS, t === low ? palette.anomaly : palette.muted, 11, "center"));
     label(ctx, T.sim, PAD, yS + 20, palette.muted, 11);
+    label(ctx, T.lowest, w - PAD, yS + 20, palette.anomaly, 11, "right");
     // the segments
     const yB = yS + 36;
     segs.forEach((s, i) => {
@@ -60,25 +55,26 @@ export function FastVidScene() {
     });
     label(ctx, `${T.anchor}: ${anchors.map((f) => `${f + 1}${U.tempme.frame}`).join(", ")}`, w - PAD, yB + 36, palette.accent, 11, "right");
 
-    // where the hand of frame 4 went
-    const seg = segs.find((s) => s.includes(3))!, an = dtm(seg);
-    const own = seg[0] === 3;
-    const a = own ? an[HAND_AT[0]] : an.find((q) => q.from.some((r) => r.frame === 3 && r.patch === HAND_AT[0]))!;
-    const before = FRAMES[a.frame][a.patch], after = a.v, gapHand = dist(after, FRAMES[3][HAND_AT[0]]);
+    // where the closed eye of frame 4 went
+    const { anchor: a, own } = closedAnchor(segs);
+    const before = FRAMES[a.frame][a.patch], after = a.v, gapClosed = dist(after, FRAMES[CLOSE_AT][EYE]);
     const yP = yB + 62, Z = portrait ? 92 : 84, Z2 = portrait ? 92 : Z * 0.75;
     line(ctx, PAD, yP - 12, w - PAD, yP - 12, palette.frame, 1);
-    label(ctx, T.hand, PAD, yP + 4, palette.ink, 12);
-    crop(ctx, frameKinds(3), HAND_AT[0], PAD, yP + 18, Z, handShift(3));
+    label(ctx, T.closed, PAD, yP + 4, palette.ink, 12);
+    catCrop(ctx, img.current, PAD, yP + 18, Z, true, EYE);
+    frame(ctx, PAD, yP + 18, Z, Z, palette.frame, 1);
     const jx = portrait ? w - PAD - Z2 : PAD + Z + 16, jy = portrait ? yP + 18 : yP + 40;
     label(ctx, `${T.joined}`, jx, jy - 10, palette.muted, 11);
-    crop(ctx, frameKinds(a.frame), a.patch, jx, jy, Z2, handShift(a.frame));
+    catCrop(ctx, img.current, jx, jy, Z2, closedAt(a.frame), a.patch);
+    frame(ctx, jx, jy, Z2, Z2, palette.frame, 1);
     if (portrait) line(ctx, PAD + Z + 8, yP + 18 + Z / 2, jx - 8, jy + Z2 / 2, palette.muted, 1, [3, 3]);
     const tx = portrait ? PAD : PAD + Z + 16 + Z2 + 14, ty = portrait ? yP + Z + 46 : yP + 46, gl = portrait ? 22 : 18;
-    const bad = gapHand > 0.5;
-    label(ctx, own ? T.own : T.wall, tx, ty, bad ? palette.anomaly : palette.mint, 12);
+    const bad = gapClosed > FAR;
+    const whose = `${a.frame + 1}${U.tempme.frame} ${NAMES[frameKinds(a.frame)[a.patch]]} ${T.anchorTok}`;
+    label(ctx, own ? T.own : whose, tx, ty, bad ? palette.anomaly : palette.mint, 12);
     label(ctx, `${T.before} ${vec(before)}`, tx, ty + gl, palette.muted, 11);
     label(ctx, `${T.after} ${vec(after)}`, tx, ty + 2 * gl, palette.ink, 11);
-    label(ctx, `${T.fromHand} ${gapHand.toFixed(2)}`, tx, ty + 3 * gl, bad ? palette.anomaly : palette.mint, 12);
+    label(ctx, `${T.fromClosed} ${gapClosed.toFixed(2)}`, tx, ty + 3 * gl, bad ? palette.anomaly : palette.mint, 12);
     label(ctx, `${T.kept} ${segs.length * 16} · ${T.per}`, PAD, portrait ? ty + 4 * gl + 18 : h - 16, palette.accent, 12);
   });
 
@@ -108,6 +104,7 @@ export function TempMeScene() {
   const [keep, setKeep] = useState(32);
   const T = U.tempme;
   const tokens: Token[] = useMemo(() => (scope === "within" ? perFrame(keep) : acrossFrames(keep)), [scope, keep]);
+  const img = useCatImage();
 
   const ref = useCanvas((ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
@@ -118,11 +115,11 @@ export function TempMeScene() {
     const owner = (m: number) => tokens.find((t) => t.members.includes(m))!;
     STILL.forEach((_, f) => {
       const x = x0 + f * (fw + gap);
-      desk(ctx, x, yF, fw, KIND);
+      catCrop(ctx, img.current, x, yF, fw);
       for (let p = 0; p < 16; p++) {
         const t = owner(f * 16 + p), cx = x + (p % 4) * c, cy = yF + Math.floor(p / 4) * c;
         if (t.s > 1) tintCell(ctx, cx, cy, c, groups.indexOf(t));
-        if (dist(t.v, stillVec(f * 16 + p)) > 0.5) { ctx.save(); ctx.strokeStyle = palette.anomaly; ctx.lineWidth = 2.5; ctx.strokeRect(cx + 1.5, cy + 1.5, c - 3, c - 3); ctx.restore(); }
+        if (dist(t.v, stillVec(f * 16 + p)) > FAR) { ctx.save(); ctx.strokeStyle = palette.anomaly; ctx.lineWidth = 2.5; ctx.strokeRect(cx + 1.5, cy + 1.5, c - 3, c - 3); ctx.restore(); }
       }
       frame(ctx, x, yF, fw, fw, palette.frame, 1);
       label(ctx, `${f + 1}${T.frame}`, x + fw / 2, yF - 12, palette.muted, 11, "center");
@@ -131,14 +128,15 @@ export function TempMeScene() {
     // the plane: 64 faint dots, one circle per token left
     const qy = yF + fw + 34, qh = h - qy - 76;
     label(ctx, T.plane, PAD, qy - 12, palette.muted, 11);
-    const at = plane(ctx, PAD, qy, w - 2 * PAD, qh, [-1.6, 2.7], [-1.5, 2.0]);
-    STILL.forEach((fr) => fr.forEach((v, p) => { const [x, y] = at(v); ctx.fillStyle = KIND_DOT[KIND[p]]; ctx.globalAlpha = 0.4; ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }));
+    const at = plane(ctx, PAD, qy, w - 2 * PAD, qh, PLANE_X, PLANE_Y);
+    axisNames(ctx, at, U.merge.axisX, U.merge.axisY);
+    STILL.forEach((fr) => fr.forEach((v, p) => { const [x, y] = at(v); ctx.fillStyle = KIND_DOT[KIND[p]]; ctx.globalAlpha = 0.55; ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }));
     // tokens that sit on top of each other (the same thing in four frames) are labelled once, as s × count
     // labels are drawn only where they do not collide with another circle
     const stacks: { v: number[]; n: number; s: number; x: number; y: number; r: number }[] = [];
     tokens.forEach((t) => {
       const [x, y] = at(t.v), near = stacks.find((q) => dist(q.v, t.v) < 0.09 && q.s === t.s);
-      const r = tokenDot(ctx, x, y, t.s, t.s > 1 ? tint(groups.indexOf(t), 0.5) : "#ffffff", t.members.some((m) => dist(t.v, stillVec(m)) > 0.5), false);
+      const r = tokenDot(ctx, x, y, t.s, t.s > 1 ? tint(groups.indexOf(t), 0.5) : "#ffffff", t.members.some((m) => dist(t.v, stillVec(m)) > FAR), false);
       if (near) near.n += 1; else stacks.push({ v: t.v, n: 1, s: t.s, x, y, r });
     });
     stacks.forEach((q, i) => {
@@ -154,7 +152,7 @@ export function TempMeScene() {
     label(ctx, [...comp].map(([k, n]) => `${k} ${n}${T.count}`).join(" · "), PAD, h - 48, palette.ink, 11);
     const worst = worstErr(tokens);
     label(ctx, `${T.keep} ${tokens.length}`, PAD, h - 22, palette.accent, 13);
-    label(ctx, `${T.worst} ${worst.toFixed(2)}`, w - PAD, h - 22, worst > 0.5 ? palette.anomaly : palette.mint, 12, "right");
+    label(ctx, `${T.worst} ${worst.toFixed(2)}`, w - PAD, h - 22, worst > FAR ? palette.anomaly : palette.mint, 12, "right");
   });
 
   return (

@@ -74,6 +74,24 @@ export function avgPool(g: Grid): Grid {
 
 export const nearestUp = (g: Grid, factor: number): Grid => grid(g.n * factor, (r, c) => g.d[Math.floor(r / factor) * g.n + Math.floor(c / factor)]);
 
+/**
+ * Scene 2's mask: the owner's whole cat (public/study/cat-square.png, 512×512) as 32×32 blocks of 16×16 px, 1 where more than half
+ * of the block lies inside the cat's outline. The outside is the flood fill from the image border over pixels within 40
+ * (|R−r|+|G−g|+|B−b|, 0–255 scale) of the background colour (253, 236, 226). Rows 0–7, columns 11–18 are the crop of U-Net 01–04.
+ */
+const CAT_ROWS = [
+  "00000000000000000000000000000000", "00000000000000000000001000000000", "00000000000000000000011000000000", "00000000000000110000011100000000",
+  "00000000000000111101111100000000", "00000000000000111111111100000000", "00000000000000011111111100000000", "00000000000000011111111100000000",
+  "00000000000000001111111100000000", "00000000000000001111111000000000", "00000000000000000111111000000000", "00000000000000000111111000000000",
+  "00000000000000011111111000000000", "00000000000001111111111100000000", "00000000000011111111111100000000", "00000000000111111111111000000000",
+  "00000000000111111111111000000000", "00000000001111111111110000000000", "00000000001111111111110000000000", "00000000001111111111110000000000",
+  "00000000011111111111110000000000", "00000000011111111111110000000000", "00000000011111111111110000000000", "00000000011111111111110000000000",
+  "00000000011111111111110000000000", "00000000011111111111110000000000", "00000000111111111111110000000000", "00000000111111111111111000000000",
+  "00000001111111111111111100000000", "00000001111111111111111000000000", "00000000001111111111000000000000", "00000000000000000000000000000000",
+];
+export const CAT_N = 32;
+export const CAT_MASK: Grid = grid(CAT_N, (r, c) => (CAT_ROWS[r][c] === "1" ? 1 : 0));
+
 /** Scene 2: shrink `depth` times by 2×2 averaging, then blow straight back up. */
 export function downThenUp(mask: Grid, depth: number): { small: Grid; back: Grid } {
   let small = mask;
@@ -95,7 +113,7 @@ export function bilinearUp(g: Grid): Grid {
 export const transposedUp = (g: Grid, kernel: number[]): Grid =>
   grid(2 * g.n, (r, c) => g.d[Math.floor(r / 2) * g.n + Math.floor(c / 2)] * kernel[(r % 2) * 2 + (c % 2)]);
 
-export const SMALL_MAP: Grid = grid(4, (r, c) => [0.1, 0.2, 0.1, 0.0, 0.3, 0.9, 0.8, 0.1, 0.2, 1.0, 0.7, 0.1, 0.0, 0.3, 0.2, 0.0][r * 4 + c]);
+/** Scene 3 grows the 4×4 map of U-Net 02 (the cat crop pooled once, from unet-walk-math.ts). Its stamp is hand-set. */
 export const STAMP_COPY = [1, 1, 1, 1];
 export const STAMP_LEARNED = [1.0, 0.7, 0.7, 0.4];
 

@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { clamp, drawGrid, label, palette, useCanvas } from "@/components/anomaly/lib";
 import { arrow, cells, frame, gray, line, signed, type Ctx } from "./kit";
+import { CAT_HEAD_PARTS_16, CAT_HEAD_RGB_16, CAT_SRC } from "./cat-grids";
 import { vitCopy } from "./vit-copy";
-import { STANDARD, TAU_T, dino, dot, randMat, randn, seeded, sinusoid, softmax } from "./vit-math";
-import { cat, isPortrait } from "./vit-walk-scenes";
+import { TAU_T, dino, dot, randMat, randn, seeded, sinusoid, softmax } from "./vit-math";
+import { isPortrait, useHead } from "./vit-walk-scenes";
 
 const U = vitCopy.ui;
 const PAD = 18;
@@ -18,7 +19,7 @@ const at = (e: PointerEvent<HTMLCanvasElement>) => {
 /* 01 · Photo → patches → one row of weights per token number           */
 /* ------------------------------------------------------------------ */
 
-const IMG_SRC = "/anomaly/hazelnut-good.webp";
+const IMG_SRC = CAT_SRC.head;
 const PATCH_SIZES = [98, 56, 28, 14];
 const NTH = [0, 1, 2];
 const PROJ = randMat(24, 16, seeded(7), 0.5);       // stand-in for the learned patch-embedding matrix E
@@ -50,7 +51,8 @@ export function TokenScene() {
     drawGrid(ctx, w, h, 40);
     const img = imgRef.current, data = dataRef.current;
     const G = 392 / P, N = G * G;
-    const idx = sel ?? Math.floor(G * 0.2) * G + Math.floor(G * 0.35);
+    // until the reader clicks, the chosen patch sits on the left ear (the cell followed from section 02)
+    const idx = sel ?? Math.floor(G * 0.4) * G + Math.floor(G * 0.2);
     const pr = Math.floor(idx / G), pcol = idx % G;
     const portrait = isPortrait(w, h);
     const S = portrait ? Math.min(w - 2 * PAD, h * 0.46) : Math.min(h - 80, w * 0.5);
@@ -200,17 +202,19 @@ export function Pos2DScene() {
 /* 07 · What one cell draws on: a fixed window, or shares computed from content */
 /* ------------------------------------------------------------------ */
 
-const CG = 11;
-const isObj = (r: number, c: number) => (r - 3) ** 2 + (c - 7) ** 2 <= 2.3 ** 2 || (r - 8) ** 2 + (c - 2) ** 2 <= 1.6 ** 2;
+/** The cat's head shrunk to 16 × 16 cells (measured colours), and each cell's part from colour thresholds (approximate). */
+const CG = 16;
+const partOf = (r: number, c: number) => CAT_HEAD_PARTS_16[r][c];
+const headColor = (r: number, c: number) => `rgb(${CAT_HEAD_RGB_16[r][c].map((v) => Math.round(v * 255)).join(",")})`;
 
 export function ReachScene() {
-  const [q, setQ] = useState<[number, number]>([3, 7]);
+  const [q, setQ] = useState<[number, number]>([10, 7]);       // the left eye
   const [L, setL] = useState(2);
   const rectRef = useRef({ grids: [[0, 0], [0, 0]], cell: 1 });
-  // hand-set: the base cell gives a high score to cells of its own kind (object or background), wherever they are
+  // hand-set: the base cell gives a high score to cells of the same part (background, cream fur, dark points, inner ear, eye), wherever they are
   const weights = useMemo(() => {
-    const mine = isObj(q[0], q[1]);
-    return softmax(Array.from({ length: CG * CG }, (_, i) => (isObj(Math.floor(i / CG), i % CG) === mine ? 4 : 0)));
+    const mine = partOf(q[0], q[1]);
+    return softmax(Array.from({ length: CG * CG }, (_, i) => (partOf(Math.floor(i / CG), i % CG) === mine ? 4 : 0)));
   }, [q]);
 
   const ref = useCanvas((ctx, w, h) => {
@@ -226,7 +230,7 @@ export function ReachScene() {
     const rx = portrait ? x0 : x0 + side + gap, ry = portrait ? y0 + side + 44 : y0;
     rectRef.current = { grids: [[x0, y0], [rx, ry]], cell };
     const mx = Math.max(...weights);
-    const base = (r: number, c: number) => (isObj(r, c) ? `rgba(${palette.inkRgb},0.3)` : palette.track);
+    const base = headColor;
     let seen = 0;
 
     label(ctx, `${U.compare.cnn} · ${L}${U.compare.layer}`, x0 + half, y0 - 16, palette.normal, 12, "center");
@@ -234,20 +238,20 @@ export function ReachScene() {
     for (let r = 0; r < CG; r++) for (let c = 0; c < CG; c++) {
       if (Math.abs(r - q[0]) <= L && Math.abs(c - q[1]) <= L) {
         seen++;
-        ctx.fillStyle = `rgba(${palette.normalRgb},0.6)`;
+        ctx.fillStyle = `rgba(${palette.normalRgb},0.62)`;
         ctx.fillRect(x0 + c * cell + 0.5, y0 + r * cell + 0.5, cell - 1, cell - 1);
       }
     }
     label(ctx, U.compare.attn, rx + half, ry - 16, palette.accent, 12, "center");
     cells(ctx, rx, ry, cell, CG, CG, base);
     for (let i = 0; i < CG * CG; i++) {
-      ctx.fillStyle = `rgba(${palette.accentRgb},${0.04 + 0.86 * (weights[i] / mx)})`;
+      ctx.fillStyle = `rgba(${palette.accentRgb},${0.03 + 0.8 * (weights[i] / mx)})`;
       ctx.fillRect(rx + (i % CG) * cell + 0.5, ry + Math.floor(i / CG) * cell + 0.5, cell - 1, cell - 1);
     }
     frame(ctx, x0 + q[1] * cell, y0 + q[0] * cell, cell, cell, palette.ink, 2.5);
     frame(ctx, rx + q[1] * cell, ry + q[0] * cell, cell, cell, palette.ink, 2.5);
 
-    const seesCnn = `${U.compare.sees} ${seen} ${U.compare.of}`, seesAttn = `${U.compare.sees} 121 ${U.compare.of}`;
+    const seesCnn = `${U.compare.sees} ${seen} ${U.compare.of}`, seesAttn = `${U.compare.sees} ${CG * CG} ${U.compare.of}`;
     if (portrait) {
       // two short lines beside each grid: the count, then what sets the weights
       const tx = x0 + side + 14, split = (s: string) => {
@@ -306,8 +310,8 @@ const STUDENT: number[] = (() => {
   return Array.from({ length: STEPS + 1 }, (_, k) => 1.2 * (1 - Math.exp(-k / 40)) + 0.2 * randn(r));
 })();
 const MOMENTA = [0.9, 0.97, 0.996];
-/** Crops as fractions of the photo: left, top, side. The large one holds ear, eye and wall; the small one only the ear. */
-const BIG = [0.04, 0.02, 0.9], SMALL = [0.07, 0.02, 0.36];
+/** Crops as fractions of the head drawing: left, top, side. The large one holds both ears, both eyes and the nose; the small one only the left ear. */
+const BIG = [0.03, 0.03, 0.94], SMALL = [0.03, 0.17, 0.42];
 const TEACH = palette.mint;        // plays the role of the answer
 const STUD = palette.accent;       // the prediction
 const pct = (v: number) => `${Math.round(v * 100)}%`;
@@ -317,6 +321,7 @@ export function DinoScene() {
   const [tau, setTau] = useState(TAU_T);
   const [mi, setMi] = useState(1);
   const D = useMemo(() => dino(tau), [tau]);
+  const head = useHead();
   const teacher = useMemo(() => {
     const m = MOMENTA[mi], out = [STUDENT[0]];
     for (let k = 1; k <= STEPS; k++) out.push(m * out[k - 1] + (1 - m) * STUDENT[k]);   // θ_t ← m·θ_t + (1−m)·θ_s
@@ -328,8 +333,10 @@ export function DinoScene() {
     drawGrid(ctx, w, h, 40);
     const portrait = isPortrait(w, h), S = portrait ? 112 : Math.min(150, w * 0.3);
     const px = portrait ? (w - S) / 2 : PAD, py = 40;
+    const img = head.current, n = img ? img.naturalWidth : 1;
     label(ctx, U.dino.photo, px + S / 2, py - 14, palette.muted, 11, "center");
-    cat(ctx, px, py, S, STANDARD);
+    if (img) ctx.drawImage(img, px, py, S, S);
+    else { ctx.fillStyle = palette.track; ctx.fillRect(px, py, S, S); }
     frame(ctx, px, py, S, S, palette.frame, 1);
     frame(ctx, px + BIG[0] * S, py + BIG[1] * S, BIG[2] * S, BIG[2] * S, TEACH, 2.5);
     frame(ctx, px + SMALL[0] * S, py + SMALL[1] * S, SMALL[2] * S, SMALL[2] * S, STUD, 2.5);
@@ -341,12 +348,11 @@ export function DinoScene() {
       { name: `${U.dino.student}: ${U.dino.studentDoes[step]}`, crop: SMALL, color: STUD, p: D.ps, nameColor: step === 2 ? palette.anomaly : STUD },
     ];
     rows.forEach((row, i) => {
-      const y = top + i * 106, [u, v, s] = row.crop, Z = TH / s;
+      const y = top + i * 106, [u, v, s] = row.crop;
       label(ctx, row.name, x0, y - 11, row.nameColor, 11);
       // the crop, resized to the same box whichever its size in the photo
-      ctx.save(); ctx.beginPath(); ctx.rect(x0, y, TH, TH); ctx.clip();
-      cat(ctx, x0 - u * Z, y - v * Z, Z, STANDARD);
-      ctx.restore();
+      if (img) ctx.drawImage(img, u * n, v * n, s * n, s * n, x0, y, TH, TH);
+      else { ctx.fillStyle = palette.track; ctx.fillRect(x0, y, TH, TH); }
       frame(ctx, x0, y, TH, TH, row.color, 2);
       const bx = x0 + TH + 14, colw = (x1 - bx) / 6;
       if (step === 0) { label(ctx, U.dino.none, bx, y + TH / 2, palette.muted, 11); return; }
