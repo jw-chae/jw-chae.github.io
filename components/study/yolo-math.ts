@@ -1,6 +1,6 @@
 /** Arithmetic behind the YOLO study scenes: one 160 × 160 picture with the Siamese cat (public/study/cat-pixel.webp)
- *  and a drawn cup, a 4 × 4 grid of cells, IoU and NMS by hand, the two label assignments, YOLOv10's reported numbers,
- *  and YOLOE's name vectors and fold. The answer boxes and the cat's share of each cell are measured from the cat
+ *  and a drawn cup, a 4 × 4 grid of cells, IoU and NMS by hand, the two label assignments, and YOLOv10's reported numbers.
+ *  (YOLOE's name vectors, fold, visual prompts and LRPC moved to ov-math.ts with the openvocab chapter.) The answer boxes and the cat's share of each cell are measured from the cat
  *  image's alpha channel at its placement; every model output (cell boxes, scores, features) is hand-set for the
  *  explanation; every published value carries its table in a comment. */
 
@@ -248,125 +248,11 @@ export function downsample(H: number, W: number, C: number) {
 }
 export const DS_EX = { H: 80, W: 80, C: 64 };
 
-/* ---- 06 · names as vectors (YOLOE text-prompt path). D′ = 4, D = 3, all hand-set ---- */
-
-/** The feature each cell hands to the last 1×1 convolution of the head (D′ = 4 numbers). Hand-set, loosely following
- *  the picture: A (chest), B (face), C (haunch) lean the "cat" way, D (mostly wall) less so, E the "cup" way; the
- *  bottom-row cells with the tail and paws get a weaker cat-like feature, the cup's bottom cell a weak cup-like one. */
-export const FEAT: number[][] = (() => {
-  const f: number[][] = [];
-  const parts: Record<string, number[]> = { "3,0": [0.8, 0, 0.3, 0], "3,1": [1, 0, 0.4, 0.2], "0,1": [0.3, 0, 0.1, 0.1], "3,3": [0.1, 0.8, 0, 0.4] };
-  for (let r = 0; r < GRID; r++) for (let c = 0; c < GRID; c++) {
-    const key = idOf(r, c);
-    const v: Record<string, number[]> = { A: [2, 0, 1, 0], B: [1.5, 0, 1, 0.5], C: [1.5, 0.5, 0.5, 0], D: [1, 0, 0.5, 0.5], E: [0, 2, 0, 1] };
-    f.push(v[key] ?? parts[`${r},${c}`] ?? [0.2, 0.1, 0, ((r + c) % 3) * 0.1]);
-  }
-  return f;
-})();
-/** Last 1×1 convolution of the object embedding head: D = 3 outputs from D′ = 4 inputs. */
-export const K_EMB: Mat = [[1, 0, 0.5, 0], [0, 1, 0, 0.5], [0.5, 0, 1, 0]];
-/** A closed-set head of the same place: one row per class, cat and cup. Hand-set. */
-export const K_CLS: Mat = [[1, 0, 1, 0], [0, 1, 0, 0.5]];
+/* ---- small matrix helpers (kept for other chapters' scenes; the YOLOE arithmetic now lives in ov-math.ts) ---- */
 
 export const matVec = (M: Mat, x: number[]) => M.map((row) => row.reduce((s, v, j) => s + v * x[j], 0));
 export const dot = (a: number[], b: number[]) => a.reduce((s, v, i) => s + v * b[i], 0);
 export const matMul = (A: Mat, B: Mat): Mat => A.map((row) => B[0].map((_, j) => row.reduce((s, v, k) => s + v * B[k][j], 0)));
-const unit = (v: number[]) => { const n = Math.sqrt(dot(v, v)); return v.map((x) => x / n); };
-
-/** Names the YOLOE sections use: the two closed-set names, then "Siamese cat" (the breed of the cat in the picture,
- *  added after training) and "hat" (nothing like it in the picture). */
-export type NameKey = "cat" | "cup" | "siam" | "hat";
-export const NAME_KEYS: NameKey[] = ["cat", "cup", "siam", "hat"];
-/** Stand-ins for what a text encoder returns for each name, length 1. Real ones have hundreds of numbers.
- *  "Siamese cat" is set close to "cat", as a real text encoder tends to place names of similar meaning. */
-export const TEXT: Record<NameKey, number[]> = {
-  cat: unit([0.8, 0, 0.6]),
-  cup: unit([0, 1, 0]),
-  siam: unit([0.6, 0, 0.8]),
-  hat: unit([-0.6, 0, -0.8]),
-};
-export const EMB = FEAT.map((x) => matVec(K_EMB, x));             // O: one D = 3 vector per cell
-export const scoreName = (cell: number, name: NameKey, P: Record<NameKey, number[]> = TEXT) => dot(EMB[cell], P[name]);
-export const IDX = { A: RC.A[0] * GRID + RC.A[1], B: RC.B[0] * GRID + RC.B[1], C: RC.C[0] * GRID + RC.C[1], D: RC.D[0] * GRID + RC.D[1], E: RC.E[0] * GRID + RC.E[1], bg: 3 };
-
-/* ---- 07 · RepRTA: refine the name vectors during training, then fold them into the last convolution ---- */
-
-/** What f_θ might return for each name after training. Hand-set: the fold works for any values here. */
-export const TEXT_REFINED: Record<NameKey, number[]> = {
-  cat: [0.9, -0.1, 0.4],
-  cup: [0.05, 0.95, -0.1],
-  siam: [0.3, 0, 0.9],
-  hat: [-0.5, 0.1, -0.8],
-};
-/** K′ = f_θ(P) · K: C rows of D′ numbers, the kernel of a plain C-class 1×1 convolution. */
-export const fold = (names: NameKey[], P: Record<NameKey, number[]> = TEXT_REFINED): Mat => matMul(names.map((n) => P[n]), K_EMB);
-/** Scores of one cell by the two-step path (I → K → O, then O · P̃) and by the folded path (I → K′). */
-export function twoWays(cell: number, names: NameKey[]) {
-  const O = matVec(K_EMB, FEAT[cell]);
-  const twoStep = names.map((n) => dot(O, TEXT_REFINED[n]));
-  const oneStep = matVec(fold(names), FEAT[cell]);
-  return { O, twoStep, oneStep, gap: Math.max(...twoStep.map((v, i) => Math.abs(v - oneStep[i]))) };
-}
-/** Multiply-adds per cell: two-step D·D′ + C·D, folded C·D′. */
-export const macsTwoStep = (C: number) => K_EMB.length * K_EMB[0].length + C * K_EMB.length;
-export const macsFolded = (C: number) => C * K_EMB[0].length;
-
-/* ---- 08 · visual prompt (SAVPE, toy with one group) and prompt-free retrieval (LRPC) ---- */
-
-/** The box a user draws around the cat (hand-set, a little looser than the answer box on the left, top and right).
- *  The cells whose centres fall inside it are A, B, C, D. Toy: semantic features = the cells' embeddings, one weight group. */
-export const PROMPT_BOX: Box = [13, 30, 78, 139];
-export const PROMPT_CELLS = [IDX.A, IDX.B, IDX.C, IDX.D];
-/** Share of the prompt box covered by the cat (same alpha measurement as CAT_COVER). */
-export const PROMPT_BOX_SHARE = 0.573;
-export const ACT_LOGITS = [1.2, 0.6, 0.2, -0.4];                 // hand-set activation-branch outputs in A, B, C, D (D is mostly wall)
 export const softmax = (z: number[]) => { const m = Math.max(...z), e = z.map((v) => Math.exp(v - m)), s = e.reduce((a, b) => a + b, 0); return e.map((v) => v / s); };
-export const ACT_W = softmax(ACT_LOGITS);
-export const POOL_W = PROMPT_CELLS.map(() => 1 / PROMPT_CELLS.length);
-/** Weighted sum of the semantic features inside the box, scaled to length 1 like the text prompts. */
-export const visualPrompt = (w: number[]) => unit([0, 1, 2].map((d) => PROMPT_CELLS.reduce((s, cell, i) => s + w[i] * EMB[cell][d], 0)));
-
-/** LRPC: a "something is here" score per cell (hand-set), then only cells above δ are compared with the built-in vocabulary.
- *  Set to follow the picture: highest in the cells holding the cat's and the cup's centres, between 0.001 and 0.01 in the
- *  bottom cells with the tail, the paws and the cup's bottom, below 0.001 on the wall (the ear tips in row 0 included). */
-export const VOCAB = 4585;                                     // YOLOE: tag list with 4585 category names
-export const ANCHORS_REAL = 8400;                              // YOLOE appendix B: total anchor points in the baseline
-export const OBJ_ANY: number[] = [
-  0.0002, 0.0006, 0.0002, 0.0001,
-  0.31, 0.62, 0.0004, 0.0002,
-  0.55, 0.93, 0.0009, 0.86,
-  0.0035, 0.0042, 0.0006, 0.0012,
-];
-/** Cells (row-major) holding parts of the cat or the cup whose centres are elsewhere: tail, paws and tail, cup's bottom. */
-export const PART_CELLS = { tail: 12, paws: 13, cupBottom: 15 };
-export const DELTAS = [0.0001, 0.001, 0.01];
-export const kept = (delta: number) => OBJ_ANY.map((v, i) => (v > delta ? i : -1)).filter((i) => i >= 0);
-/** YOLOE Table 7 (LVIS minival, prompt-free, T4): FPS and AP without LRPC and with each δ. */
-export const YOLOE_TABLE7 = {
-  S: [{ d: "none", ap: 21.0, fps: 56.5 }, { d: "1e-3", ap: 21.0, fps: 95.8 }, { d: "1e-4", ap: 21.0, fps: 66.1 }, { d: "1e-2", ap: 20.8, fps: 106 }],
-  L: [{ d: "none", ap: 27.2, fps: 19.9 }, { d: "1e-3", ap: 27.2, fps: 25.3 }],
-};
-
-/* ---- published numbers: YOLOE (arXiv 2503.07465, ICCV 2025) ---- */
-
-/** Table 1: LVIS minival zero-shot, Fixed AP, text prompts; FPS on T4 TensorRT / iPhone 12 CoreML; training hours on 8 RTX4090. */
-export const YOLOE_TABLE1 = {
-  "YOLO-Worldv2-S": { params: 13, hours: 41.7, fpsT4: 216.4, fpsIp: 48.9, ap: 24.4, apr: 17.1 },
-  "YOLOE-v8-S": { params: 12, hours: 12.0, fpsT4: 305.8, fpsIp: 64.3, ap: 27.9, apr: 22.3 },
-  "YOLO-Worldv2-L": { params: 48, hours: 80.0, fpsT4: 80.0, fpsIp: 22.1, ap: 35.5, apr: 25.6 },
-  "YOLOE-v8-L": { params: 45, hours: 22.5, fpsT4: 102.5, fpsIp: 27.2, ap: 35.9, apr: 33.2 },
-};
-/** Table 5: roadmap on the L model, LVIS minival standard AP, FPS T4 / iPhone 12. */
-export const YOLOE_TABLE5 = [
-  { key: "world", ap: 33.0, fps: 80.0 },
-  { key: "epochs", ap: 31.0, fps: 80.0 },
-  { key: "neg", ap: 31.9, fps: 80.0 },
-  { key: "nofusion", ap: 30.0, fps: 102.5 },
-  { key: "mobileclip", ap: 31.5, fps: 102.5 },
-  { key: "reprta", ap: 33.5, fps: 102.5 },
-  { key: "seg", ap: 33.3, fps: 102.5 },
-];
-/** Sec. 4.4: COCO transfer, full tuning. YOLOE-v8-L 53.0 AP^b / 42.7 AP^m after 80 epochs vs YOLOv8-L 52.4 / 42.3 after 300. */
-export const YOLOE_COCO = { yoloe: { apb: 53.0, apm: 42.7, epochs: 80 }, v8: { apb: 52.4, apm: 42.3, epochs: 300 } };
-/** Table 6: SAVPE vs mask pooling, +1.5 AP; 31.9 AP at A = 16. */
-export const YOLOE_SAVPE = { gain: 1.5, ap: 31.9, groups: 16 };
+/** Row-major index of each followed cell, and of the top-right wall cell used as "background" in 01. */
+export const IDX = { A: RC.A[0] * GRID + RC.A[1], B: RC.B[0] * GRID + RC.B[1], C: RC.C[0] * GRID + RC.C[1], D: RC.D[0] * GRID + RC.D[1], E: RC.E[0] * GRID + RC.E[1], bg: 3 };

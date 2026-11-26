@@ -4,8 +4,8 @@ import "../../../anomaly.css";
 import "../../../study.css";
 
 export const metadata: Metadata = {
-  title: "실시간 검출은 어떻게 빨라졌나: YOLOv10과 YOLOE",
-  description: "Real-time object detection study notes with interactive figures on one picture of a cat and a cup: what a grid cell outputs, IoU and NMS by hand, one-to-many versus one-to-one label assignment, YOLOv10's consistent dual assignments and efficiency-driven design, and YOLOE's text prompts as vectors, the RepRTA fold, visual prompts and prompt-free retrieval.",
+  title: "실시간 검출은 어떻게 빨라졌나: YOLO에서 YOLOv10까지",
+  description: "Real-time object detection study notes with interactive figures on one picture of a Siamese cat and a cup: what a grid cell outputs, IoU and NMS by hand, one-to-many versus one-to-one label assignment, YOLOv10's consistent dual assignments that remove NMS, and its efficiency-driven design of the head, downsampling and blocks.",
   alternates: { canonical: "/study/yolo/" },
 };
 
