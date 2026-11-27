@@ -239,7 +239,7 @@ export function RepvitScene() {
       DW_K3.forEach((k, c) => {
         const y = y0 + c * rh + (portrait ? 18 : 12);
         const name = `${T.channel} ${c + 1}${c === 0 ? `, ${T.ours}` : ""}`;
-        if (portrait) label(ctx, name, PAD, y - 22, c === 0 ? palette.accent : palette.ink, 11);
+        if (portrait) label(ctx, name, PAD, y - (c === 0 ? 34 : 22), c === 0 ? palette.accent : palette.ink, 11);
         else label(ctx, name.split(", ")[0], PAD, y + 1.5 * kc, c === 0 ? palette.accent : palette.ink, 12);
         if (!portrait && c === 0) label(ctx, T.ours, PAD, y + 1.5 * kc + 18, palette.accent, 11);
         const kx = (i: number) => x0 + i * (3 * kc + gap);
@@ -326,7 +326,8 @@ export function PbScene() {
     arrow(ctx, ax + s.k[0].length * kc + 6, ay + 1.5 * kc, px - 6, ay + 1.5 * kc, palette.muted, 1.3);
     numGrid(ctx, chk.padded, px, ay, kc, { caption: T.placed, tone: palette.accent, fill: (r, c) => (Math.abs(chk.padded[r][c]) > 1e-12 || padTo3(s.k.map((row) => row.map(() => 1)), s.pt, s.pl)[r][c] ? TINT : null), color: (r, c) => (padTo3(s.k.map((row) => row.map(() => 1)), s.pt, s.pl)[r][c] ? palette.ink : palette.dotOff) });
 
-    const mc = portrait ? 24 : 28, gap = portrait ? 22 : 30, rowW = 9 * mc + 2 * gap;
+    // the merge row sits right of the image on wide canvases; shrink its cells when the column is narrow
+    const gap = portrait ? 22 : 30, mc = portrait ? 24 : Math.max(20, Math.min(28, Math.floor((w - PAD - ax - 2 * gap) / 9))), rowW = 9 * mc + 2 * gap;
     const my = portrait ? iy + 5 * ic + 58 : ay + 3 * kc + 50, mx = portrait ? (w - rowW) / 2 : ax;
     numGrid(ctx, K3, mx, my, mc, { caption: T.base, tone: palette.normal, fill: (r, c) => signedTint(K3[r][c]) });
     label(ctx, "+", mx + 3 * mc + gap / 2, my + 1.5 * mc, palette.muted, 14, "center");

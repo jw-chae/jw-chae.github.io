@@ -297,7 +297,7 @@ export function MatchScene() {
       });
       y += 6;
       line(`${T.sum} ${fix(res.total, 3)}`, view === 2 ? BAD : OUT, 13, 24);
-      if (view === 1) line(`${T.order}를 바꿔도 같은 짝, 같은 손실`, GT, 11, 18);
+      if (view === 1) line(`${T.order}를 바꿔도 같은 짝, 같은 loss`, GT, 11, 18);
     }
   });
 

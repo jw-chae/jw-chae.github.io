@@ -6,7 +6,7 @@ import { diffCopy } from "./diff-copy";
 import {
   BELL, DDPM, GUIDE_T, GUIDE_X, PHOTO_CELL, PHOTO_N, PHOTO_SEED, SIX, TOY, TRACK, TRAIN_EPS, TRAIN_T, TWO_BUMPS, TWO_CLASSES,
   drawSamples, guideAt, guidedStats, histogram, landing, meanNearest, mulberry, normal, normalPdf, pixelNoise,
-  posterior, reverseTrace, sampleGuided, sampleReverse, smiley, spiral, stats, trainStep, walkPaths, type Mixture, type P2,
+  posterior, reverseTrace, sampleGuided, sampleReverse, smiley, spiral, stats, trainStep, type Mixture, type P2,
 } from "./diff-math";
 import { arrow, bar, frame, line, type Ctx } from "./kit";
 
@@ -176,76 +176,7 @@ export function SampleScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 02 · Many small pushes add up to a bell                              */
-/* ------------------------------------------------------------------ */
-
-const WALK = walkPaths(600, 64, 3);
-
-export function WalkScene() {
-  const [k, setK] = useState<number | null>(null);
-
-  const ref = useCanvas((ctx, w, h, tt) => {
-    ctx.clearRect(0, 0, w, h);
-    drawGrid(ctx, w, h, 40);
-    const kk = k ?? Math.min(64, Math.floor(tt * 7) % 84);
-    const x0 = PAD, x1 = w - PAD, R = 26;
-    const X = (v: number) => x0 + ((v + R) / (2 * R)) * (x1 - x0);
-    const py0 = 40, py1 = h * 0.42, hy0 = py1 + 34, hy1 = h - 62;
-
-    label(ctx, U.gauss.paths, x0, py0 - 16, palette.muted, 11);
-    line(ctx, X(0), py0, X(0), py1, palette.frame, 1, [3, 3]);
-    ctx.save();
-    ctx.strokeStyle = `rgba(${palette.accentRgb},0.38)`; ctx.lineWidth = 1;
-    for (let p = 0; p < 46; p++) {
-      ctx.beginPath();
-      for (let s = 0; s <= kk; s++) {
-        const x = X(WALK[p][s]), y = py0 + (s / 64) * (py1 - py0);
-        if (s === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-    }
-    ctx.restore();
-    const yk = py0 + (kk / 64) * (py1 - py0);
-    for (let p = 0; p < 46; p++) dot(ctx, X(WALK[p][kk]), yk, 2, palette.accent);
-
-    // histogram of all 600 particles; positions share the parity of k, so bins are 2 wide
-    label(ctx, U.gauss.hist, x0, hy0 - 16, palette.muted, 11);
-    const counts = new Map<number, number>();
-    for (const p of WALK) counts.set(p[kk], (counts.get(p[kk]) ?? 0) + 1);
-    const sdT = Math.sqrt(Math.max(kk, 0.0001));
-    const peak = kk === 0 ? 0.5 : Math.max(normalPdf(0, 0, sdT) * 1.25, 0.02);
-    const Y = (v: number) => hy1 - (Math.min(v, peak) / peak) * (hy1 - hy0);
-    const bw = X(2) - X(0);
-    counts.forEach((c, pos) => {
-      const dens = c / (600 * 2);
-      ctx.fillStyle = `rgba(${palette.accentRgb},0.6)`;
-      ctx.fillRect(X(pos) - bw / 2 + 0.5, Y(dens), Math.max(1, bw - 1), hy1 - Y(dens));
-    });
-    if (kk > 0) curve(ctx, (x) => normalPdf(x, 0, sdT), -R, R, X, Y, palette.normal, 2.5);
-    line(ctx, x0, hy1, x1, hy1, palette.frame, 1);
-
-    const sd = stats(WALK.map((p) => p[kk])).sd;
-    label(ctx, `k = ${kk}`, x0, h - 34, palette.ink, 13);
-    label(ctx, `${U.gauss.measured} ${sd.toFixed(2)}`, w / 2, h - 34, palette.accent, 12, "center");
-    label(ctx, `${U.gauss.theory} = ${sdT < 0.01 ? "0.00" : sdT.toFixed(2)}`, x1, h - 34, palette.normal, 12, "right");
-  });
-
-  return (
-    <div className="ad-scene">
-      <canvas ref={ref} className="ad-canvas" aria-hidden="true" />
-      <div className="ad-controls">
-        <label className="ad-ctl">
-          <span>{U.gauss.steps} <b>{k ?? "…"}</b></span>
-          <input type="range" min={0} max={64} step={1} value={k ?? 0} onChange={(e) => setK(Number(e.target.value))} />
-        </label>
-        <button type="button" className="ad-btn" onClick={() => setK(null)}>{U.gauss.auto}</button>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* 03 · From the observation back to the cause                          */
+/* 02 · From the observation back to the cause                          */
 /* ------------------------------------------------------------------ */
 
 export function BayesScene() {
@@ -308,7 +239,7 @@ export function BayesScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 04 · The forward process on a real photograph, and on one number of it */
+/* 03 · The forward process on a real photograph, and on one number of it */
 /* ------------------------------------------------------------------ */
 
 const IMG_N = PHOTO_N;
@@ -430,7 +361,7 @@ export function NoiseImageScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 05 · One training problem, one quantity per step                     */
+/* 04 · One training problem, one quantity per step                     */
 /* ------------------------------------------------------------------ */
 
 export function DenoiseScene() {
@@ -540,7 +471,7 @@ export function DenoiseScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 06 · Walking back: one point with every number shown, then a crowd   */
+/* 05 · Walking back: one point with every number shown, then a crowd   */
 /* ------------------------------------------------------------------ */
 
 const SHAPES: Mixture[] = [SIX, { mu: spiral(), s: 0.035 }, { mu: smiley(), s: 0.035 }];
@@ -654,7 +585,7 @@ export function ReverseScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 07 · Guidance: two predictions at one point, then a crowd            */
+/* 06 · Guidance: two predictions at one point, then a crowd            */
 /* ------------------------------------------------------------------ */
 
 export function GuideScene() {

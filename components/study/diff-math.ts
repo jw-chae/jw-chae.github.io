@@ -53,19 +53,7 @@ export function histogram(xs: number[], lo: number, hi: number, bins: number): n
   return h.map((c) => c / (xs.length * w));      // density, so it can sit under the pdf curve
 }
 
-/* ---- 02 · many small random pushes add up to a bell ---- */
-
-/** paths[p][k] = position of particle p after k pushes of ±1 (fair coin). */
-export function walkPaths(particles: number, steps: number, seed: number): number[][] {
-  const r = mulberry(seed);
-  return Array.from({ length: particles }, () => {
-    const path = [0];
-    for (let k = 1; k <= steps; k++) path.push(path[k - 1] + (r() < 0.5 ? -1 : 1));
-    return path;
-  });
-}
-
-/* ---- 03 · guessing the cause from the observation ---- */
+/* ---- 02 · guessing the cause from the observation ---- */
 
 /** Two sources at −1 (A) and +1 (B); each emits its value plus N(0, σ²) noise. */
 export function posterior(x: number, sigma: number, priorA: number): { likeA: number; likeB: number; pA: number; pB: number; mean: number } {

@@ -33,11 +33,11 @@ function mgrid(ctx: Ctx, m: Mat, x: number, y: number, cw: number, ch: number, t
 const cellName = (i: number) => {
   const r = Math.floor(i / GRID), c = i % GRID, id = idOf(r, c);
   if (id) return id;
-  return ({ 12: "꼬리 칸", 13: "발 칸", 15: "컵 아래 칸" } as Record<number, string>)[i] ?? `${r + 1}줄 ${c + 1}칸`;
+  return ({ 12: "꼬리 cell", 13: "발 cell", 15: "컵 아래 cell" } as Record<number, string>)[i] ?? `${r + 1}행 ${c + 1}열`;
 };
 
 /* ------------------------------------------------------------------ */
-/* 05 · Fusion: YOLO-World's max-sigmoid gate, Grounding DINO's query   */
+/* 07 · Fusion: YOLO-World's max-sigmoid gate, Grounding DINO's query   */
 /*      selection, both computed on the toy cell vectors                */
 /* ------------------------------------------------------------------ */
 
@@ -114,7 +114,7 @@ export function FusionScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 06 · RepRTA: two products in training, one folded 1×1 conv in use    */
+/* 05 · RepRTA: two products in training, one folded 1×1 conv in use    */
 /* ------------------------------------------------------------------ */
 
 export function FoldScene() {
@@ -207,7 +207,7 @@ export function FoldScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 07 · Visual prompt (SAVPE, toy) and prompt-free retrieval (LRPC)     */
+/* 06 · Visual prompt (SAVPE, toy) and prompt-free retrieval (LRPC)     */
 /* ------------------------------------------------------------------ */
 
 const fmtSmall = (v: number) => (v >= 0.01 ? fix(v, 2) : v.toFixed(4));

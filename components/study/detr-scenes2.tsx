@@ -245,7 +245,7 @@ export function SfodScene() {
       });
       y += STUDENT.length * rh + 22;
       fitLabel(ctx, `${U.match.best}: ${best.pick.map((s, j) => `${pl[j].cls === "cat" ? U.names.cat : U.names.cup} ${U.pic.slot} ${s + 1}`).join(", ")}`, PAD, y, w - 2 * PAD, OUT, 12); y += 22;
-      fitLabel(ctx, "04절과 같은 비용, 같은 짝짓기. 정답 자리에 가짜 정답", PAD, y, w - 2 * PAD, palette.muted, 11.5);
+      fitLabel(ctx, "04절 그대로, 정답 대신 pseudo-label", PAD, y, w - 2 * PAD, palette.muted, 11.5);
       return;
     }
 

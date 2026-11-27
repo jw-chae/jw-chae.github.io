@@ -115,7 +115,7 @@ export function TokenScene() {
     label(ctx, U.patch.flat, sx, sy - 10, palette.muted, 11);
     lum.forEach((v, i) => { ctx.fillStyle = gray(v); ctx.fillRect(sx + i * fc + 0.5, sy, fc - 1, fc - 1); });
     sy += fc + 26;
-    label(ctx, `E의 ${nth + 1}째 줄: ${U.patch.weights}`, sx, sy - 10, palette.muted, 11);
+    label(ctx, `E의 ${nth + 1}째 행: ${U.patch.weights}`, sx, sy - 10, palette.muted, 11);
     PROJ[nth].forEach((v, i) => { ctx.fillStyle = signed(v, wAbs); ctx.fillRect(sx + i * fc + 0.5, sy, fc - 1, fc - 1); });
     sy += fc + 22;
     arrow(ctx, sx + 6, sy - 14, sx + 6, sy + 2, palette.accent, 1.5);

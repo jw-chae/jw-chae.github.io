@@ -127,7 +127,7 @@ export const keptFlash = (N: number) => 2 * N * 4;
 export const tripRatio = (Br: number, d = DH) => (2 * Br) / d;
 export const BLOCKS = [64, 128, 256];
 
-/* ---- 04 / 05 · windows and sparse patterns on the 16 × 16 cat ---- */
+/* ---- 04 · windows on the 16 × 16 cat (the sparse patterns are kept for the comparison in 07 and the doubts; no figure draws them) ---- */
 
 export const G = 16;
 export const EYE16 = cellAt(EYE_PX, G);
@@ -203,7 +203,7 @@ export const eyeKeys = (p: Pattern, layer = 1) => keysOf(p, EYE16[0] * G + EYE16
 /** A sliding window of radius r needs ⌈gap / r⌉ layers to carry the eye to the tail at a grid of g × g. */
 export const slideLayers = (g: number, r: number) => Math.ceil(eyeTailGap(g) / r);
 
-/* ---- 06 · Linformer on the 4 × 4 crop: the eye's row over k pooled keys ---- */
+/* ---- Linformer on the 4 × 4 crop: the eye's row over k pooled keys (summarised in a few sentences in 05; no figure) ---- */
 
 /** The eye's scores against all 16 crop tokens, its shares and what it reads. */
 export const CROP_S = X.map((k) => score(Q_EYE, k));
@@ -221,7 +221,7 @@ export function linformer(k: number) {
 }
 export const LIN_KS = [16, 8, 4, 2, 1];
 
-/* ---- 07 · linear attention: the order of multiplication, and the kernel φ(x) = elu(x) + 1 ---- */
+/* ---- 05 · linear attention: the order of multiplication, and the kernel φ(x) = elu(x) + 1 ---- */
 
 /** Multiply-adds of the two products: (QKᵀ)V and Q(KᵀV), per head. Softmax's or the kernel's normalisation left out. */
 export const tableFirst = (N: number, d: number) => 2 * N * N * d;
@@ -248,7 +248,7 @@ export const STATE = (() => {
 export const cacheNumbers = (n: number, d: number) => 2 * n * d;
 export const stateNumbers = (d: number) => d * d + d;
 
-/* ---- 08 · decoding: KV cache bytes per token, MQA and GQA ---- */
+/* ---- 06 · decoding: KV cache bytes per token, MQA and GQA ---- */
 
 export type Lm = { key: string; layers: number; heads: number; kv: number; dh: number; window: number | null; trained: number };
 /** From the papers: Llama 2 7B keeps Llama 1's 7B shape (32 layers, d = 4096, 32 heads, so 128 per head) and has no GQA; Llama 3 8B has
@@ -270,7 +270,7 @@ export const stepFlops = (m: Lm, n: number) => 4 * m.heads * held(m, n) * m.dh *
 export const intensity = (m: Lm, n: number) => stepFlops(m, n) / cacheBytes(m, n);
 export const CONTEXTS = [1024, 4096, 8192, 32768, 131072];
 
-/* ---- 09 · choosing: one row per situation ---- */
+/* ---- 07 · choosing: one row per situation ---- */
 
 export type Situation = { key: string; N: number; train: boolean; decode: boolean };
 export const SITUATIONS: Situation[] = [

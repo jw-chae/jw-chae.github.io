@@ -4,11 +4,10 @@ import type { ReactNode } from "react";
 import { ChapterPage } from "./chapter-page";
 import { diffCopy as t } from "./diff-copy";
 import { diffDoubts } from "./diff-doubts";
-import { BayesScene, DenoiseScene, GuideScene, NoiseImageScene, ReverseScene, SampleScene, WalkScene } from "./diff-scenes";
+import { BayesScene, DenoiseScene, GuideScene, NoiseImageScene, ReverseScene, SampleScene } from "./diff-scenes";
 
 const scenes: Record<string, () => ReactNode> = {
   dist: () => <SampleScene />,
-  gauss: () => <WalkScene />,
   bayes: () => <BayesScene />,
   forward: () => <NoiseImageScene />,
   denoise: () => <DenoiseScene />,

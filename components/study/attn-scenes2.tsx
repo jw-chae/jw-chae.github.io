@@ -5,89 +5,16 @@ import { drawGrid, label, palette, useCanvas } from "@/components/anomaly/lib";
 import { line, rbox } from "./kit";
 import { attnCopy } from "./attn-copy";
 import {
-  CONTEXTS, CROP_OUT, DEVICE, EYE_CELL, FOUR_KIND, FOUR_X, KIND, LIN_KS, LMS, METHODS, SITUATIONS, X, cacheBytes, chooseRows, intensity,
-  kvPerToken, linformer, quadShare, sharesAt, stateFirst, tableFirst, type MethodKey,
+  CONTEXTS, DEVICE, FOUR_KIND, FOUR_X, LMS, METHODS, SITUATIONS, cacheBytes, chooseRows, intensity, kvPerToken, quadShare, sharesAt,
+  stateFirst, tableFirst, type MethodKey,
 } from "./attn-math";
-import { KIND_DOT, PAD, bytes, comma, drawCrop, fix, hbar, isPortrait, ms, num, pc, plane, tag, textW, tint, useCatImage, vec } from "./attn-draw";
+import { PAD, bytes, comma, hbar, isPortrait, ms, num, pc, tag, textW, vec } from "./attn-draw";
 
 const U = attnCopy.ui;
 const KERN = palette.accent2;
 
 /* ------------------------------------------------------------------ */
-/* 06 · Linformer: the eye's row over k pooled keys                     */
-/* ------------------------------------------------------------------ */
-
-const PX: [number, number] = [-3.0, 1.4], PY: [number, number] = [-2.0, 1.5];
-
-export function LowRankScene() {
-  const [k, setK] = useState(16);
-  const T = U.lowrank;
-  const img = useCatImage();
-  const L = linformer(k);
-
-  const ref = useCanvas((ctx, w, h) => {
-    ctx.clearRect(0, 0, w, h);
-    drawGrid(ctx, w, h, 40);
-    const portrait = isPortrait(w, h), fs = w < 420 ? 11 : 12;
-    label(ctx, `${T.row}: ${k} ${U.wall.cells} · k = ${k}`, PAD, 16, palette.ink, 13);
-
-    // the crop with the pooling groups tinted
-    const S = portrait ? 128 : Math.min(176, w * 0.32), cx = PAD, cy = 34, c = S / 4;
-    drawCrop(ctx, img.current, cx, cy, S);
-    if (k < 16) L.groups.forEach((g, gi) => g.forEach((i) => {
-      const x = cx + (i % 4) * c, y = cy + Math.floor(i / 4) * c;
-      ctx.fillStyle = tint(gi, 0.16); ctx.fillRect(x, y, c, c);
-      ctx.save(); ctx.strokeStyle = tint(gi, 0.95); ctx.lineWidth = 2; ctx.strokeRect(x + 2.5, y + 2.5, c - 5, c - 5); ctx.restore();
-    }));
-    ctx.save(); ctx.strokeStyle = "rgba(20,24,33,0.35)"; ctx.lineWidth = 1;
-    for (let i = 1; i < 4; i++) { ctx.beginPath(); ctx.moveTo(cx + i * c, cy); ctx.lineTo(cx + i * c, cy + S); ctx.moveTo(cx, cy + i * c); ctx.lineTo(cx + S, cy + i * c); ctx.stroke(); }
-    ctx.strokeStyle = palette.mint; ctx.lineWidth = 3;
-    ctx.strokeRect(cx + (EYE_CELL % 4) * c + 1, cy + Math.floor(EYE_CELL / 4) * c + 1, c - 2, c - 2);
-    ctx.restore();
-    tag(ctx, U.reach.eye, cx + (EYE_CELL % 4 + 0.5) * c, cy + Math.floor(EYE_CELL / 4) * c + c - 9, palette.mint, 11);
-
-    // the plane: 16 patches, pooled keys with the eye's share, exact read and current read
-    const qx = portrait ? PAD : cx + S + 20, qy = portrait ? cy + S + 26 : cy, qw = w - PAD - qx, qh = portrait ? h - (cy + S + 26) - 96 : h - cy - 92;
-    label(ctx, T.plane, qx, qy - 11, palette.muted, 11);
-    const at = plane(ctx, qx, qy, qw, qh, PX, PY);
-    { const [x1, y1] = at([PX[1], 0]), [x2, y2] = at([0, PY[1]]); label(ctx, T.axisX, x1 - 5, y1 + 10, palette.muted, 11, "right"); label(ctx, T.axisY, x2 - 5, y2 + 10, palette.muted, 11, "right"); }
-    X.forEach((v, i) => { const [x, y] = at(v); ctx.fillStyle = KIND_DOT[KIND[i]]; ctx.globalAlpha = 0.65; ctx.beginPath(); ctx.arc(x, y, 3.2, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; });
-    const showShares = k <= 8;
-    L.keys.forEach((kk, gi) => {
-      const [x, y] = at(kk), r = 5 + 2.2 * Math.sqrt(L.groups[gi].length);
-      if (k < 16) L.groups[gi].forEach((i) => { const [mx, my] = at(X[i]); line(ctx, mx, my, x, y, `rgba(${palette.inkRgb},0.15)`, 1); });
-      ctx.fillStyle = k < 16 ? tint(gi, 0.55) : "#ffffff"; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = palette.ink; ctx.lineWidth = 1.2; ctx.stroke();
-      if (showShares && L.w[gi] >= 0.05) label(ctx, pc(L.w[gi], 0), x + r + 3, y - 7, palette.normal, 11);
-    });
-    const [ex, ey] = at(CROP_OUT), [nx, ny] = at(L.out);
-    if (L.err > 1e-6) line(ctx, ex, ey, nx, ny, palette.anomaly, 1.6, [4, 3]);
-    ctx.fillStyle = palette.mint; ctx.beginPath(); ctx.arc(ex, ey, 6, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = palette.accent; ctx.beginPath(); ctx.arc(nx, ny, 5, 0, Math.PI * 2); ctx.fill();
-
-    // what the eye reads
-    const yT = h - 64;
-    line(ctx, PAD, yT - 16, w - PAD, yT - 16, palette.frame, 1);
-    label(ctx, `${T.exact} ${vec(CROP_OUT)}`, PAD, yT, palette.mint, fs);
-    label(ctx, `${T.now} ${vec(L.out)}`, PAD, yT + 22, palette.accent, fs);
-    label(ctx, `${T.gap} ${fix(L.err)}`, w - PAD, yT + 22, L.err > 0.25 ? palette.anomaly : palette.mint, fs, "right");
-  });
-
-  return (
-    <div className="ad-scene">
-      <canvas ref={ref} className="ad-canvas" aria-hidden="true" />
-      <div className="ad-controls">
-        <div className="ad-ctl ad-seg" role="group" aria-label={T.k}>
-          <span>{T.k}</span>
-          {LIN_KS.map((v) => <button key={v} type="button" className={k === v ? "on" : ""} onClick={() => setK(v)}>{v}</button>)}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* 07 · Linear attention: order of multiplication, and the shares      */
+/* 05 · Linear attention: order of multiplication, and the shares      */
 /* ------------------------------------------------------------------ */
 
 const SIZES: Record<string, { N: number; d: number }> = { four: { N: 4, d: 2 }, k1: { N: 4096, d: 64 }, k2: { N: 16384, d: 64 } };
@@ -165,7 +92,7 @@ export function LinearScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 08 · Decoding: K, V heads and the cache against context length      */
+/* 06 · Decoding: K, V heads and the cache against context length      */
 /* ------------------------------------------------------------------ */
 
 const ctxName = (n: number) => `${n / 1024}K`;
@@ -249,7 +176,7 @@ export function DecodeScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 09 · Choosing: one situation, six methods                           */
+/* 07 · Choosing: one situation, six methods                           */
 /* ------------------------------------------------------------------ */
 
 export function ChooseScene() {

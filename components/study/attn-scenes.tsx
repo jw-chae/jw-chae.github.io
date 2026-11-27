@@ -289,8 +289,8 @@ export function FlashScene() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 04 · 05 · Windows and sparse patterns: how far the eye's information */
-/*            has spread after each layer                               */
+/* 04 · Window attention: how far the eye's information has spread     */
+/*      after each layer                                               */
 /* ------------------------------------------------------------------ */
 
 const isSwin = (p: Pattern) => p === "swin" || p === "swinShift";
@@ -392,4 +392,3 @@ export function ReachScene({ patterns, maxLayer }: { patterns: Pattern[]; maxLay
 }
 
 export const WindowScene = () => <ReachScene patterns={["swin", "swinShift", "slide2"]} maxLayer={8} />;
-export const SparseScene = () => <ReachScene patterns={["slide1", "random", "global", "strided", "bigbird"]} maxLayer={10} />;

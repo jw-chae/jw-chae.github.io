@@ -45,7 +45,7 @@ export function CellScene() {
       fillCell(ctx, L, r, c, TINT);
       (["A", "B", "C", "D", "E"] as CellId[]).forEach((k) => cellTag(ctx, L, k, k === id ? OUT : palette.ink));
       drawBox(ctx, L, o.box, OUT, { lw: 2.5 });
-      const name = id === "bg" ? "배경 칸" : `칸 ${id}`;
+      const name = id === "bg" ? T.bgName : `${T.cell} ${id}`;
       line(`${name}${id === "bg" ? "이" : "가"} ${T.writes.trim()}`, OUT, 13, 26);
       line(`${T.box}  x1 y1 x2 y2`, palette.muted, 11, 18);
       line(`      ${o.box.map((v) => num(v, 0)).join("  ")}`, palette.ink, fs, 26);
@@ -313,7 +313,7 @@ export function DualScene() {
     const yHead1 = dTop, yHead2 = dTop + bh + 12, yMid = dTop + bh + 6 - bh / 2;
     const useO2o = view === 0 || head === 0, useO2m = view === 0 || head === 1;
     headBox(ctx, xIn, yMid, bw, bh, T.input, "160 × 160", palette.muted, false);
-    headBox(ctx, xBb, yMid, bw, bh, T.backbone, "", palette.muted, false);
+    headBox(ctx, xBb, yMid, bw, bh, T.backbone, T.neck, palette.muted, false);
     arrow(ctx, xIn + bw + 3, yMid + bh / 2, xBb - 3, yMid + bh / 2, palette.muted);
     headBox(ctx, xHd, yHead1, bw, bh, T.o2m, view === 1 && !useO2m ? T.dropped : T.o2mRule, OUT, !useO2m);
     headBox(ctx, xHd, yHead2, bw, bh, T.o2o, view === 1 && !useO2o ? T.dropped : view === 0 ? ch.key === "b2" ? "α 0.5, β 2" : `α ${num(ch.a)}, β ${num(ch.b)}` : "", READ, !useO2o);
@@ -325,7 +325,7 @@ export function DualScene() {
       let y = top;
       label(ctx, T.targets, PAD, y, palette.muted, 11); y += 26;
       const cw = port ? [36, 92, 92, 0] : [44, 110, 110, 150];
-      const cols = port ? ["칸", T.o2m, T.o2o] : ["칸", T.o2m, T.o2o, T.rank];
+      const cols = port ? [T.cellCol, T.o2m, T.o2o] : [T.cellCol, T.o2m, T.o2o, T.rank];
       const order = rankBy(ch.a, ch.b);
       const rows = [cols, ...TRAIN_IDS.map((k) => {
         const r = [k, fix(o2m.target[k], 3), fix(o2o.target[k], 3)];

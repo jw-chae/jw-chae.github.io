@@ -4,14 +4,13 @@ import type { ReactNode } from "react";
 import { ChapterPage } from "./chapter-page";
 import { pruneCopy as t } from "./prune-copy";
 import { pruneDoubts } from "./prune-doubts";
-import { MagScene, ObdScene, RetrainScene, SparseScene, TicketScene } from "./prune-scenes";
+import { MagScene, RetrainScene, SparseScene } from "./prune-scenes";
 import { CompareScene, DingScene, LlmScene, StructScene } from "./prune-scenes2";
 
+// OBD and the lottery ticket are folded into 01 and the doubts of 02; their scenes (ObdScene, TicketScene) are no longer shown.
 const scenes: Record<string, () => ReactNode> = {
   magnitude: () => <MagScene />,
-  obd: () => <ObdScene />,
   retrain: () => <RetrainScene />,
-  ticket: () => <TicketScene />,
   sparse: () => <SparseScene />,
   structured: () => <StructScene />,
   ding: () => <DingScene />,

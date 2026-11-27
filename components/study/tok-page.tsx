@@ -5,7 +5,7 @@ import { ChapterPage } from "./chapter-page";
 import { tokCopy as t } from "./tok-copy";
 import { tokDoubts } from "./tok-doubts";
 import { CostScene, MergeScene, PruneScene, VtcScene } from "./tok-scenes";
-import { FastVidScene, KvScene, PrefixScene, TempMeScene } from "./tok-scenes2";
+import { FastVidScene, KvScene, PrefixScene } from "./tok-scenes2";
 
 const scenes: Record<string, () => ReactNode> = {
   cost: () => <CostScene />,
@@ -13,7 +13,6 @@ const scenes: Record<string, () => ReactNode> = {
   merge: () => <MergeScene />,
   vtc: () => <VtcScene />,
   fastvid: () => <FastVidScene />,
-  tempme: () => <TempMeScene />,
   kv: () => <KvScene />,
   prefixkv: () => <PrefixScene />,
 };
