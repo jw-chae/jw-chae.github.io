@@ -27,6 +27,12 @@ function Section({ s, index, doubts, children }: { s: StudySection; index: numbe
       <Reveal className="ad-stage-copy">
         <p className="ad-num"><span>{s.num}</span> {s.kicker}</p>
         <h2 id={`${s.id}-title`}>{s.question}</h2>
+        {s.gist ? (
+          <div className="st-gist">
+            <span>{L.gist}</span>
+            {s.gist.map((p, i) => <p key={i}>{p}</p>)}
+          </div>
+        ) : null}
         {s.lead?.map((p, i) => <p className="ad-body" key={i}>{p}</p>)}
         {s.walk?.map((st, i) => (
           <div className="st-part st-step" key={st.q}>

@@ -11,6 +11,7 @@ export type StudySection = {
     need: string[];
     how: string[];
   };
+  gist?: string[];                          // the answer in plain words and a picture, before any numbers
   lead?: string[];                          // walk form: where the reader stands before the first step
   walk?: { q: string; a: string[] }[];      // walk form: each answer raises the next question
   analogy?: string;
@@ -176,5 +177,5 @@ export const studyIndexCopy = {
 
 export const chapterLabels = {
   see: "그림에서 볼 것", takeaway: "한 줄로", toc: "이 챕터의 질문", prev: "이전 챕터", next: "다음 챕터", index: "챕터 목록",
-  origin: "왜 나왔나", need: "왜 필요한가", how: "무엇을 어떻게 했나", analogy: "비유", bridge: "다음 질문", doubts: "여기서 드는 의문",
+  origin: "왜 나왔나", need: "왜 필요한가", how: "무엇을 어떻게 했나", analogy: "비유", gist: "먼저 큰 그림", bridge: "다음 질문", doubts: "여기서 드는 의문",
 };

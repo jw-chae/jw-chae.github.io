@@ -468,6 +468,35 @@
   line-height: 1.75;
 }
 
+.st-gist {
+  margin: 0.9rem 0 1.2rem;
+  padding: 0.95rem 1.1rem;
+  border-left: 3px solid var(--blue);
+  border-radius: 0 12px 12px 0;
+  background: rgba(37, 99, 235, 0.06);
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.75;
+  word-break: keep-all;
+}
+
+.st-gist span {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: var(--blue);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.st-gist p {
+  margin: 0 0 0.55rem;
+}
+
+.st-gist p:last-child {
+  margin-bottom: 0;
+}
+
 .st-analogy {
   margin: 1.3rem 0 0.4rem;
   padding: 0.95rem 1.1rem;
