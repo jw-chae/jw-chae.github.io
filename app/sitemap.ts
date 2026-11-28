@@ -12,7 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { en: "/projects/", zh: "/zh/projects/" },
   ];
 
-  const koOnly = ["/study/", "/study/linalg/", "/study/probability/", "/study/loss/", "/study/cnn/", "/study/resnet50/", "/study/unet/", "/study/transformer/", "/study/vit/", "/study/llm/", "/study/diffusion/", "/study/generative/", "/study/lora/", "/study/efficiency/", "/study/reparam/", "/study/yolo/", "/study/detr/", "/study/openvocab/", "/study/tokens/", "/study/attention/", "/study/compress/", "/study/pruning/", "/study/skip/"].map((url) => ({
+  const koOnly = ["/study/", "/study/linalg/", "/study/probability/", "/study/loss/", "/study/cnn/", "/study/resnet50/", "/study/unet/", "/study/transformer/", "/study/vit/", "/study/llm/", "/study/diffusion/", "/study/generative/", "/study/lora/", "/study/efficiency/", "/study/reparam/", "/study/yolo/", "/study/detr/", "/study/openvocab/", "/study/vla/", "/study/tokens/", "/study/attention/", "/study/compress/", "/study/pruning/", "/study/skip/"].map((url) => ({
     url: `${base}${url}`,
     lastModified: new Date("2026-11-20"),
     changeFrequency: "monthly" as const,

@@ -128,32 +128,37 @@ export const chapters: Chapter[] = [
     href: "/study/openvocab/", tags: ["open vocabulary", "CLIP", "YOLOE"], figures: 7,
   },
   {
-    slug: "tokens", num: "18", era: "2022 · 2025", title: "토큰을 덜 쓰면 얼마나 빨라지나: 가지치기와 합치기",
+    slug: "vla", num: "18", era: "2022 · 2025", title: "VLA는 어떻게 말을 로봇의 움직임으로 바꾸나",
+    desc: "사진과 지시문을 받은 모델이 집게의 다음 0.1초를 숫자 몇 개로 낸다. 위에서 내려다본 탁자 하나의 꽃병 앞 갈림길에서, 사람의 시범을 MSE로 따라 하면 왜 꽃병으로 가는지 계산하고, RT-2와 OpenVLA의 action token, ACT의 action chunk, π0의 flow matching, FAST의 압축 토큰이 각각 어떻게 한쪽 길을 고르고 무엇을 치르는지 따라간다.",
+    href: "/study/vla/", tags: ["VLA", "action chunk", "flow matching"], figures: 7,
+  },
+  {
+    slug: "tokens", num: "19", era: "2022 · 2025", title: "토큰을 덜 쓰면 얼마나 빨라지나: 가지치기와 합치기",
     desc: "토큰 수를 반으로 줄이면 계산은 대개 반쯤 준다. 무엇을 버리고 무엇을 합칠지가 남는다. [CLS]가 보는 곳으로 고르는 법, 비슷한 토큰을 평균 내는 법, 영상을 장면 단위로 끊는 법, KV cache를 층마다 다르게 줄이는 법.",
     href: "/study/tokens/", tags: ["token pruning", "token merging", "KV cache"], figures: 7,
   },
   {
-    slug: "attention", num: "19", era: "2019 · 2024", title: "Attention은 왜 N²이고, 어떻게 줄이나",
+    slug: "attention", num: "20", era: "2019 · 2024", title: "Attention은 왜 N²이고, 어떻게 줄이나",
     desc: "고양이 그림을 2048픽셀까지 키우면 점수 표가 계산과 메모리를 다 먹는다. 눈 patch 하나의 점수 한 행을 따라가며 FlashAttention, window attention, linear attention, GQA가 각각 무엇을 아끼고 무엇을 잃는지 센다.",
     href: "/study/attention/", tags: ["attention", "FlashAttention", "linear attention"], figures: 7,
   },
   {
-    slug: "compress", num: "20", era: "2015 · 2026", title: "큰 모델을 작게: 증류와 양자화",
+    slug: "compress", num: "21", era: "2015 · 2026", title: "큰 모델을 작게: 증류와 양자화",
     desc: "큰 모델의 답을 작은 모델에게 베끼게 하는 증류, 숫자를 적는 비트를 줄이는 양자화. 고양이 사진 한 장의 세 확률에서 student가 라벨에 없는 무엇을 베끼는지, 가중치 하나가 float 값, 저장된 정수, 되돌린 값으로 어떻게 갈라지는지 계산하고 DINO-PCB, CAIT, Quantized Prompt로 간다.",
     href: "/study/compress/", tags: ["distillation", "quantization"], figures: 9,
   },
   {
-    slug: "pruning", num: "21", era: "1989 · 2023", title: "가중치를 0으로: 가지치기, 그리고 증류·양자화와 무엇이 다른가",
+    slug: "pruning", num: "22", era: "1989 · 2023", title: "가중치를 0으로: 가지치기, 그리고 증류·양자화와 무엇이 다른가",
     desc: "고양이 머리 그림의 색으로 부위를 맞히는 작은 망을 실제로 학습시키고, 가중치를 0으로 적을 때 눈 칸 하나의 답이 어떻게 바뀌는지 따라간다. 다시 학습이 메우는 것, 0이 많아도 GPU에서 빨라지지 않는 이유와 2:4, 뉴런을 통째로 지우는 ResRep, LLM을 다시 학습 없이 지우는 Wanda, 그리고 양자화·증류 가운데 언제 무엇을 고르나까지.",
     href: "/study/pruning/", tags: ["pruning", "sparsity", "ResRep"], figures: 7,
   },
   {
-    slug: "skip", num: "22", era: "2017 · 2026", title: "매번 다 계산하지 않기: MoE와 diffusion 캐싱",
+    slug: "skip", num: "23", era: "2017 · 2026", title: "매번 다 계산하지 않기: MoE와 diffusion 캐싱",
     desc: "토큰마다 expert 몇 개만 계산하는 MoE, 이웃한 step의 계산을 다시 쓰는 diffusion caching. 토큰 하나와 점 하나를 손으로 따라가며 건너뛰어도 답이 거의 그대로인 때와 오차가 쌓이는 때를 본다. MaskMoE와 PoSTCache를 깊게, CartesianMoE, DSMoE, RA-CFGCache는 짧게.",
     href: "/study/skip/", tags: ["mixture of experts", "diffusion cache"], figures: 6,
   },
   {
-    slug: "anomaly", num: "23", era: "지금", title: "Memory-bank anomaly detection",
+    slug: "anomaly", num: "24", era: "지금", title: "Memory-bank anomaly detection",
     desc: "위에서 만든 토큰 위에서 정상 증거를 어떻게 모으고, 남기고, 믿는가. 내 연구 페이지로 이어진다.",
     href: "/anomaly/", tags: ["DINOv2", "memory bank"], figures: 0, external: true,
   },
